@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Default App Background -->
+    <color name="app_background">#FFFFFF</color>
+    <color name="app_background_dark">#000000</color>
+
+    <!-- Action Bar Colors -->
+    <color name="actionbar_dark_background">#7D7D7D</color>
+    <color name="actiontab_dark_background">#B7B7B7</color>
+    <color name="actionbar_textcolor">#FFFFFF</color>
+
+    <!-- UI Compoment Colors -->
+    <color name="text_color_light">#FFFFFF</color>
+    <color name="text_color_dark">#444444</color>
+    <color name="text_color_dark_light">#B7B7B7</color>
+    <color name="dialog_title_background">#8D8D8D</color>
+    <color name="dialog_background">#FFFFFF</color>
+    <color name="divider_color">#E1E1E1</color>
+
+</resources>

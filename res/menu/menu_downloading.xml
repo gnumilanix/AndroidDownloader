@@ -1,0 +1,18 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.milanix.example.downloader.HomeActivity" >
+
+    <item
+        android:id="@+id/action_refresh"
+        android:icon="@drawable/ic_action_refresh_light"
+        android:orderInCategory="100"
+        android:showAsAction="never"
+        android:title="@string/action_refresh"/>
+    <item
+        android:id="@+id/action_add"
+        android:icon="@drawable/ic_action_addtoqueue_light"
+        android:orderInCategory="100"
+        android:showAsAction="never"
+        android:title="@string/action_addnew"/>
+
+</menu>

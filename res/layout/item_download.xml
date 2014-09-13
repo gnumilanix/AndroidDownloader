@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="@dimen/list_padding" >
+
+    <ImageView
+        android:id="@+id/download_icon"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_alignBottom="@+id/download_date"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:src="@drawable/ic_launcher" />
+
+    <TextView
+        android:id="@+id/download_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginLeft="@dimen/list_padding"
+        android:layout_toRightOf="@+id/download_icon"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textColor="@color/text_color_dark" />
+
+    <ProgressBar
+        android:id="@+id/download_progress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/download_name"
+        android:layout_alignParentRight="true"
+        android:layout_below="@+id/download_name" />
+
+    <TextView
+        android:id="@+id/download_date"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/download_progress"
+        android:layout_below="@+id/download_progress"
+        android:layout_marginTop="@dimen/text_margin"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textColor="@color/text_color_dark" />
+
+    <TextView
+        android:id="@+id/download_url"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/download_date"
+        android:layout_alignParentRight="true"
+        android:layout_alignTop="@+id/download_date"
+        android:layout_toRightOf="@+id/download_date"
+        android:ellipsize="end"
+        android:gravity="right"
+        android:paddingLeft="@dimen/list_padding"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textColor="@color/text_color_dark" />
+
+</RelativeLayout>
