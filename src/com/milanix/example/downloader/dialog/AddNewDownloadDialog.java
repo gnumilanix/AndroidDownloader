@@ -104,7 +104,7 @@ public class AddNewDownloadDialog extends DialogFragment implements
 					FilenameUtils.getExtension(url));
 			values.put(DownloadsDatabase.COLUMN_DATE, new Date().getTime());
 			values.put(DownloadsDatabase.COLUMN_STATE,
-					DownloadState.DOWNLOADING.toString());
+					DownloadState.ADDED.toString());
 
 			Long rowId = ((HomeActivity) getActivity()).getDatabase().insert(
 					DownloadsDatabase.TABLE_DOWNLOADS, null, values);

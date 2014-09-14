@@ -89,7 +89,7 @@ public class DeleteDownloadDialog extends DialogFragment {
 
 		dismiss();
 	}
-
+	
 	@Override
 	public void onAttach(Activity activity) {
 		super.onAttach(activity);

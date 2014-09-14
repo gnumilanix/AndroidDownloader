@@ -2,6 +2,7 @@ package com.milanix.example.downloader.fragment.adapter;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.support.v4.widget.CursorAdapter;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,6 +16,8 @@ import com.milanix.example.downloader.R;
 import com.milanix.example.downloader.data.dao.Download;
 import com.milanix.example.downloader.data.dao.Download.DownloadListener;
 import com.milanix.example.downloader.data.dao.Download.DownloadState;
+import com.milanix.example.downloader.data.dao.Download.FailedReason;
+import com.milanix.example.downloader.data.dao.Download.TaskState;
 import com.milanix.example.downloader.data.database.DownloadsDatabase;
 import com.milanix.example.downloader.service.DownloadService;
 import com.milanix.example.downloader.util.TextHelper;
@@ -27,6 +30,10 @@ import com.milanix.example.downloader.util.TextHelper;
  */
 public class DownloadListAdapter extends CursorAdapter {
 	private DownloadService downloadService = null;
+
+	private static final int COLOR_HINT_SUCCESS = Color.parseColor("#99CC00");
+	private static final int COLOR_HINT_FAILURE = Color.parseColor("#FF4444");
+	private static final int COLOR_HINT_PROGRESS = Color.parseColor("#33B5E5");
 
 	public DownloadListAdapter(Context context, Cursor c, boolean autoRequery) {
 		super(context, c, autoRequery);
@@ -56,6 +63,8 @@ public class DownloadListAdapter extends CursorAdapter {
 
 		ViewHolder holder = new ViewHolder();
 
+		holder.download_hint = (View) view.findViewById(R.id.download_hint);
+
 		holder.download_icon = (ImageView) view
 				.findViewById(R.id.download_icon);
 
@@ -84,10 +93,12 @@ public class DownloadListAdapter extends CursorAdapter {
 	private void setListener(final ViewHolder holder, final Cursor cursor) {
 		final Integer id = cursor.getInt(cursor
 				.getColumnIndex(DownloadsDatabase.COLUMN_ID));
-
-		if (DownloadState.DOWNLOADING.equals(DownloadState.getEnum(cursor
+		final DownloadState state = DownloadState.getEnum(cursor
 				.getString(cursor
-						.getColumnIndex(DownloadsDatabase.COLUMN_STATE))))) {
+						.getColumnIndex(DownloadsDatabase.COLUMN_STATE)));
+
+		if (DownloadState.DOWNLOADING.equals(state)
+				|| DownloadState.ADDED.equals(state)) {
 			final ProgressBar progressBar = holder.download_progress;
 
 			final DownloadListener callback = new DownloadListener() {
@@ -105,12 +116,13 @@ public class DownloadListAdapter extends CursorAdapter {
 				}
 
 				@Override
-				public void onDownloadFailed(Download download) {
+				public void onDownloadFailed(Download download,
+						FailedReason reason) {
 				}
 
 				@Override
-				public void onDownloadProgress(Download download,
-						Integer progress) {
+				public void onDownloadProgress(TaskState taskState,
+						Download download, Integer progress) {
 					if (null != progressBar && null != progress)
 						progressBar.setProgress(progress);
 				}
@@ -152,6 +164,7 @@ public class DownloadListAdapter extends CursorAdapter {
 	 */
 	private void setData(Context context, final ViewHolder holder,
 			final Cursor cursor) {
+
 		holder.download_name.setText(cursor.getString(cursor
 				.getColumnIndex(DownloadsDatabase.COLUMN_NAME)));
 		holder.download_date.setText(TextHelper.getRelativeDateString(cursor
@@ -165,8 +178,17 @@ public class DownloadListAdapter extends CursorAdapter {
 						.getColumnIndex(DownloadsDatabase.COLUMN_STATE))))) {
 			holder.download_progress.setVisibility(View.VISIBLE);
 
+			holder.download_hint.setBackgroundColor(COLOR_HINT_PROGRESS);
+		} else if (DownloadState.COMPLETED.equals(DownloadState.getEnum(cursor
+				.getString(cursor
+						.getColumnIndex(DownloadsDatabase.COLUMN_STATE))))) {
+			holder.download_progress.setVisibility(View.GONE);
+
+			holder.download_hint.setBackgroundColor(COLOR_HINT_SUCCESS);
 		} else {
 			holder.download_progress.setVisibility(View.GONE);
+
+			holder.download_hint.setBackgroundColor(COLOR_HINT_FAILURE);
 		}
 
 	}
@@ -178,6 +200,8 @@ public class DownloadListAdapter extends CursorAdapter {
 	 * 
 	 */
 	public static class ViewHolder {
+		public View download_hint;
+
 		public ImageView download_icon;
 
 		public ProgressBar download_progress;

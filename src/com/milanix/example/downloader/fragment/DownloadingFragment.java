@@ -1,45 +1,38 @@
 package com.milanix.example.downloader.fragment;
 
-import java.util.Collection;
-import java.util.HashMap;
-
 import android.content.ComponentName;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.database.Cursor;
-import android.os.AsyncTask;
-import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.app.DialogFragment;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
+import android.widget.AbsListView.MultiChoiceModeListener;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.AdapterView.OnItemLongClickListener;
-import android.widget.ListView;
 
 import com.milanix.example.downloader.HomeActivity;
 import com.milanix.example.downloader.R;
 import com.milanix.example.downloader.data.dao.Download;
 import com.milanix.example.downloader.data.dao.Download.DownloadListener;
 import com.milanix.example.downloader.data.dao.Download.DownloadState;
+import com.milanix.example.downloader.data.dao.Download.FailedReason;
+import com.milanix.example.downloader.data.dao.Download.TaskState;
 import com.milanix.example.downloader.data.database.DownloadsDatabase;
 import com.milanix.example.downloader.data.database.util.QueryHelper;
 import com.milanix.example.downloader.dialog.AddNewDownloadDialog;
 import com.milanix.example.downloader.dialog.AddNewDownloadDialog.OnAddNewDownloadListener;
-import com.milanix.example.downloader.dialog.DeleteDownloadDialog;
-import com.milanix.example.downloader.dialog.DeleteDownloadDialog.OnDeleteDownloadListener;
-import com.milanix.example.downloader.fragment.abs.AbstractFragment;
+import com.milanix.example.downloader.fragment.abs.AbstractDownloadFragment;
 import com.milanix.example.downloader.fragment.adapter.DownloadListAdapter;
 import com.milanix.example.downloader.service.DownloadService;
 import com.milanix.example.downloader.service.DownloadService.DownloadBinder;
+import com.milanix.example.downloader.service.DownloadService.TaskStateResult;
 import com.milanix.example.downloader.util.FileUtils;
 import com.milanix.example.downloader.util.NetworkUtils;
 import com.milanix.example.downloader.util.PreferenceHelper;
@@ -48,16 +41,8 @@ import com.milanix.example.downloader.util.ToastHelper;
 /**
  * This fragment contains downloading list and its related logic.
  */
-public class DownloadingFragment extends AbstractFragment implements
-		OnItemClickListener, OnItemLongClickListener, OnAddNewDownloadListener,
-		OnDeleteDownloadListener {
-
-	private View rootView;
-	private ListView downloading_list;
-
-	private DownloadListAdapter adapter;
-
-	private HashMap<Integer, AsyncTask<String, Integer, Download>> downloadTasks = new HashMap<Integer, AsyncTask<String, Integer, Download>>();
+public class DownloadingFragment extends AbstractDownloadFragment implements
+		OnItemClickListener, OnAddNewDownloadListener {
 
 	private DownloadService downloadService = null;
 
@@ -71,7 +56,7 @@ public class DownloadingFragment extends AbstractFragment implements
 
 			bound = true;
 
-			setAdapter(getDownloadingDownloads());
+			setAdapter(getDownloads());
 		}
 
 		@Override
@@ -81,35 +66,9 @@ public class DownloadingFragment extends AbstractFragment implements
 	};
 
 	@Override
-	public void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-
-		setHasOptionsMenu(true);
-		setRetainInstance(true);
-	}
-
-	@Override
-	public View onCreateView(LayoutInflater inflater, ViewGroup container,
-			Bundle savedInstanceState) {
-		rootView = inflater
-				.inflate(R.layout.downloading_home, container, false);
-
+	protected void onInit() {
 		setUI();
 		setListener();
-
-		return rootView;
-	}
-
-	@Override
-	public void setUI() {
-		downloading_list = (ListView) rootView
-				.findViewById(R.id.downloading_list);
-	}
-
-	@Override
-	public void setListener() {
-		downloading_list.setOnItemClickListener(this);
-		downloading_list.setOnItemLongClickListener(this);
 	}
 
 	/**
@@ -117,7 +76,8 @@ public class DownloadingFragment extends AbstractFragment implements
 	 * 
 	 * @param cursor
 	 */
-	private void setAdapter(Cursor cursor) {
+	@Override
+	protected void setAdapter(Cursor cursor) {
 		if (null != cursor) {
 			adapter = new DownloadListAdapter(getActivity(), cursor, false,
 					downloadService);
@@ -127,14 +87,76 @@ public class DownloadingFragment extends AbstractFragment implements
 	}
 
 	/**
-	 * This method will set new cursor to the adapter
+	 * This method will resume downloads
 	 */
-	private void refreshAdapter() {
-		if (null != adapter) {
-			adapter.changeCursor(getDownloadingDownloads());
+	private void resumeDownload() {
+		if (bound) {
+			TaskStateResult result = downloadService
+					.resumeDownload(downloading_list.getCheckedItemIds());
 
-			ToastHelper.showToast(getActivity(), "Refreshing list");
+			for (Integer id : result.getUncreatedTasks()) {
+
+			}
 		}
+	}
+
+	/**
+	 * This method will pause downloads
+	 */
+	private void pauseDownload() {
+		if (bound) {
+			downloadService.pauseDownload(downloading_list.getCheckedItemIds());
+		}
+	}
+
+	@Override
+	public MultiChoiceModeListener getMultiChoiceModeListener() {
+		return new MultiChoiceModeListener() {
+
+			@Override
+			public boolean onActionItemClicked(android.view.ActionMode mode,
+					MenuItem item) {
+				switch (item.getItemId()) {
+				case R.id.action_resume:
+					resumeDownload();
+
+					return true;
+				case R.id.action_pause:
+					pauseDownload();
+
+					return true;
+				case R.id.action_delete:
+					return true;
+				default:
+					return false;
+				}
+			}
+
+			@Override
+			public boolean onCreateActionMode(android.view.ActionMode mode,
+					Menu menu) {
+				MenuInflater inflater = mode.getMenuInflater();
+				inflater.inflate(R.menu.menu_context_downloading, menu);
+				return true;
+			}
+
+			@Override
+			public void onDestroyActionMode(android.view.ActionMode mode) {
+
+			}
+
+			@Override
+			public boolean onPrepareActionMode(android.view.ActionMode mode,
+					Menu menu) {
+				return false;
+			}
+
+			@Override
+			public void onItemCheckedStateChanged(android.view.ActionMode mode,
+					int position, long id, boolean checked) {
+
+			}
+		};
 	}
 
 	/**
@@ -142,7 +164,8 @@ public class DownloadingFragment extends AbstractFragment implements
 	 * 
 	 * @return cursor retrieved if successful otherwise null
 	 */
-	private Cursor getDownloadingDownloads() {
+	@Override
+	protected Cursor getDownloads() {
 		if (getActivity() instanceof HomeActivity) {
 			return ((HomeActivity) getActivity()).getDatabase().query(
 					DownloadsDatabase.TABLE_DOWNLOADS,
@@ -168,44 +191,6 @@ public class DownloadingFragment extends AbstractFragment implements
 		newFragment.setCancelable(true);
 		newFragment.show(getFragmentManager(),
 				AddNewDownloadDialog.class.getSimpleName());
-	}
-
-	/**
-	 * This method will show add new download dialog
-	 */
-	private void showRemoveDialog(long id, String url) {
-		Bundle bundle = new Bundle();
-		bundle.putLong(DeleteDownloadDialog.KEY_DOWNLOADID, id);
-		bundle.putString(DeleteDownloadDialog.KEY_DOWNLOADURL, url);
-
-		DeleteDownloadDialog newFragment = new DeleteDownloadDialog();
-		newFragment.setArguments(bundle);
-		newFragment.setTargetFragment(this, -1);
-		newFragment.setCancelable(true);
-		newFragment.show(getFragmentManager(),
-				DeleteDownloadDialog.class.getSimpleName());
-	}
-
-	@Override
-	public String getLogTag() {
-		return DownloadingFragment.class.getSimpleName();
-	}
-
-	@Override
-	public boolean onItemLongClick(AdapterView<?> parent, View view,
-			int position, long id) {
-		Cursor cursor = adapter.getCursor();
-
-		if (cursor.moveToPosition(position)) {
-			showRemoveDialog(cursor.getLong(cursor
-					.getColumnIndex(DownloadsDatabase.COLUMN_ID)),
-					cursor.getString(cursor
-							.getColumnIndex(DownloadsDatabase.COLUMN_URL)));
-
-			return true;
-		}
-
-		return false;
 	}
 
 	@Override
@@ -257,18 +242,6 @@ public class DownloadingFragment extends AbstractFragment implements
 					getString(R.string.download_add_fail));
 	}
 
-	@Override
-	public void onDownloadDeleted(boolean isSuccess, String url) {
-		if (isSuccess) {
-			ToastHelper.showToast(getActivity(), String.format(
-					getString(R.string.download_delete_success), url));
-
-			refreshAdapter();
-		} else
-			ToastHelper.showToast(getActivity(), String.format(
-					getString(R.string.download_delete_fail), url));
-	}
-
 	/**
 	 * This method will push download to the service
 	 * 
@@ -310,7 +283,8 @@ public class DownloadingFragment extends AbstractFragment implements
 						}
 
 						@Override
-						public void onDownloadFailed(Download download) {
+						public void onDownloadFailed(Download download,
+								FailedReason reason) {
 							Log.d(getLogTag(),
 									"Download failed " + download.getName());
 
@@ -318,13 +292,15 @@ public class DownloadingFragment extends AbstractFragment implements
 						}
 
 						@Override
-						public void onDownloadProgress(Download download,
-								Integer progress) {
+						public void onDownloadProgress(TaskState taskState,
+								Download download, Integer progress) {
+							if (TaskState.PAUSED.equals(taskState))
+								Log.d(getLogTag(), "Download paused "
+										+ download.getName());
 						}
 					});
 
-			downloadTasks.put(download.getId(),
-					downloadService.downloadFile(download));
+			downloadService.downloadFile(download);
 		}
 	}
 
@@ -348,27 +324,6 @@ public class DownloadingFragment extends AbstractFragment implements
 		}
 	}
 
-	@Override
-	public void onDestroy() {
-		cancelOngoingTasks();
-
-		super.onDestroy();
-	}
-
-	/**
-	 * This method will cancel all ongoing tasks
-	 */
-	private void cancelOngoingTasks() {
-		Collection<AsyncTask<String, Integer, Download>> ongoingTasks = downloadTasks
-				.values();
-
-		for (AsyncTask<String, Integer, Download> task : ongoingTasks) {
-			if (null != task) {
-				task.cancel(true);
-			}
-		}
-	}
-
 	/**
 	 * This method will update the given download state
 	 * 
@@ -387,9 +342,10 @@ public class DownloadingFragment extends AbstractFragment implements
 					values,
 					QueryHelper.getWhere(DownloadsDatabase.COLUMN_ID,
 							download.getId(), true), null)) {
-				refreshAdapter();
+
+				refreshAdapterOnUIThread();
 			}
 		}
-
 	}
+
 }

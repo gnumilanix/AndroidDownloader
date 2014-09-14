@@ -1,0 +1,24 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.milanix.example.downloader.HomeActivity" >
+
+    <item
+        android:id="@+id/action_resume"
+        android:icon="@drawable/ic_action_resume_dark"
+        android:orderInCategory="100"
+        android:showAsAction="always"
+        android:title="@string/action_resume"/>
+    <item
+        android:id="@+id/action_pause"
+        android:icon="@drawable/ic_action_pause_dark"
+        android:orderInCategory="100"
+        android:showAsAction="always"
+        android:title="@string/action_pause"/>
+    <item
+        android:id="@+id/action_delete"
+        android:icon="@drawable/ic_action_delete_dark"
+        android:orderInCategory="100"
+        android:showAsAction="always"
+        android:title="@string/action_delete"/>
+
+</menu>

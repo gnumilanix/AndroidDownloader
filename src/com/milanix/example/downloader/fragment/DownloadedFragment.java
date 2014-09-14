@@ -5,96 +5,75 @@ import java.io.File;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.webkit.MimeTypeMap;
+import android.widget.AbsListView.MultiChoiceModeListener;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.AdapterView.OnItemLongClickListener;
-import android.widget.ListView;
 
 import com.milanix.example.downloader.HomeActivity;
 import com.milanix.example.downloader.R;
 import com.milanix.example.downloader.data.dao.Download.DownloadState;
 import com.milanix.example.downloader.data.database.DownloadsDatabase;
 import com.milanix.example.downloader.data.database.util.QueryHelper;
-import com.milanix.example.downloader.dialog.DeleteDownloadDialog;
-import com.milanix.example.downloader.dialog.DeleteDownloadDialog.OnDeleteDownloadListener;
-import com.milanix.example.downloader.fragment.abs.AbstractFragment;
-import com.milanix.example.downloader.fragment.adapter.DownloadListAdapter;
-import com.milanix.example.downloader.util.ToastHelper;
+import com.milanix.example.downloader.fragment.abs.AbstractDownloadFragment;
 
 /**
  * This fragment contains downloaded list and its related logic.
  */
-public class DownloadedFragment extends AbstractFragment implements
-		OnItemClickListener, OnItemLongClickListener, OnDeleteDownloadListener {
-
-	private View rootView;
-	private ListView downloading_list;
-
-	private DownloadListAdapter adapter;
-
-	@Override
-	public void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-
-		setHasOptionsMenu(true);
-		setRetainInstance(true);
-	}
-
-	@Override
-	public View onCreateView(LayoutInflater inflater, ViewGroup container,
-			Bundle savedInstanceState) {
-		rootView = inflater
-				.inflate(R.layout.downloading_home, container, false);
-
-		setUI();
-		setListener();
-		setAdapter(getDownloadedDownloads());
-
-		return rootView;
-	}
-
-	@Override
-	public void setUI() {
-		downloading_list = (ListView) rootView
-				.findViewById(R.id.downloading_list);
-	}
+public class DownloadedFragment extends AbstractDownloadFragment implements
+		OnItemClickListener {
 
 	@Override
 	public void setListener() {
+		super.setListener();
+
 		downloading_list.setOnItemClickListener(this);
-		downloading_list.setOnItemLongClickListener(this);
 	}
 
-	/**
-	 * This method will set adapter
-	 * 
-	 * @param cursor
-	 */
-	private void setAdapter(Cursor cursor) {
-		if (null != cursor) {
-			adapter = new DownloadListAdapter(getActivity(), cursor, false);
+	@Override
+	public MultiChoiceModeListener getMultiChoiceModeListener() {
+		return new MultiChoiceModeListener() {
 
-			downloading_list.setAdapter(adapter);
-		}
-	}
+			@Override
+			public boolean onActionItemClicked(android.view.ActionMode mode,
+					MenuItem item) {
+				switch (item.getItemId()) {
+				case R.id.action_delete:
+					return true;
+				default:
+					return false;
+				}
+			}
 
-	/**
-	 * This method will set new cursor to the adapter
-	 */
-	private void refreshAdapter() {
-		if (null != adapter) {
-			adapter.changeCursor(getDownloadedDownloads());
+			@Override
+			public boolean onCreateActionMode(android.view.ActionMode mode,
+					Menu menu) {
+				MenuInflater inflater = mode.getMenuInflater();
+				inflater.inflate(R.menu.menu_context_downloaded, menu);
+				return true;
+			}
 
-			ToastHelper.showToast(getActivity(), "Refreshing list");
-		}
+			@Override
+			public void onDestroyActionMode(android.view.ActionMode mode) {
+
+			}
+
+			@Override
+			public boolean onPrepareActionMode(android.view.ActionMode mode,
+					Menu menu) {
+				return false;
+			}
+
+			@Override
+			public void onItemCheckedStateChanged(android.view.ActionMode mode,
+					int position, long id, boolean checked) {
+
+			}
+		};
 	}
 
 	/**
@@ -102,7 +81,8 @@ public class DownloadedFragment extends AbstractFragment implements
 	 * 
 	 * @return cursor retrieved if successful otherwise null
 	 */
-	private Cursor getDownloadedDownloads() {
+	@Override
+	protected Cursor getDownloads() {
 		if (getActivity() instanceof HomeActivity) {
 			return ((HomeActivity) getActivity()).getDatabase().query(
 					DownloadsDatabase.TABLE_DOWNLOADS,
@@ -117,22 +97,6 @@ public class DownloadedFragment extends AbstractFragment implements
 		} else {
 			return null;
 		}
-	}
-
-	/**
-	 * This method will show add new download dialog
-	 */
-	private void showRemoveDialog(long id, String url) {
-		Bundle bundle = new Bundle();
-		bundle.putLong(DeleteDownloadDialog.KEY_DOWNLOADID, id);
-		bundle.putString(DeleteDownloadDialog.KEY_DOWNLOADURL, url);
-
-		DeleteDownloadDialog newFragment = new DeleteDownloadDialog();
-		newFragment.setArguments(bundle);
-		newFragment.setTargetFragment(this, -1);
-		newFragment.setCancelable(true);
-		newFragment.show(getFragmentManager(),
-				DeleteDownloadDialog.class.getSimpleName());
 	}
 
 	/**
@@ -151,28 +115,6 @@ public class DownloadedFragment extends AbstractFragment implements
 		intent.setDataAndType(Uri.fromFile(file), type);
 
 		startActivity(intent);
-	}
-
-	@Override
-	public String getLogTag() {
-		return DownloadedFragment.class.getSimpleName();
-	}
-
-	@Override
-	public boolean onItemLongClick(AdapterView<?> parent, View view,
-			int position, long id) {
-		Cursor cursor = adapter.getCursor();
-
-		if (cursor.moveToPosition(position)) {
-			showRemoveDialog(cursor.getLong(cursor
-					.getColumnIndex(DownloadsDatabase.COLUMN_ID)),
-					cursor.getString(cursor
-							.getColumnIndex(DownloadsDatabase.COLUMN_URL)));
-
-			return true;
-		}
-
-		return false;
 	}
 
 	@Override
@@ -206,15 +148,4 @@ public class DownloadedFragment extends AbstractFragment implements
 		}
 	}
 
-	@Override
-	public void onDownloadDeleted(boolean isSuccess, String url) {
-		if (isSuccess) {
-			ToastHelper.showToast(getActivity(), String.format(
-					getString(R.string.download_delete_success), url));
-
-			refreshAdapter();
-		} else
-			ToastHelper.showToast(getActivity(), String.format(
-					getString(R.string.download_delete_fail), url));
-	}
 }

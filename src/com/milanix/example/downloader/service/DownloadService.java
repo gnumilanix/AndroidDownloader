@@ -1,13 +1,26 @@
 package com.milanix.example.downloader.service;
 
+import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.RandomAccessFile;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.params.BasicHttpParams;
@@ -24,7 +37,10 @@ import android.util.Log;
 import com.milanix.example.downloader.data.dao.Download;
 import com.milanix.example.downloader.data.dao.Download.DownloadListener;
 import com.milanix.example.downloader.data.dao.Download.DownloadState;
+import com.milanix.example.downloader.data.dao.Download.FailedReason;
+import com.milanix.example.downloader.data.dao.Download.TaskState;
 import com.milanix.example.downloader.util.FileUtils;
+import com.milanix.example.downloader.util.IOUtils;
 import com.milanix.example.downloader.util.NetworkUtils;
 import com.milanix.example.downloader.util.TextHelper;
 
@@ -35,8 +51,32 @@ import com.milanix.example.downloader.util.TextHelper;
  * 
  */
 public class DownloadService extends Service {
-	// Map to support miltple callback with same ids but different caller
+
+	// Map to support multiple callback with same ids but different caller
 	private HashMap<Integer, HashSet<DownloadListener>> attachedCallbacks = new HashMap<Integer, HashSet<DownloadListener>>();
+
+	// Map to keep track of async task
+	private HashMap<Integer, DownloadTask> downloadTasks = new HashMap<Integer, DownloadTask>();
+
+	// Executor for parallel downloads
+	private Executor executor = AsyncTask.THREAD_POOL_EXECUTOR;
+
+	// Executor constants
+	private static final int POOL_MAX_MULTIPLIER = 25;
+	private static final int POOL_KEEP_ALIVE = 1;
+	private static final BlockingQueue<Runnable> POOL_WORKQUEUE = new LinkedBlockingQueue<Runnable>(
+			10);
+	private static final ThreadFactory POOL_THREAD_FACTORY = new ThreadFactory() {
+		private final AtomicInteger mCount = new AtomicInteger(1);
+
+		public Thread newThread(Runnable r) {
+			StringBuilder threadNameBuilder = new StringBuilder(
+					"Download AsyncTask #");
+			threadNameBuilder.append(mCount.getAndIncrement());
+
+			return new Thread(r, threadNameBuilder.toString());
+		}
+	};
 
 	private final IBinder mBinder = new DownloadBinder();
 
@@ -66,22 +106,144 @@ public class DownloadService extends Service {
 	}
 
 	/**
-	 * This method will download the given download file
+	 * This method will init ThreadPoolExecutor with given core
+	 * 
+	 * @param corePoolSize
+	 *            max number of parallen tasks
+	 */
+	public void initDownloadPool(int corePoolSize) {
+		executor = new ThreadPoolExecutor(corePoolSize, corePoolSize
+				* POOL_MAX_MULTIPLIER, POOL_KEEP_ALIVE, TimeUnit.SECONDS,
+				POOL_WORKQUEUE, POOL_THREAD_FACTORY);
+	}
+
+	/**
+	 * This method will download the given download file id. THis will not
+	 * immediately start the download. Caller must attach callback to listen to
+	 * the progress.
 	 * 
 	 * @param download
 	 *            is a download file
 	 * @return asynctask with given file handler
 	 */
-	public AsyncTask<String, Integer, Download> downloadFile(Download download) {
+	public DownloadTask downloadFile(Download download) {
 
-		if (null == download)
+		if (null == download) {
+			notifyCallbacksFailed(download, FailedReason.UNKNOWN_ERROR);
+
 			return null;
+		}
+
+		// If contains task with given id return the reference instead
+		if (downloadTasks.containsKey(download.getId()))
+			return downloadTasks.get(download.getId());
 
 		if (TextHelper.isStringEmpty(download.getUrl()))
-			notifyCallbacksFailed(download);
+			notifyCallbacksFailed(download, FailedReason.UNKNOWN_ERROR);
 
-		return new DownloadTask(download).executeOnExecutor(
-				AsyncTask.THREAD_POOL_EXECUTOR, download.getUrl());
+		DownloadTask taskToStart = new DownloadTask(download);
+		taskToStart.executeOnExecutor(executor, download.getUrl());
+
+		downloadTasks.put(download.getId(), taskToStart);
+
+		return taskToStart;
+	}
+
+	/**
+	 * This method will pause task with given id if exist otherwise null
+	 * 
+	 * @param ids
+	 *            with attached tasks to be paused
+	 * @return TaskStateResult including success and other ids
+	 */
+	public TaskStateResult pauseDownload(long[] ids) {
+		if (null == ids)
+			return null;
+
+		List<Integer> listIds = getAsIntegerList(ids);
+
+		TaskStateResult result = new TaskStateResult();
+
+		for (Integer id : listIds) {
+			if (null != id) {
+				if (downloadTasks.containsKey(id)) {
+					DownloadTask task = downloadTasks.get(id);
+					task.pauseTask();
+
+					result.getSuccessTasks().add(task);
+				} else {
+					result.getUncreatedTasks().add(id);
+				}
+			}
+		}
+
+		return result;
+	}
+
+	/**
+	 * This method will pause task with given id if exist otherwise null
+	 * 
+	 * @param download
+	 *            with attached tasks to be paused
+	 * @return TaskStateResult including success and other ids
+	 */
+	public TaskStateResult resumeDownload(long[] ids) {
+		if (null == ids)
+			return null;
+
+		List<Integer> listIds = getAsIntegerList(ids);
+
+		TaskStateResult result = new TaskStateResult();
+
+		for (Integer id : listIds) {
+			if (null != id) {
+				if (downloadTasks.containsKey(id)) {
+					DownloadTask task = downloadTasks.get(id);
+					task.resumeTask();
+
+					result.getSuccessTasks().add(task);
+				} else {
+					result.getUncreatedTasks().add(id);
+				}
+			}
+		}
+
+		return result;
+	}
+
+	/**
+	 * This method will get integer list from long array
+	 * 
+	 * @param ids
+	 *            array of long
+	 * @return list of integer
+	 */
+	private List<Integer> getAsIntegerList(long[] ids) {
+		List<Integer> primitiveList = new ArrayList<Integer>();
+
+		for (long id : ids)
+			primitiveList.add((int) id);
+
+		return primitiveList;
+	}
+
+	/**
+	 * This method will cancel all ongoing tasks
+	 * 
+	 * @return all sucessfully cancelled tasks
+	 */
+	public HashSet<DownloadTask> cancelOngoingTasks() {
+		Collection<DownloadTask> ongoingTasks = downloadTasks.values();
+		HashSet<DownloadTask> cancelledTasks = new HashSet<DownloadTask>();
+
+		for (DownloadTask task : ongoingTasks) {
+			if (null != task) {
+				if (task.cancel(true))
+					cancelledTasks.add(task);
+			}
+		}
+
+		return cancelledTasks;
 	}
 
 	/**
@@ -190,14 +352,17 @@ public class DownloadService extends Service {
 	 * @param download
 	 *            is the download object
 	 */
-	private void notifyCallbacksFailed(final Download download) {
+	private void notifyCallbacksFailed(final Download download,
+			final FailedReason reason) {
 		if (null != download && null != download.getId()) {
 			if (attachedCallbacks.containsKey(download.getId())) {
 				final HashSet<DownloadListener> callbacks = attachedCallbacks
 						.get(download.getId());
 
+				download.setState(DownloadState.FAILED);
+
 				for (DownloadListener callback : callbacks) {
-					callback.onDownloadFailed(download);
+					callback.onDownloadFailed(download, reason);
 				}
 			}
 		}
@@ -213,15 +378,15 @@ public class DownloadService extends Service {
 	 * @param progress
 	 *            is the progress
 	 */
-	private void notifyCallbacksProgress(final Download download,
-			final int progress) {
+	private void notifyCallbacksProgress(final TaskState taskState,
+			final Download download, final int progress) {
 		if (null != download && null != download.getId()) {
 			if (attachedCallbacks.containsKey(download.getId())) {
 				final HashSet<DownloadListener> callbacks = attachedCallbacks
 						.get(download.getId());
 
 				for (DownloadListener callback : callbacks) {
-					callback.onDownloadProgress(download, progress);
+					callback.onDownloadProgress(taskState, download, progress);
 				}
 			}
 		}
@@ -236,62 +401,157 @@ public class DownloadService extends Service {
 	public class DownloadTask extends AsyncTask<String, Integer, Download> {
 
 		private Download download;
+		private TaskState taskState = TaskState.RESUMED;
+		private Boolean isPauseNotified = false;
 
+		private static final String RANGE_HEADER = "Range";
+		private static final String RANGE_VALUE = "bytes=%d-";
+		private static final String TEMP_SUFFIX = ".tmp";
 		private static final int BUFFER_SIZE = 1024;
-		private File targetFile;
 
 		public DownloadTask(Download download) {
 			this.download = download;
-
-			if (null != this.download) {
-				this.targetFile = new File(download.getPath());
-			}
 		}
 
 		@Override
 		protected Download doInBackground(String... arg) {
-			InputStream remoteContentStream = null;
-			OutputStream localFileStream = null;
+			if (!NetworkUtils.isNetworkConnected(getApplicationContext())) {
 
-			try {
-				HttpClient downloadClient = NetworkUtils.getHttpClient();
+				notifyCallbacksFailed(download,
+						FailedReason.NETWORK_NOTAVAILABLE);
+			} else if (!FileUtils.isStorageWritable()) {
+				notifyCallbacksFailed(download,
+						FailedReason.STORAGE_NOTWRITABLE);
+			} else {
+				Log.d(getLogTag(), "network available and storage writable");
 
-				HttpParams params = new BasicHttpParams();
-				HttpConnectionParams.setSoTimeout(params, 60000);
+				InputStream remoteContentStream = null;
+				BufferedInputStream bufferedFileStream = null;
 
-				HttpGet request = new HttpGet(arg[0]);
-				request.setParams(params);
+				File targetLocalFile = null;
+				File targetTempFile = null;
+				RandomAccessFile targetWriteFile = null;
 
-				HttpResponse response = downloadClient.execute(request);
+				try {
+					HttpClient downloadClient = NetworkUtils.getHttpClient();
 
-				remoteContentStream = response.getEntity().getContent();
+					HttpParams params = new BasicHttpParams();
+					HttpConnectionParams.setSoTimeout(params, 60000);
 
-				long fileSize = response.getEntity().getContentLength();
+					HttpGet request = new HttpGet(arg[0]);
+					request.setParams(params);
 
-				localFileStream = new FileOutputStream(targetFile);
+					HttpResponse response = downloadClient.execute(request);
 
-				byte[] buffer = new byte[BUFFER_SIZE];
-				int chunkSize = 0;
-				int chunkCompleted = 0;
+					remoteContentStream = response.getEntity().getContent();
 
-				while (-1 != (chunkSize = remoteContentStream.read(buffer))) {
-					localFileStream.write(buffer, 0, chunkSize);
+					long fileSize = response.getEntity().getContentLength();
+					long tempfileSize = 0L;
 
-					chunkCompleted += chunkSize;
+					if (!FileUtils.isStorageSpaceAvailable(fileSize)) {
+						notifyCallbacksFailed(download,
+								FailedReason.STORAGE_NOTAVAILABLE);
+					} else {
+						Log.d(getLogTag(), "storage available");
 
-					publishProgress((int) ((double) chunkCompleted
-							/ (double) fileSize * 100.0));
+						targetLocalFile = new File(download.getPath());
+
+						// If file exist mark completed otherwise progress
+						if (targetLocalFile.exists()
+								&& fileSize == targetLocalFile.length()) {
+							Log.d(getLogTag(), "file exists");
+
+							download.setState(DownloadState.COMPLETED);
+						} else {
+							Log.d(getLogTag(), "file does not exist");
+
+							byte[] buffer = new byte[BUFFER_SIZE];
+							int chunkSize = 0;
+							int chunkCompleted = 0;
+							int chunkProgress = 0;
+							int chunkCopied = 0;
+
+							targetTempFile = new File(
+									FilenameUtils.getFullPath(download
+											.getPath()),
+									FilenameUtils.getName(download.getPath())
+											+ TEMP_SUFFIX);
+
+							// If temp file exist add header to request
+							// remaining
+							// one
+							if (targetTempFile.exists()) {
+								request.addHeader(RANGE_HEADER, String.format(
+										RANGE_VALUE, targetTempFile.length()));
+
+								tempfileSize = targetTempFile.length();
+
+								chunkCompleted = (int) tempfileSize;
+
+								Log.d(getLogTag(), "temp exists");
+							}
+
+							targetWriteFile = new RandomAccessFile(
+									targetTempFile, "rw");
+
+							bufferedFileStream = new BufferedInputStream(
+									remoteContentStream, BUFFER_SIZE);
+
+							// Seek to target. If temp seeks to length otherwise
+							// 0
+							targetWriteFile.seek(targetWriteFile.length());
+
+							while (-1 != (chunkSize = remoteContentStream
+									.read(buffer))) {
+								if (TaskState.RESUMED.equals(taskState)) {
+									if (isPauseNotified) {
+										isPauseNotified = false;
+									}
+									targetWriteFile.write(buffer, 0, chunkSize);
+
+									chunkCompleted += chunkSize;
+									chunkCopied += chunkSize;
+
+									chunkProgress = (int) ((double) chunkCompleted
+											/ (double) fileSize * 100.0);
+
+									publishProgress(chunkProgress);
+								} else {
+									if (!isPauseNotified) {
+										isPauseNotified = true;
+
+										publishProgress(chunkProgress);
+									}
+								}
+							}
+
+							if ((tempfileSize + chunkCopied) != fileSize
+									&& fileSize != -1) {
+								Log.d(getLogTag(), "Incomplete download");
+
+								throw new IOException("Download was incomplete");
+							} else {
+								Log.d(getLogTag(), "Complete download");
+
+								targetTempFile.renameTo(targetLocalFile);
+								download.setState(DownloadState.COMPLETED);
+							}
+						}
+					}
+
+				} catch (ClientProtocolException ex) {
+					Log.e(getLogTag(), "IO exception occoured", ex);
+
+					notifyCallbacksFailed(download, FailedReason.NETWORK_ERROR);
+				} catch (IOException ex) {
+					Log.e(getLogTag(), "IO exception occoured", ex);
+
+					notifyCallbacksFailed(download, FailedReason.IO_ERROR);
+				} finally {
+					IOUtils.close(targetWriteFile);
+					IOUtils.close(remoteContentStream);
+					IOUtils.close(bufferedFileStream);
 				}
-
-				download.setState(DownloadState.COMPLETED);
-
-			} catch (Exception e) {
-				e.printStackTrace();
-
-				download.setState(DownloadState.FAILED);
-			} finally {
-				FileUtils.close(remoteContentStream);
-				FileUtils.close(localFileStream);
 			}
 
 			return download;
@@ -320,9 +580,68 @@ public class DownloadService extends Service {
 
 		@Override
 		protected void onProgressUpdate(Integer... values) {
-			notifyCallbacksProgress(download, values[0]);
+			notifyCallbacksProgress(taskState, download, values[0]);
 
 			super.onProgressUpdate(values);
 		}
+
+		/**
+		 * This method will pause the current task.
+		 */
+		public synchronized void pauseTask() {
+			taskState = TaskState.PAUSED;
+		}
+
+		/**
+		 * This method will resume the current task.
+		 */
+		public synchronized void resumeTask() {
+			taskState = TaskState.RESUMED;
+		}
+	}
+
+	/**
+	 * This is a result state for taskstate request. It contains tasks whose
+	 * states were changed successfully. It will also return set of ids for task
+	 * that was not available
+	 * 
+	 * @author Milan
+	 * 
+	 */
+	public static class TaskStateResult {
+		private HashSet<DownloadTask> successTasks = new HashSet<DownloadTask>();
+
+		private HashSet<Integer> uncreatedTasks = new HashSet<Integer>();
+
+		/**
+		 * @return the successTasks
+		 */
+		public HashSet<DownloadTask> getSuccessTasks() {
+			return successTasks;
+		}
+
+		/**
+		 * @param successTasks
+		 *            the successTasks to set
+		 */
+		public void setSuccessTasks(HashSet<DownloadTask> successTasks) {
+			this.successTasks = successTasks;
+		}
+
+		/**
+		 * @return the uncreatedTasks
+		 */
+		public HashSet<Integer> getUncreatedTasks() {
+			return uncreatedTasks;
+		}
+
+		/**
+		 * @param uncreatedTasks
+		 *            the uncreatedTasks to set
+		 */
+		public void setUncreatedTasks(HashSet<Integer> uncreatedTasks) {
+			this.uncreatedTasks = uncreatedTasks;
+		}
+
 	}
 }

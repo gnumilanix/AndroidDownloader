@@ -1,15 +1,12 @@
 package com.milanix.example.downloader.data.dao;
 
-import java.util.Observable;
-import java.util.Observer;
-
 /**
  * This is an {@link Download} dao
  * 
  * @author Milan
  * 
  */
-public class Download implements Observer {
+public class Download {
 	/**
 	 * Enum for {@link Download} states
 	 * 
@@ -17,8 +14,8 @@ public class Download implements Observer {
 	 * 
 	 */
 	public static enum DownloadState {
-		DOWNLOADING("downloading"), COMPLETED("completed"), FAILED("failed"), CANCELLED(
-				"cancelled"), UNKNOWN("unknown");
+		ADDED("added"), DOWNLOADING("downloading"), COMPLETED("completed"), FAILED(
+				"failed"), CANCELLED("cancelled"), UNKNOWN("unknown");
 
 		private final String name;
 
@@ -32,7 +29,9 @@ public class Download implements Observer {
 		}
 
 		public static DownloadState getEnum(String value) {
-			if (DOWNLOADING.toString().equals(value))
+			if (ADDED.toString().equals(value))
+				return ADDED;
+			else if (DOWNLOADING.toString().equals(value))
 				return DOWNLOADING;
 			else if (COMPLETED.toString().equals(value))
 				return COMPLETED;
@@ -40,6 +39,42 @@ public class Download implements Observer {
 				return FAILED;
 			else
 				return UNKNOWN;
+		}
+	}
+
+	/**
+	 * Enum for download task state
+	 * 
+	 * @author Milan
+	 * 
+	 */
+	public static enum TaskState {
+		RESUMED, PAUSED
+	}
+
+	/**
+	 * Enum for {@link DownloadState} failed reason
+	 * 
+	 * @author Milan
+	 * 
+	 */
+	public static enum FailedReason {
+		STORAGE_NOTWRITABLE("External storage is not writable."), STORAGE_NOTAVAILABLE(
+				"External storage space is not available."), NETWORK_NOTAVAILABLE(
+				"Network is not available."), IO_ERROR(
+				"Error while reading/writing file."), NETWORK_ERROR(
+				"Error while downloading file."), UNKNOWN_ERROR(
+				"Unknown error occoured.");
+
+		private final String name;
+
+		private FailedReason(String s) {
+			name = s;
+		}
+
+		@Override
+		public String toString() {
+			return name;
 		}
 	}
 
@@ -214,7 +249,7 @@ public class Download implements Observer {
 		 * @param download
 		 *            object
 		 */
-		public void onDownloadFailed(Download download);
+		public void onDownloadFailed(Download download, FailedReason reason);
 
 		/**
 		 * Called when download progress in updated
@@ -224,13 +259,8 @@ public class Download implements Observer {
 		 * 
 		 * @param int is a progress
 		 */
-		public void onDownloadProgress(Download download, Integer progress);
-	}
-
-	@Override
-	public void update(Observable observable, Object data) {
-		// TODO Auto-generated method stub
-
+		public void onDownloadProgress(TaskState taskState, Download download,
+				Integer progress);
 	}
 
 }

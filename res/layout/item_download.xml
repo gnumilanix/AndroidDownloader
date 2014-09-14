@@ -2,15 +2,24 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/list_cab_selector"
     android:padding="@dimen/list_padding" >
+
+    <View
+        android:id="@+id/download_hint"
+        android:layout_width="3dp"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/download_date"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true" />
 
     <ImageView
         android:id="@+id/download_icon"
         android:layout_width="60dp"
         android:layout_height="60dp"
         android:layout_alignBottom="@+id/download_date"
-        android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
+        android:layout_toRightOf="@+id/download_hint"
         android:src="@drawable/ic_launcher" />
 
     <TextView
@@ -21,6 +30,8 @@
         android:layout_alignParentTop="true"
         android:layout_marginLeft="@dimen/list_padding"
         android:layout_toRightOf="@+id/download_icon"
+        android:ellipsize="end"
+        android:singleLine="true"
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:textColor="@color/text_color_dark" />
 
@@ -40,6 +51,8 @@
         android:layout_alignLeft="@+id/download_progress"
         android:layout_below="@+id/download_progress"
         android:layout_marginTop="@dimen/text_margin"
+        android:ellipsize="end"
+        android:singleLine="true"
         android:textAppearance="?android:attr/textAppearanceSmall"
         android:textColor="@color/text_color_dark" />
 
@@ -54,6 +67,7 @@
         android:ellipsize="end"
         android:gravity="right"
         android:paddingLeft="@dimen/list_padding"
+        android:singleLine="true"
         android:textAppearance="?android:attr/textAppearanceSmall"
         android:textColor="@color/text_color_dark" />
 
