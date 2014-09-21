@@ -5,6 +5,9 @@ import java.io.File;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Bundle;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -14,11 +17,11 @@ import android.widget.AbsListView.MultiChoiceModeListener;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 
-import com.milanix.example.downloader.HomeActivity;
 import com.milanix.example.downloader.R;
 import com.milanix.example.downloader.data.dao.Download.DownloadState;
 import com.milanix.example.downloader.data.database.DownloadsDatabase;
 import com.milanix.example.downloader.data.database.util.QueryHelper;
+import com.milanix.example.downloader.data.provider.DownloadContentProvider;
 import com.milanix.example.downloader.fragment.abs.AbstractDownloadFragment;
 
 /**
@@ -43,6 +46,10 @@ public class DownloadedFragment extends AbstractDownloadFragment implements
 					MenuItem item) {
 				switch (item.getItemId()) {
 				case R.id.action_delete:
+					removeDownloads(downloading_list.getCheckedItemIds());
+
+					mode.finish();
+
 					return true;
 				default:
 					return false;
@@ -74,29 +81,6 @@ public class DownloadedFragment extends AbstractDownloadFragment implements
 
 			}
 		};
-	}
-
-	/**
-	 * This method will get downloads from the database and set to the adapter
-	 * 
-	 * @return cursor retrieved if successful otherwise null
-	 */
-	@Override
-	protected Cursor getDownloads() {
-		if (getActivity() instanceof HomeActivity) {
-			return ((HomeActivity) getActivity()).getDatabase().query(
-					DownloadsDatabase.TABLE_DOWNLOADS,
-					null,
-					QueryHelper.getWhere(DownloadsDatabase.COLUMN_STATE,
-							DownloadState.COMPLETED.toString(), true),
-					null,
-					null,
-					null,
-					QueryHelper.getOrdering(DownloadsDatabase.COLUMN_ID,
-							QueryHelper.ORDERING_DESC), null);
-		} else {
-			return null;
-		}
 	}
 
 	/**
@@ -140,12 +124,22 @@ public class DownloadedFragment extends AbstractDownloadFragment implements
 
 		switch (item.getItemId()) {
 		case R.id.action_refresh:
-			refreshAdapter();
+			refreshCursorLoader(false);
 
 			return true;
 		default:
 			return super.onOptionsItemSelected(item);
 		}
+	}
+
+	@Override
+	public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+		return new CursorLoader(getActivity(),
+				DownloadContentProvider.CONTENT_URI_DOWNLOADS, null,
+				QueryHelper.getWhere(DownloadsDatabase.COLUMN_STATE,
+						DownloadState.COMPLETED.toString(), true), null,
+				QueryHelper.getOrdering(DownloadsDatabase.COLUMN_ID,
+						QueryHelper.ORDERING_DESC));
 	}
 
 }

@@ -1,18 +1,23 @@
 package com.milanix.example.downloader.dialog;
 
+import java.util.ArrayList;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.ContentProviderOperation;
+import android.content.ContentProviderResult;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnShowListener;
+import android.content.OperationApplicationException;
 import android.os.Bundle;
+import android.os.RemoteException;
 import android.support.v4.app.DialogFragment;
 import android.view.View;
 
-import com.milanix.example.downloader.HomeActivity;
 import com.milanix.example.downloader.R;
 import com.milanix.example.downloader.data.database.DownloadsDatabase;
-import com.milanix.example.downloader.data.database.util.QueryHelper;
+import com.milanix.example.downloader.data.provider.DownloadContentProvider;
 
 /**
  * This dialog allows user to delete downloads
@@ -21,22 +26,18 @@ import com.milanix.example.downloader.data.database.util.QueryHelper;
  * 
  */
 public class DeleteDownloadDialog extends DialogFragment {
-	public static final String KEY_DOWNLOADID = "key_downloadid";
-	public static final String KEY_DOWNLOADURL = "key_downloadurl";
+	public static final String KEY_DOWNLOADIDS = "key_downloadid";
 
 	private OnDeleteDownloadListener onDeleteListener;
 
 	@Override
 	public Dialog onCreateDialog(Bundle savedInstanceState) {
-		final long downloadId = getArguments().getLong(KEY_DOWNLOADID, -1);
-		final String downloadUrl = getArguments()
-				.getString(KEY_DOWNLOADURL, "");
+		final long[] downloadIds = getArguments().getLongArray(KEY_DOWNLOADIDS);
 
 		AlertDialog.Builder builder = new AlertDialog.Builder(getActivity())
 				.setMessage(
 						String.format(
-								getString(R.string.download_deleteconfirm),
-								downloadUrl))
+								getString(R.string.download_deleteconfirm), ""))
 				.setPositiveButton(R.string.btn_delete,
 						new DialogInterface.OnClickListener() {
 							public void onClick(DialogInterface dialog, int id) {
@@ -54,13 +55,13 @@ public class DeleteDownloadDialog extends DialogFragment {
 
 			@Override
 			public void onShow(DialogInterface dialogInf) {
-				if (downloadId > 0) {
+				if (null != downloadIds) {
 					dialog.getButton(AlertDialog.BUTTON_POSITIVE)
 							.setOnClickListener(new View.OnClickListener() {
 
 								@Override
 								public void onClick(View view) {
-									deleteDownload(downloadId, downloadUrl);
+									deleteDownloads(downloadIds);
 								}
 							});
 				}
@@ -73,23 +74,39 @@ public class DeleteDownloadDialog extends DialogFragment {
 	/**
 	 * This method will delete given download id
 	 */
-	private void deleteDownload(long downloadId, String url) {
-		if (getActivity() instanceof HomeActivity) {
-			int rowsAffected = ((HomeActivity) getActivity()).getDatabase()
-					.delete(DownloadsDatabase.TABLE_DOWNLOADS,
-							QueryHelper.getWhere(DownloadsDatabase.COLUMN_ID,
-									downloadId, true), null);
+	private void deleteDownloads(long[] downloadIds) {
+		ArrayList<ContentProviderOperation> deleteOperations = new ArrayList<ContentProviderOperation>();
 
-			if (0 == rowsAffected) {
-				onDeleteListener.onDownloadDeleted(false, url);
-			} else {
-				onDeleteListener.onDownloadDeleted(true, url);
-			}
+		for (long downloadId : downloadIds) {
+			deleteOperations
+					.add(ContentProviderOperation
+							.newDelete(
+									DownloadContentProvider.CONTENT_URI_DOWNLOADS)
+							.withSelection(
+									DownloadsDatabase.COLUMN_ID + " = ?",
+									new String[] { Long.toString(downloadId) })
+							.build());
 		}
 
-		dismiss();
+		try {
+			ContentProviderResult[] operationsResult = getActivity()
+					.getContentResolver()
+					.applyBatch(DownloadContentProvider.AUTHORITY,
+							deleteOperations);
+
+			if (operationsResult.length > 0)
+				onDeleteListener.onDownloadDeleted(true);
+			else
+				onDeleteListener.onDownloadDeleted(false);
+		} catch (RemoteException e) {
+			onDeleteListener.onDownloadDeleted(false);
+		} catch (OperationApplicationException e) {
+			onDeleteListener.onDownloadDeleted(false);
+		} finally {
+			dismiss();
+		}
 	}
-	
+
 	@Override
 	public void onAttach(Activity activity) {
 		super.onAttach(activity);
@@ -113,9 +130,10 @@ public class DeleteDownloadDialog extends DialogFragment {
 		 * THis method will be called when the user confirms the delete
 		 * 
 		 * 
-		 * @param true if success otherwise false
+		 * @param true if success otherwise false. True if atleast a row is
+		 *        affected
 		 * 
 		 */
-		public void onDownloadDeleted(boolean isSuccess, String url);
+		public void onDownloadDeleted(boolean isSuccess);
 	}
 }

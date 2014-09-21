@@ -9,7 +9,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.ContentValues;
-import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
 import android.view.LayoutInflater;
@@ -18,12 +18,10 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import com.milanix.example.downloader.HomeActivity;
 import com.milanix.example.downloader.R;
-import com.milanix.example.downloader.data.dao.Download;
 import com.milanix.example.downloader.data.dao.Download.DownloadState;
 import com.milanix.example.downloader.data.database.DownloadsDatabase;
-import com.milanix.example.downloader.data.database.util.QueryHelper;
+import com.milanix.example.downloader.data.provider.DownloadContentProvider;
 import com.milanix.example.downloader.util.TextHelper;
 
 /**
@@ -95,68 +93,36 @@ public class AddNewDownloadDialog extends DialogFragment implements
 	 * @param url
 	 */
 	private void addNewDownload(String url) {
-		if (getActivity() instanceof HomeActivity) {
-			ContentValues values = new ContentValues();
-			values.put(DownloadsDatabase.COLUMN_URL, url);
-			values.put(DownloadsDatabase.COLUMN_NAME,
-					FilenameUtils.getBaseName(url));
-			values.put(DownloadsDatabase.COLUMN_TYPE,
-					FilenameUtils.getExtension(url));
-			values.put(DownloadsDatabase.COLUMN_DATE, new Date().getTime());
-			values.put(DownloadsDatabase.COLUMN_STATE,
-					DownloadState.ADDED.toString());
+		ContentValues values = new ContentValues();
+		values.put(DownloadsDatabase.COLUMN_URL, url);
+		values.put(DownloadsDatabase.COLUMN_NAME,
+				FilenameUtils.getBaseName(url));
+		values.put(DownloadsDatabase.COLUMN_TYPE,
+				FilenameUtils.getExtension(url));
+		values.put(DownloadsDatabase.COLUMN_DATE, new Date().getTime());
+		values.put(DownloadsDatabase.COLUMN_STATE,
+				DownloadState.ADDED.toString());
 
-			Long rowId = ((HomeActivity) getActivity()).getDatabase().insert(
-					DownloadsDatabase.TABLE_DOWNLOADS, null, values);
+		Uri insertedContentURI = getActivity().getContentResolver().insert(
+				DownloadContentProvider.CONTENT_URI_DOWNLOADS, values);
+
+		if (null != insertedContentURI) {
+			int rowId = TextHelper.getValueAsInt(insertedContentURI
+					.getLastPathSegment());
 
 			if (-1 == rowId) {
 				onNewDownloadListener.onNewDownloadAdded(null);
 			} else {
-				onNewDownloadListener.onNewDownloadAdded(getDownload(rowId));
+				onNewDownloadListener.onNewDownloadAdded(rowId);
 
 				dismiss();
 			}
-		}
-	}
+		} else {
+			onNewDownloadListener.onNewDownloadAdded(null);
 
-	/**
-	 * This method will retrieve download with given id
-	 * 
-	 * @param id
-	 *            of the download
-	 * @return download object
-	 */
-	private Download getDownload(long id) {
-		if (getActivity() instanceof HomeActivity) {
-
-			Cursor retrievedCursor = ((HomeActivity) getActivity())
-					.getDatabase().query(
-							DownloadsDatabase.TABLE_DOWNLOADS,
-							null,
-							QueryHelper.getWhere(DownloadsDatabase.COLUMN_ID,
-									id, true), null, null, null, null, null);
-
-			if (retrievedCursor.getCount() > 0) {
-				if (retrievedCursor.moveToFirst()) {
-					return new Download(
-							retrievedCursor
-									.getInt(retrievedCursor
-											.getColumnIndex(DownloadsDatabase.COLUMN_ID)),
-							retrievedCursor.getString(retrievedCursor
-									.getColumnIndex(DownloadsDatabase.COLUMN_URL)),
-							retrievedCursor.getString(retrievedCursor
-									.getColumnIndex(DownloadsDatabase.COLUMN_NAME)),
-							retrievedCursor.getInt(retrievedCursor
-									.getColumnIndex(DownloadsDatabase.COLUMN_TYPE)),
-							retrievedCursor.getLong(retrievedCursor
-									.getColumnIndex(DownloadsDatabase.COLUMN_DATE)),
-							DownloadState.getEnum(retrievedCursor.getString(retrievedCursor
-									.getColumnIndex(DownloadsDatabase.COLUMN_STATE))));
-				}
-			}
+			dismiss();
 		}
 
-		return null;
 	}
 
 	/**
@@ -172,10 +138,10 @@ public class AddNewDownloadDialog extends DialogFragment implements
 		 * 
 		 * 
 		 * @param download
-		 *            is the download object, null if failed
+		 *            is the row id of a newly added download, null if failed
 		 * 
 		 */
-		public void onNewDownloadAdded(Download download);
+		public void onNewDownloadAdded(Integer id);
 	}
 
 }

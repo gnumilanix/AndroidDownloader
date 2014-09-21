@@ -28,6 +28,7 @@ import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 
 import android.app.Service;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Binder;
@@ -39,6 +40,9 @@ import com.milanix.example.downloader.data.dao.Download.DownloadListener;
 import com.milanix.example.downloader.data.dao.Download.DownloadState;
 import com.milanix.example.downloader.data.dao.Download.FailedReason;
 import com.milanix.example.downloader.data.dao.Download.TaskState;
+import com.milanix.example.downloader.data.database.DownloadsDatabase;
+import com.milanix.example.downloader.data.database.util.QueryHelper;
+import com.milanix.example.downloader.data.provider.DownloadContentProvider;
 import com.milanix.example.downloader.util.FileUtils;
 import com.milanix.example.downloader.util.IOUtils;
 import com.milanix.example.downloader.util.NetworkUtils;
@@ -103,6 +107,17 @@ public class DownloadService extends Service {
 	 */
 	private static String getLogTag() {
 		return DownloadService.class.getName();
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see android.app.Service#onDestroy()
+	 */
+	@Override
+	public void onDestroy() {
+		// TODO Auto-generated method stub
+		super.onDestroy();
 	}
 
 	/**
@@ -393,6 +408,25 @@ public class DownloadService extends Service {
 	}
 
 	/**
+	 * This method will update the given download state using a content provider
+	 * 
+	 * @param download
+	 *            is the download object
+	 * @state is the download state
+	 */
+	private void updateDownloadState(Download download, DownloadState state) {
+		ContentValues values = new ContentValues();
+		values.put(DownloadsDatabase.COLUMN_PATH, download.getPath());
+		values.put(DownloadsDatabase.COLUMN_STATE, state.toString());
+
+		getApplicationContext().getContentResolver().update(
+				DownloadContentProvider.CONTENT_URI_DOWNLOADS,
+				values,
+				QueryHelper.getWhere(DownloadsDatabase.COLUMN_ID,
+						download.getId(), true), null);
+	}
+
+	/**
 	 * This is a task to download the file
 	 * 
 	 * @author Milan
@@ -504,9 +538,9 @@ public class DownloadService extends Service {
 							while (-1 != (chunkSize = remoteContentStream
 									.read(buffer))) {
 								if (TaskState.RESUMED.equals(taskState)) {
-									if (isPauseNotified) {
+									if (isPauseNotified)
 										isPauseNotified = false;
-									}
+
 									targetWriteFile.write(buffer, 0, chunkSize);
 
 									chunkCompleted += chunkSize;
@@ -542,9 +576,13 @@ public class DownloadService extends Service {
 				} catch (ClientProtocolException ex) {
 					Log.e(getLogTag(), "IO exception occoured", ex);
 
+					updateDownloadState(download, DownloadState.FAILED);
+
 					notifyCallbacksFailed(download, FailedReason.NETWORK_ERROR);
 				} catch (IOException ex) {
 					Log.e(getLogTag(), "IO exception occoured", ex);
+
+					updateDownloadState(download, DownloadState.FAILED);
 
 					notifyCallbacksFailed(download, FailedReason.IO_ERROR);
 				} finally {
@@ -559,6 +597,8 @@ public class DownloadService extends Service {
 
 		@Override
 		protected void onCancelled(Download result) {
+			updateDownloadState(download, DownloadState.CANCELLED);
+
 			notifyCallbacksCancelled(result);
 
 			super.onCancelled(result);
@@ -566,6 +606,8 @@ public class DownloadService extends Service {
 
 		@Override
 		protected void onPostExecute(Download result) {
+			updateDownloadState(download, result.getState());
+
 			notifyCallbacksCompleted(result);
 
 			super.onPostExecute(result);
@@ -573,6 +615,8 @@ public class DownloadService extends Service {
 
 		@Override
 		protected void onPreExecute() {
+			updateDownloadState(download, DownloadState.DOWNLOADING);
+
 			notifyCallbacksStarted(download);
 
 			super.onPreExecute();

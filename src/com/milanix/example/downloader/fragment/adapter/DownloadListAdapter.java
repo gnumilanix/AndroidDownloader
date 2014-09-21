@@ -39,10 +39,13 @@ public class DownloadListAdapter extends CursorAdapter {
 		super(context, c, autoRequery);
 	}
 
-	public DownloadListAdapter(Context context, Cursor c, boolean autoRequery,
-			DownloadService downloadService) {
-		this(context, c, autoRequery);
-
+	/**
+	 * This method will set download service to this adapter. This is required
+	 * for callbacks for tasks being performed
+	 * 
+	 * @param downloadService
+	 */
+	public void setDownloadService(DownloadService downloadService) {
 		this.downloadService = downloadService;
 	}
 

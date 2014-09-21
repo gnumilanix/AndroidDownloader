@@ -25,8 +25,8 @@
     <string name="download_add_fail">"Failed to add to the queue"</string>
     <string name="download_disconnected">"Disconnected at the moment"</string>
     <string name="download_deleteconfirm">"Do you want to delete %s"</string>
-    <string name="download_delete_success">Removed %s from the download list</string>
-    <string name="download_delete_fail">Failed to delete %s</string>
+    <string name="download_delete_success">Deleted downloads</string>
+    <string name="download_delete_fail">Failed to delete downloads</string>
 
     <!-- Generic strings -->
     <string name="btn_ok">OK</string>

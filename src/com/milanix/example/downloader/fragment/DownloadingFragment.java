@@ -1,13 +1,15 @@
 package com.milanix.example.downloader.fragment;
 
 import android.content.ComponentName;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.database.Cursor;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.app.DialogFragment;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -17,7 +19,6 @@ import android.widget.AbsListView.MultiChoiceModeListener;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 
-import com.milanix.example.downloader.HomeActivity;
 import com.milanix.example.downloader.R;
 import com.milanix.example.downloader.data.dao.Download;
 import com.milanix.example.downloader.data.dao.Download.DownloadListener;
@@ -26,10 +27,10 @@ import com.milanix.example.downloader.data.dao.Download.FailedReason;
 import com.milanix.example.downloader.data.dao.Download.TaskState;
 import com.milanix.example.downloader.data.database.DownloadsDatabase;
 import com.milanix.example.downloader.data.database.util.QueryHelper;
+import com.milanix.example.downloader.data.provider.DownloadContentProvider;
 import com.milanix.example.downloader.dialog.AddNewDownloadDialog;
 import com.milanix.example.downloader.dialog.AddNewDownloadDialog.OnAddNewDownloadListener;
 import com.milanix.example.downloader.fragment.abs.AbstractDownloadFragment;
-import com.milanix.example.downloader.fragment.adapter.DownloadListAdapter;
 import com.milanix.example.downloader.service.DownloadService;
 import com.milanix.example.downloader.service.DownloadService.DownloadBinder;
 import com.milanix.example.downloader.service.DownloadService.TaskStateResult;
@@ -43,6 +44,7 @@ import com.milanix.example.downloader.util.ToastHelper;
  */
 public class DownloadingFragment extends AbstractDownloadFragment implements
 		OnItemClickListener, OnAddNewDownloadListener {
+	private static final String TAG = DownloadingFragment.class.getSimpleName();
 
 	private DownloadService downloadService = null;
 
@@ -56,7 +58,8 @@ public class DownloadingFragment extends AbstractDownloadFragment implements
 
 			bound = true;
 
-			setAdapter(getDownloads());
+			if (adapter != null)
+				adapter.setDownloadService(downloadService);
 		}
 
 		@Override
@@ -65,37 +68,20 @@ public class DownloadingFragment extends AbstractDownloadFragment implements
 		}
 	};
 
-	@Override
-	protected void onInit() {
-		setUI();
-		setListener();
-	}
-
-	/**
-	 * This method will set adapter
-	 * 
-	 * @param cursor
-	 */
-	@Override
-	protected void setAdapter(Cursor cursor) {
-		if (null != cursor) {
-			adapter = new DownloadListAdapter(getActivity(), cursor, false,
-					downloadService);
-
-			downloading_list.setAdapter(adapter);
-		}
-	}
-
 	/**
 	 * This method will resume downloads
+	 * 
+	 * @param selectedIds
 	 */
-	private void resumeDownload() {
+	private void resumeDownloads(long[] selectedIds) {
 		if (bound) {
 			TaskStateResult result = downloadService
-					.resumeDownload(downloading_list.getCheckedItemIds());
+					.resumeDownload(selectedIds);
 
 			for (Integer id : result.getUncreatedTasks()) {
+				Log.d(TAG, "Tasks not yet created " + id);
 
+				// pushDownloadToService(null);
 			}
 		}
 	}
@@ -103,9 +89,9 @@ public class DownloadingFragment extends AbstractDownloadFragment implements
 	/**
 	 * This method will pause downloads
 	 */
-	private void pauseDownload() {
+	private void pauseDownloads(long[] selectedIds) {
 		if (bound) {
-			downloadService.pauseDownload(downloading_list.getCheckedItemIds());
+			downloadService.pauseDownload(selectedIds);
 		}
 	}
 
@@ -118,14 +104,22 @@ public class DownloadingFragment extends AbstractDownloadFragment implements
 					MenuItem item) {
 				switch (item.getItemId()) {
 				case R.id.action_resume:
-					resumeDownload();
+					resumeDownloads(downloading_list.getCheckedItemIds());
+
+					mode.finish();
 
 					return true;
 				case R.id.action_pause:
-					pauseDownload();
+					pauseDownloads(downloading_list.getCheckedItemIds());
+
+					mode.finish();
 
 					return true;
 				case R.id.action_delete:
+					removeDownloads(downloading_list.getCheckedItemIds());
+
+					mode.finish();
+
 					return true;
 				default:
 					return false;
@@ -160,29 +154,6 @@ public class DownloadingFragment extends AbstractDownloadFragment implements
 	}
 
 	/**
-	 * This method will get downloads from the database and set to the adapter
-	 * 
-	 * @return cursor retrieved if successful otherwise null
-	 */
-	@Override
-	protected Cursor getDownloads() {
-		if (getActivity() instanceof HomeActivity) {
-			return ((HomeActivity) getActivity()).getDatabase().query(
-					DownloadsDatabase.TABLE_DOWNLOADS,
-					null,
-					QueryHelper.getWhere(DownloadsDatabase.COLUMN_STATE,
-							DownloadState.COMPLETED.toString(), false),
-					null,
-					null,
-					null,
-					QueryHelper.getOrdering(DownloadsDatabase.COLUMN_ID,
-							QueryHelper.ORDERING_DESC), null);
-		} else {
-			return null;
-		}
-	}
-
-	/**
 	 * This method will show add new download dialog
 	 */
 	private void showAddNewDialog() {
@@ -211,7 +182,7 @@ public class DownloadingFragment extends AbstractDownloadFragment implements
 
 		switch (item.getItemId()) {
 		case R.id.action_refresh:
-			refreshAdapter();
+			refreshCursorLoader(false);
 
 			return true;
 		case R.id.action_add:
@@ -224,19 +195,38 @@ public class DownloadingFragment extends AbstractDownloadFragment implements
 	}
 
 	@Override
-	public void onNewDownloadAdded(Download download) {
-		if (null != download) {
-			ToastHelper.showToast(getActivity(),
-					String.format(getString(R.string.download_add_success),
-							download.getUrl()));
+	public void onNewDownloadAdded(Integer id) {
+		if (null != id) {
+			Cursor queriedCursor = getActivity().getContentResolver()
+					.query(DownloadContentProvider.CONTENT_URI_DOWNLOADS,
+							null,
+							QueryHelper.getWhere(DownloadsDatabase.COLUMN_ID,
+									id, true), null, null);
 
-			refreshAdapter();
+			if (queriedCursor.getCount() > 0) {
+				if (queriedCursor.moveToFirst()) {
+					refreshCursorLoader(false);
 
-			if (NetworkUtils.isNetworkConnected(getActivity()))
-				pushDownloadToService(download);
-			else
+					Download addedDownload = DownloadsDatabase
+							.getDownloadFromCursor(queriedCursor);
+
+					ToastHelper.showToast(getActivity(), String.format(
+							getString(R.string.download_add_success),
+							addedDownload.getUrl()));
+
+					if (NetworkUtils.isNetworkConnected(getActivity()))
+						pushDownloadToService(addedDownload);
+					else
+						ToastHelper.showToast(getActivity(),
+								getString(R.string.download_disconnected));
+				} else {
+					ToastHelper.showToast(getActivity(),
+							getString(R.string.download_add_fail));
+				}
+			} else {
 				ToastHelper.showToast(getActivity(),
-						getString(R.string.download_disconnected));
+						getString(R.string.download_add_fail));
+			}
 		} else
 			ToastHelper.showToast(getActivity(),
 					getString(R.string.download_add_fail));
@@ -260,26 +250,18 @@ public class DownloadingFragment extends AbstractDownloadFragment implements
 						public void onDownloadStarted(Download download) {
 							Log.d(getLogTag(),
 									"Download started " + download.getName());
-
-							updateDownloadState(download,
-									DownloadState.DOWNLOADING);
 						}
 
 						@Override
 						public void onDownloadCancelled(Download download) {
 							Log.d(getLogTag(),
 									"Download cancelled " + download.getName());
-
-							updateDownloadState(download,
-									DownloadState.CANCELLED);
 						}
 
 						@Override
 						public void onDownloadCompleted(Download download) {
 							Log.d(getLogTag(),
 									"Download completed " + download.getName());
-
-							updateDownloadState(download, download.getState());
 						}
 
 						@Override
@@ -287,8 +269,6 @@ public class DownloadingFragment extends AbstractDownloadFragment implements
 								FailedReason reason) {
 							Log.d(getLogTag(),
 									"Download failed " + download.getName());
-
-							updateDownloadState(download, DownloadState.FAILED);
 						}
 
 						@Override
@@ -324,28 +304,14 @@ public class DownloadingFragment extends AbstractDownloadFragment implements
 		}
 	}
 
-	/**
-	 * This method will update the given download state
-	 * 
-	 * @param download
-	 *            is the download object
-	 * @state is the download state
-	 */
-	private void updateDownloadState(Download download, DownloadState state) {
-		if (getActivity() instanceof HomeActivity) {
-			ContentValues values = new ContentValues();
-			values.put(DownloadsDatabase.COLUMN_PATH, download.getPath());
-			values.put(DownloadsDatabase.COLUMN_STATE, state.toString());
-
-			if (0 != ((HomeActivity) getActivity()).getDatabase().update(
-					DownloadsDatabase.TABLE_DOWNLOADS,
-					values,
-					QueryHelper.getWhere(DownloadsDatabase.COLUMN_ID,
-							download.getId(), true), null)) {
-
-				refreshAdapterOnUIThread();
-			}
-		}
+	@Override
+	public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+		return new CursorLoader(getActivity(),
+				DownloadContentProvider.CONTENT_URI_DOWNLOADS, null,
+				QueryHelper.getWhere(DownloadsDatabase.COLUMN_STATE,
+						DownloadState.COMPLETED.toString(), false), null,
+				QueryHelper.getOrdering(DownloadsDatabase.COLUMN_ID,
+						QueryHelper.ORDERING_DESC));
 	}
 
 }

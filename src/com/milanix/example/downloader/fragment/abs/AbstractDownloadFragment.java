@@ -1,7 +1,12 @@
 package com.milanix.example.downloader.fragment.abs;
 
+import android.database.ContentObserver;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.Loader;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,7 +14,7 @@ import android.widget.AbsListView.MultiChoiceModeListener;
 import android.widget.ListView;
 
 import com.milanix.example.downloader.R;
-import com.milanix.example.downloader.data.database.DownloadsDatabase;
+import com.milanix.example.downloader.data.provider.DownloadContentProvider;
 import com.milanix.example.downloader.dialog.DeleteDownloadDialog;
 import com.milanix.example.downloader.dialog.DeleteDownloadDialog.OnDeleteDownloadListener;
 import com.milanix.example.downloader.fragment.DownloadedFragment;
@@ -23,11 +28,14 @@ import com.milanix.example.downloader.util.ToastHelper;
  * 
  */
 public abstract class AbstractDownloadFragment extends AbstractFragment
-		implements OnDeleteDownloadListener {
+		implements OnDeleteDownloadListener,
+		LoaderManager.LoaderCallbacks<Cursor> {
 
 	protected View rootView;
 	protected ListView downloading_list;
 	protected DownloadListAdapter adapter;
+
+	private DownloadContentObserver downloadContentObserver;
 
 	public AbstractDownloadFragment() {
 		super();
@@ -52,13 +60,27 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 		return rootView;
 	}
 
+	@Override
+	public void onPause() {
+		registerContentObserver();
+
+		super.onPause();
+	}
+
+	@Override
+	public void onResume() {
+		unregisterContentObserver();
+
+		super.onResume();
+	}
+
 	/**
 	 * Called to init view components
 	 */
 	protected void onInit() {
 		setUI();
 		setListener();
-		setAdapter(getDownloads());
+		setAdapter();
 	}
 
 	@Override
@@ -75,62 +97,74 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 	}
 
 	/**
-	 * This method will set adapter
+	 * This method will set adapter and init loader
 	 * 
 	 * @param cursor
 	 */
-	protected void setAdapter(Cursor cursor) {
-		if (null != cursor) {
-			adapter = new DownloadListAdapter(getActivity(), cursor, false);
+	protected void setAdapter() {
+		adapter = new DownloadListAdapter(getActivity(), null, false);
 
-			downloading_list.setAdapter(adapter);
-		}
+		downloading_list.setAdapter(adapter);
+
+		getLoaderManager().initLoader(0, null, this);
 	}
 
 	/**
-	 * This method will set new cursor to the adapter
+	 * This method will register downloads content observer
 	 */
-	protected void refreshAdapter() {
+	private void registerContentObserver() {
+		if (null == downloadContentObserver)
+			downloadContentObserver = new DownloadContentObserver(new Handler());
+
+		getActivity().getContentResolver().registerContentObserver(
+				DownloadContentProvider.CONTENT_URI_DOWNLOADS, true,
+				downloadContentObserver);
+	}
+
+	/**
+	 * This method will unregister downloads content observer
+	 */
+	private void unregisterContentObserver() {
+		if (null != downloadContentObserver)
+			getActivity().getContentResolver().unregisterContentObserver(
+					downloadContentObserver);
+	}
+
+	/**
+	 * This method will restart a cursor loader
+	 * 
+	 * @param isSilent
+	 *            if false will notify user otherwise nothing will be displayed
+	 */
+	protected void refreshCursorLoader(boolean isSilent) {
 		if (null != adapter) {
-			adapter.changeCursor(getDownloads());
+			getLoaderManager().restartLoader(0, null, this);
 
-			ToastHelper.showToast(getActivity(), "Refreshing list");
+			if (!isSilent)
+				ToastHelper.showToast(getActivity(), "Refreshing list");
 		}
-	}
-
-	/**
-	 * This method will refresh adapter on ui thread
-	 */
-	protected void refreshAdapterOnUIThread() {
-		getActivity().runOnUiThread(new Runnable() {
-
-			@Override
-			public void run() {
-				refreshAdapter();
-			}
-
-		});
 	}
 
 	@Override
-	public void onDownloadDeleted(boolean isSuccess, String url) {
+	public void onDownloadDeleted(boolean isSuccess) {
 		if (isSuccess) {
-			ToastHelper.showToast(getActivity(), String.format(
-					getString(R.string.download_delete_success), url));
+			refreshCursorLoader(true);
 
-			refreshAdapter();
+			ToastHelper.showToast(getActivity(),
+					getString(R.string.download_delete_success));
 		} else
-			ToastHelper.showToast(getActivity(), String.format(
-					getString(R.string.download_delete_fail), url));
+			ToastHelper.showToast(getActivity(),
+					getString(R.string.download_delete_fail));
 	}
 
 	/**
 	 * This method will show add new download dialog
+	 * 
+	 * downloadIds array of ids to delete
 	 */
-	protected void showRemoveDialog(long id, String url) {
+	protected void showRemoveDialog(long[] downloadIds) {
 		Bundle bundle = new Bundle();
-		bundle.putLong(DeleteDownloadDialog.KEY_DOWNLOADID, id);
-		bundle.putString(DeleteDownloadDialog.KEY_DOWNLOADURL, url);
+		bundle.putLongArray(DeleteDownloadDialog.KEY_DOWNLOADIDS, downloadIds);
 
 		DeleteDownloadDialog newFragment = new DeleteDownloadDialog();
 		newFragment.setArguments(bundle);
@@ -143,17 +177,11 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 	/**
 	 * This method will remove given ids from the database
 	 * 
-	 * @param position
+	 * @param downloadIds
+	 *            array of ids to delete
 	 */
-	protected void removeDownload(int position) {
-		Cursor cursor = adapter.getCursor();
-
-		if (cursor.moveToPosition(position)) {
-			showRemoveDialog(cursor.getLong(cursor
-					.getColumnIndex(DownloadsDatabase.COLUMN_ID)),
-					cursor.getString(cursor
-							.getColumnIndex(DownloadsDatabase.COLUMN_URL)));
-		}
+	protected void removeDownloads(long[] downloadIds) {
+		showRemoveDialog(downloadIds);
 	}
 
 	@Override
@@ -161,12 +189,18 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 		return DownloadedFragment.class.getSimpleName();
 	}
 
-	/**
-	 * This method will return cursor to be set to the adapter
-	 * 
-	 * @return Cursor populated with data
-	 */
-	protected abstract Cursor getDownloads();
+	@Override
+	public abstract Loader<Cursor> onCreateLoader(int id, Bundle args);
+
+	@Override
+	public void onLoadFinished(Loader<Cursor> loader, Cursor newCursor) {
+		adapter.swapCursor(newCursor);
+	}
+
+	@Override
+	public void onLoaderReset(Loader<Cursor> loader) {
+		adapter.swapCursor(null);
+	}
 
 	/**
 	 * This method will return MultiChoiceModeListener
@@ -174,5 +208,29 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 	 * @return MultiChoiceModeListener
 	 */
 	protected abstract MultiChoiceModeListener getMultiChoiceModeListener();
+
+	/**
+	 * Content observer for {@link DownloadContentProvider}
+	 * 
+	 * @author Milan
+	 * 
+	 */
+	protected class DownloadContentObserver extends ContentObserver {
+
+		public DownloadContentObserver(Handler handler) {
+			super(handler);
+		}
+
+		@Override
+		public void onChange(boolean selfChange, Uri uri) {
+			refreshCursorLoader(false);
+		}
+
+		@Override
+		public void onChange(boolean selfChange) {
+			onChange(selfChange, null);
+		}
+
+	}
 
 }

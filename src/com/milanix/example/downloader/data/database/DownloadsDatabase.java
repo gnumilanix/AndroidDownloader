@@ -1,8 +1,12 @@
 package com.milanix.example.downloader.data.database;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+
+import com.milanix.example.downloader.data.dao.Download;
+import com.milanix.example.downloader.data.dao.Download.DownloadState;
 
 /**
  * This class contains logic for storing/retrieving and querying the database
@@ -75,8 +79,34 @@ public class DownloadsDatabase {
 		public void onUpgrade(SQLiteDatabase database, int oldVersion,
 				int newVersion) {
 			database.execSQL("DROP TABLE IF EXISTS " + TABLE_DOWNLOADS);
+
 			onCreate(database);
 		}
+	}
+
+	/**
+	 * This method will return download object from the cursor
+	 * 
+	 * @param cursor
+	 *            to retrieve data from
+	 * @return download object if successfull otherwise null
+	 */
+	public static Download getDownloadFromCursor(Cursor cursor) {
+		if (null == cursor)
+			return null;
+
+		return new Download(cursor.getInt(cursor
+				.getColumnIndex(DownloadsDatabase.COLUMN_ID)),
+				cursor.getString(cursor
+						.getColumnIndex(DownloadsDatabase.COLUMN_URL)),
+				cursor.getString(cursor
+						.getColumnIndex(DownloadsDatabase.COLUMN_NAME)),
+				cursor.getInt(cursor
+						.getColumnIndex(DownloadsDatabase.COLUMN_TYPE)),
+				cursor.getLong(cursor
+						.getColumnIndex(DownloadsDatabase.COLUMN_DATE)),
+				DownloadState.getEnum(cursor.getString(cursor
+						.getColumnIndex(DownloadsDatabase.COLUMN_STATE))));
 	}
 
 }

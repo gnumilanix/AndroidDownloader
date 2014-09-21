@@ -34,6 +34,12 @@
             android:enabled="true"
             android:exported="true" >
         </service>
+
+        <!-- Provider for downloads, downloaded and downloading content. -->
+        <provider
+            android:name="com.milanix.example.downloader.data.provider.DownloadContentProvider"
+            android:authorities="com.milanix.example.downloader.data.provider.DownloadContentProvider"
+            android:exported="false" />
     </application>
 
 </manifest>
