@@ -31,6 +31,7 @@ import com.milanix.example.downloader.data.provider.DownloadContentProvider;
 import com.milanix.example.downloader.dialog.AddNewDownloadDialog;
 import com.milanix.example.downloader.dialog.AddNewDownloadDialog.OnAddNewDownloadListener;
 import com.milanix.example.downloader.fragment.abs.AbstractDownloadFragment;
+import com.milanix.example.downloader.fragment.adapter.DownloadListAdapter;
 import com.milanix.example.downloader.service.DownloadService;
 import com.milanix.example.downloader.service.DownloadService.DownloadBinder;
 import com.milanix.example.downloader.service.DownloadService.TaskStateResult;
@@ -58,8 +59,7 @@ public class DownloadingFragment extends AbstractDownloadFragment implements
 
 			bound = true;
 
-			if (adapter != null)
-				adapter.setDownloadService(downloadService);
+			setAdapter();
 		}
 
 		@Override
@@ -67,6 +67,23 @@ public class DownloadingFragment extends AbstractDownloadFragment implements
 			bound = false;
 		}
 	};
+
+	@Override
+	protected void onInit() {
+		setUI();
+		setListener();
+
+	}
+
+	@Override
+	protected void setAdapter() {
+		adapter = new DownloadListAdapter(getActivity(), null, false,
+				downloadService);
+
+		downloading_list.setAdapter(adapter);
+
+		getLoaderManager().initLoader(0, null, this);
+	}
 
 	/**
 	 * This method will resume downloads

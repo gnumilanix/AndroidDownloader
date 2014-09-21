@@ -40,12 +40,22 @@ public class DownloadListAdapter extends CursorAdapter {
 	}
 
 	/**
-	 * This method will set download service to this adapter. This is required
-	 * for callbacks for tasks being performed
+	 * This constructor can be used to pass download service which can listen to
+	 * callbacks
 	 * 
+	 * @param context
+	 *            application context
+	 * @param c
+	 *            data cursor
+	 * @param autoRequery
+	 *            if set true will auto requery
 	 * @param downloadService
+	 *            is the service to attach/detach callbacks
 	 */
-	public void setDownloadService(DownloadService downloadService) {
+	public DownloadListAdapter(Context context, Cursor c, boolean autoRequery,
+			DownloadService downloadService) {
+		this(context, c, autoRequery);
+
 		this.downloadService = downloadService;
 	}
 
@@ -149,9 +159,9 @@ public class DownloadListAdapter extends CursorAdapter {
 								downloadService.detachCallback(id, callback);
 							}
 						}
-
 					});
 		}
+
 	}
 
 	/**
