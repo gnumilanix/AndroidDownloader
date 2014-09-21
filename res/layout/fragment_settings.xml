@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="@color/app_background"
+    android:orientation="vertical"
+    android:padding="@dimen/navigation_drawer_padding" >
+
+    <TextView
+        android:id="@+id/location_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:text="@string/title_downloadlocation"
+        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+    <View
+        android:id="@+id/location_divider"
+        android:layout_width="wrap_content"
+        android:layout_height="@dimen/divider_height"
+        android:layout_marginBottom="@dimen/divider_margin"
+        android:layout_marginTop="@dimen/divider_margin"
+        android:background="@color/sttings_divider_color" />
+
+    <RelativeLayout
+        android:id="@+id/location_base"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/list_selector" >
+
+        <ImageView
+            android:id="@+id/location_icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignLeft="@+id/location_divider"
+            android:layout_below="@+id/location_divider"
+            android:src="@drawable/ic_icon_location_light" />
+
+        <TextView
+            android:id="@+id/location_subtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_alignTop="@+id/location_icon"
+            android:layout_marginLeft="@dimen/text_padding"
+            android:layout_toRightOf="@+id/location_icon"
+            android:text="@string/title_sub_downloadlocation"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/location_path"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignLeft="@+id/location_subtitle"
+            android:layout_alignRight="@+id/location_subtitle"
+            android:layout_below="@+id/location_subtitle"
+            android:text="/mnt/sdcard/Downloads"
+            android:textAppearance="?android:attr/textAppearanceSmall" />
+    </RelativeLayout>
+
+    <TextView
+        android:id="@+id/tasks_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/text_padding"
+        android:text="@string/title_downloads"
+        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+    <View
+        android:id="@+id/tasks_divider"
+        android:layout_width="wrap_content"
+        android:layout_height="@dimen/divider_height"
+        android:layout_marginBottom="@dimen/divider_margin"
+        android:layout_marginTop="@dimen/divider_margin"
+        android:background="@color/sttings_divider_color" />
+
+    <RelativeLayout
+        android:id="@+id/tasks_base"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/list_selector" >
+
+        <ImageView
+            android:id="@+id/tasks_icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignLeft="@+id/tasks_divider"
+            android:layout_below="@+id/tasks_divider"
+            android:src="@drawable/ic_icon_task_light" />
+
+        <TextView
+            android:id="@+id/tasks_subtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_alignTop="@+id/tasks_icon"
+            android:layout_marginLeft="@dimen/text_padding"
+            android:layout_toRightOf="@+id/tasks_icon"
+            android:text="@string/title_sub_downloads"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tasks_config"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignLeft="@+id/tasks_subtitle"
+            android:layout_alignRight="@+id/tasks_subtitle"
+            android:layout_below="@+id/tasks_subtitle"
+            android:text="5 parallel downloads"
+            android:textAppearance="?android:attr/textAppearanceSmall" />
+    </RelativeLayout>
+
+</LinearLayout>

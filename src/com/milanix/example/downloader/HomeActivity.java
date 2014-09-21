@@ -15,6 +15,7 @@ import android.view.MenuItem;
 
 import com.milanix.example.downloader.fragment.DownloadedFragment;
 import com.milanix.example.downloader.fragment.DownloadingFragment;
+import com.milanix.example.downloader.fragment.SettingsFragment;
 import com.milanix.example.downloader.service.DownloadService;
 import com.milanix.example.downloader.util.PreferenceHelper;
 
@@ -63,6 +64,15 @@ public class HomeActivity extends ActionBarActivity {
 								DownloadedFragment.class.getSimpleName(),
 								DownloadedFragment.class));
 		actionBar.addTab(tab);
+
+		tab = actionBar
+				.newTab()
+				.setIcon(R.drawable.ic_action_settings)
+				.setTabListener(
+						new TabListener<SettingsFragment>(this,
+								SettingsFragment.class.getSimpleName(),
+								SettingsFragment.class));
+		actionBar.addTab(tab);
 	}
 
 	/**
@@ -72,7 +82,7 @@ public class HomeActivity extends ActionBarActivity {
 		if (android.os.Build.VERSION.SDK_INT > Build.VERSION_CODES.GINGERBREAD) {
 			StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
 					.permitAll().build();
-			
+
 			StrictMode.setThreadPolicy(policy);
 		}
 

@@ -17,10 +17,14 @@
     <color name="dialog_title_background">#8D8D8D</color>
     <color name="dialog_background">#FFFFFF</color>
     <color name="divider_color">#E1E1E1</color>
+    <color name="sttings_divider_color">#7D7D7D</color>
 
     <!-- List selector -->
     <color name="list_cab_active">#ABCDEF</color>
     <color name="list_cab_normal">#00000000</color>
+    <color name="list_pressed">#F0F0F0</color>
+    <color name="list_selected">#F7F7F7</color>
+    <color name="list_normal">#00000000</color>
 
     <!-- Download hint color -->
     <color name="download_success">#99CC00</color>

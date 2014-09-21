@@ -102,20 +102,21 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 	/**
 	 * Called to init view components
 	 */
+	@Override
 	protected void onInit() {
-		setUI();
-		setListener();
+		super.onInit();
+
 		setAdapter();
 	}
 
 	@Override
-	public void setUI() {
+	protected void setUI() {
 		downloading_list = (ListView) rootView
 				.findViewById(R.id.downloading_list);
 	}
 
 	@Override
-	public void setListener() {
+	protected void setListener() {
 		downloading_list.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
 		downloading_list
 				.setMultiChoiceModeListener(getMultiChoiceModeListener());

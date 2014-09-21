@@ -9,16 +9,23 @@ import android.support.v4.app.Fragment;
  * 
  */
 public abstract class AbstractFragment extends Fragment {
+	/**
+	 * This method should be called to init ui components
+	 */
+	protected void onInit() {
+		setUI();
+		setListener();
+	}
 
 	/**
 	 * This method will set UI components
 	 */
-	public abstract void setUI();
+	protected abstract void setUI();
 
 	/**
 	 * This method will set listeners to the components
 	 */
-	public abstract void setListener();
+	protected abstract void setListener();
 
 	/**
 	 * This method will return tag

@@ -18,13 +18,13 @@
     <string name="tab_downloading">Downloading</string>
     <string name="tab_downloaded">Downloaded</string>
 
-    <!-- Add New dialog string -->
+    <!-- Add New dialog strings -->
     <string name="addnew_title">Add new download</string>
     <string name="addnew_hint">Enter URL to download</string>
     <string name="addnew_error_empty">URL cannot be empty</string>
     <string name="addnew_error_invalid">URL is not valid</string>
 
-    <!-- Downloads list string -->
+    <!-- Downloads list strings -->
     <string name="download_date_notavailable">N/A</string>
     <string name="download_add_success">"%s added to the download queue"</string>
     <string name="download_add_fail">"Failed to add to the queue"</string>
@@ -42,5 +42,11 @@
     <string name="btn_ok">OK</string>
     <string name="btn_cancel">Cancel</string>
     <string name="btn_delete">Delete</string>
+
+    <!-- Settings strings -->
+    <string name="title_downloadlocation">DOWNLOAD LOCATION</string>
+    <string name="title_sub_downloadlocation">Default download location</string>
+    <string name="title_downloads">PARALLEL DOWNLOADS</string>
+    <string name="title_sub_downloads">Max number of parallel downloads</string>
 
 </resources>
