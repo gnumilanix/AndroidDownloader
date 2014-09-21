@@ -3,6 +3,11 @@
 
     <string name="app_name">Downloader</string>
 
+    <!-- Navigation drawer strings -->
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_max_parallel_download">Max parallel downloads</string>
+
     <!-- Actionbar strings -->
     <string name="action_settings">Settings</string>
     <string name="action_refresh">Refresh</string>
@@ -24,9 +29,14 @@
     <string name="download_add_success">"%s added to the download queue"</string>
     <string name="download_add_fail">"Failed to add to the queue"</string>
     <string name="download_disconnected">"Disconnected at the moment"</string>
-    <string name="download_deleteconfirm">"Do you want to delete %s"</string>
+    <string name="download_delete">"Delete downloads"</string>
     <string name="download_delete_success">Deleted downloads</string>
     <string name="download_delete_fail">Failed to delete downloads</string>
+
+    <plurals name="download_deleteconfirm">
+        <item quantity="one">Do you want to delete following file?</item>
+        <item quantity="other">Do you want to delete following files?</item>
+    </plurals>
 
     <!-- Generic strings -->
     <string name="btn_ok">OK</string>

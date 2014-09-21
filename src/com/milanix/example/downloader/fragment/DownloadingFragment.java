@@ -267,18 +267,24 @@ public class DownloadingFragment extends AbstractDownloadFragment implements
 						public void onDownloadStarted(Download download) {
 							Log.d(getLogTag(),
 									"Download started " + download.getName());
+
+							postRefreshCursorLoader(false);
 						}
 
 						@Override
 						public void onDownloadCancelled(Download download) {
 							Log.d(getLogTag(),
 									"Download cancelled " + download.getName());
+
+							postRefreshCursorLoader(false);
 						}
 
 						@Override
 						public void onDownloadCompleted(Download download) {
 							Log.d(getLogTag(),
 									"Download completed " + download.getName());
+
+							postRefreshCursorLoader(false);
 						}
 
 						@Override
@@ -286,6 +292,8 @@ public class DownloadingFragment extends AbstractDownloadFragment implements
 								FailedReason reason) {
 							Log.d(getLogTag(),
 									"Download failed " + download.getName());
+
+							postRefreshCursorLoader(false);
 						}
 
 						@Override

@@ -1,9 +1,5 @@
 <resources>
 
-    <!--
-        Base application theme, dependent on API level. This theme is replaced
-        by AppBaseTheme from res/values-vXX/styles.xml on newer devices.
-    -->
     <style name="AppBaseTheme" parent="@style/Theme.AppCompat.Light"></style>
 
     <!-- Application Core theme. -->
@@ -12,7 +8,7 @@
     </style>
 
     <!-- ActionBar theme -->
-    <style name="DownloaderTheme.ActionBar" parent="@style/Theme.AppCompat.Light.DarkActionBar">
+    <style name="DownloaderTheme.ActionBar" parent="@style/Widget.AppCompat.Light.ActionBar">
         <item name="android:background">@color/actionbar_dark_background</item>
         <item name="android:titleTextStyle">@style/DownloaderTheme.ActionBar.Title</item>
         <item name="android:displayOptions">useLogo|showHome|showTitle</item>

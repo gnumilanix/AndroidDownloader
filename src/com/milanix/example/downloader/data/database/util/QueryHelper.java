@@ -31,7 +31,7 @@ public class QueryHelper {
 	}
 
 	/**
-	 * This method will get querybuilder where clause string with given param
+	 * This method will get query where clause string with given param
 	 * 
 	 * @param fieldName
 	 *            is the field to add where
@@ -58,7 +58,7 @@ public class QueryHelper {
 	}
 
 	/**
-	 * This method will get querybuilder where clause string with given param
+	 * This method will get query where clause string with given param
 	 * 
 	 * @param fieldName
 	 *            is the field to add where
@@ -81,6 +81,32 @@ public class QueryHelper {
 		whereClauseBuilder.append(value);
 
 		return whereClauseBuilder.toString();
+	}
+
+	/**
+	 * This method will get query in operator string with given param
+	 * 
+	 * @param fieldName
+	 *            is the field to add where
+	 * @param ids
+	 *            long
+	 * @return in
+	 */
+	public static String getLongIn(String fieldName, long[] ids) {
+		final StringBuilder inClauseBuilder = new StringBuilder("");
+		inClauseBuilder.append(fieldName);
+		inClauseBuilder.append(" in (");
+
+		for (int i = 0; i < ids.length; i++) {
+			inClauseBuilder.append(Long.toString(ids[i]));
+
+			if (i < ids.length - 1)
+				inClauseBuilder.append(",");
+		}
+
+		inClauseBuilder.append(")");
+
+		return inClauseBuilder.toString();
 	}
 
 }

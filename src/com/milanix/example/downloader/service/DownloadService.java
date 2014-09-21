@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -46,6 +45,7 @@ import com.milanix.example.downloader.data.provider.DownloadContentProvider;
 import com.milanix.example.downloader.util.FileUtils;
 import com.milanix.example.downloader.util.IOUtils;
 import com.milanix.example.downloader.util.NetworkUtils;
+import com.milanix.example.downloader.util.PreferenceHelper;
 import com.milanix.example.downloader.util.TextHelper;
 
 /**
@@ -63,10 +63,10 @@ public class DownloadService extends Service {
 	private HashMap<Integer, DownloadTask> downloadTasks = new HashMap<Integer, DownloadTask>();
 
 	// Executor for parallel downloads
-	private Executor executor = AsyncTask.THREAD_POOL_EXECUTOR;
+	private ThreadPoolExecutor executor;
 
 	// Executor constants
-	private static final int POOL_MAX_MULTIPLIER = 25;
+	private static final int POOL_MAX_MULTIPLIER = 5;
 	private static final int POOL_KEEP_ALIVE = 1;
 	private static final BlockingQueue<Runnable> POOL_WORKQUEUE = new LinkedBlockingQueue<Runnable>(
 			10);
@@ -92,6 +92,8 @@ public class DownloadService extends Service {
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
+		initDownloadPool();
+
 		return START_STICKY;
 	}
 
@@ -109,27 +111,49 @@ public class DownloadService extends Service {
 		return DownloadService.class.getName();
 	}
 
-	/*
-	 * (non-Javadoc)
+	/**
+	 * This method will init ThreadPoolExecutor with using {@link
+	 * PreferenceHelper.getDownloadPoolSize()}
 	 * 
-	 * @see android.app.Service#onDestroy()
 	 */
-	@Override
-	public void onDestroy() {
-		// TODO Auto-generated method stub
-		super.onDestroy();
+	private void initDownloadPool() {
+		if (null == executor)
+			executor = new ThreadPoolExecutor(getCorePoolSizeFromPref(),
+					getMaxPoolSizeFromPref(), POOL_KEEP_ALIVE,
+					TimeUnit.SECONDS, POOL_WORKQUEUE, POOL_THREAD_FACTORY);
 	}
 
 	/**
-	 * This method will init ThreadPoolExecutor with given core
-	 * 
-	 * @param corePoolSize
-	 *            max number of parallen tasks
+	 * This method will set core pool size and relative max pool size from
+	 * preferences. It will also call initDownloadPool() to ensure the pool
+	 * exists
 	 */
-	public void initDownloadPool(int corePoolSize) {
-		executor = new ThreadPoolExecutor(corePoolSize, corePoolSize
-				* POOL_MAX_MULTIPLIER, POOL_KEEP_ALIVE, TimeUnit.SECONDS,
-				POOL_WORKQUEUE, POOL_THREAD_FACTORY);
+	public void ssetPoolSizeFromPref() {
+		initDownloadPool();
+
+		executor.setCorePoolSize(getCorePoolSizeFromPref());
+		executor.setMaximumPoolSize(getMaxPoolSizeFromPref());
+	}
+
+	/**
+	 * This method will return core pool size from preferences
+	 * 
+	 * @return core pool size
+	 */
+	private int getCorePoolSizeFromPref() {
+		return PreferenceHelper.getDownloadPoolSize(getApplicationContext());
+	}
+
+	/**
+	 * This method will return max pool size from based on core pool size
+	 * preferences
+	 * 
+	 * @return max pool size
+	 */
+
+	private int getMaxPoolSizeFromPref() {
+		return PreferenceHelper.getDownloadPoolSize(getApplicationContext())
+				* POOL_MAX_MULTIPLIER;
 	}
 
 	/**

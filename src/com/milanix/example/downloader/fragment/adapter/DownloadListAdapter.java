@@ -20,6 +20,7 @@ import com.milanix.example.downloader.data.dao.Download.FailedReason;
 import com.milanix.example.downloader.data.dao.Download.TaskState;
 import com.milanix.example.downloader.data.database.DownloadsDatabase;
 import com.milanix.example.downloader.service.DownloadService;
+import com.milanix.example.downloader.util.FileUtils;
 import com.milanix.example.downloader.util.TextHelper;
 
 /**
@@ -99,7 +100,7 @@ public class DownloadListAdapter extends CursorAdapter {
 	 * This method will set listener
 	 * 
 	 * @param holder
-	 *            is a viewholder object for the view
+	 *            is a viewholder reference for the view
 	 * @param cursor
 	 *            containing data
 	 */
@@ -171,7 +172,7 @@ public class DownloadListAdapter extends CursorAdapter {
 	 *            is the current context
 	 * 
 	 * @param holder
-	 *            is a viewholder object for the view
+	 *            is a viewholder reference for the view
 	 * @param cursor
 	 *            containing data
 	 */
@@ -181,10 +182,13 @@ public class DownloadListAdapter extends CursorAdapter {
 		holder.download_name.setText(cursor.getString(cursor
 				.getColumnIndex(DownloadsDatabase.COLUMN_NAME)));
 		holder.download_date.setText(TextHelper.getRelativeDateString(cursor
-				.getLong(cursor.getColumnIndex(DownloadsDatabase.COLUMN_NAME)),
+				.getLong(cursor.getColumnIndex(DownloadsDatabase.COLUMN_DATE)),
 				context.getString(R.string.download_date_notavailable)));
 		holder.download_url.setText(cursor.getString(cursor
 				.getColumnIndex(DownloadsDatabase.COLUMN_URL)));
+		holder.download_icon.setImageResource(FileUtils
+				.getFileTypeBasedRes(cursor.getString(cursor
+						.getColumnIndex(DownloadsDatabase.COLUMN_URL))));
 
 		if (DownloadState.DOWNLOADING.equals(DownloadState.getEnum(cursor
 				.getString(cursor

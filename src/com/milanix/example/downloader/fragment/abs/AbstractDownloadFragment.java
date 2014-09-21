@@ -5,6 +5,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Message;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.view.LayoutInflater;
@@ -31,11 +32,35 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 		implements OnDeleteDownloadListener,
 		LoaderManager.LoaderCallbacks<Cursor> {
 
+	private static final int HANDLE_REFRESH_ADAPTER = 0;
+
+	private static final String HANDLE_KEY_ISSILENT = "key_issilent";
+
+	private DownloadContentObserver downloadContentObserver;
+
 	protected View rootView;
 	protected ListView downloading_list;
 	protected DownloadListAdapter adapter;
 
-	private DownloadContentObserver downloadContentObserver;
+	protected Handler uiUpdateHandler = new Handler() {
+
+		@Override
+		public void handleMessage(Message msg) {
+			switch (msg.what) {
+			case HANDLE_REFRESH_ADAPTER:
+				if (null != msg && null != msg.getData()
+						&& msg.getData().containsKey(HANDLE_KEY_ISSILENT))
+					refreshCursorLoader(msg.getData().containsKey(
+							HANDLE_KEY_ISSILENT));
+				else
+					refreshCursorLoader(false);
+
+				break;
+			default:
+				super.handleMessage(msg);
+			}
+		}
+	};
 
 	public AbstractDownloadFragment() {
 		super();
@@ -52,8 +77,8 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
-		rootView = inflater
-				.inflate(R.layout.downloading_home, container, false);
+		rootView = inflater.inflate(R.layout.fragment_download, container,
+				false);
 
 		onInit();
 
@@ -128,6 +153,23 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 		if (null != downloadContentObserver)
 			getActivity().getContentResolver().unregisterContentObserver(
 					downloadContentObserver);
+	}
+
+	/**
+	 * This method will post refresh cursor loader to the handler.
+	 * 
+	 * @param isSilent
+	 *            if refresh should be silent
+	 */
+	protected void postRefreshCursorLoader(boolean isSilent) {
+		Bundle data = new Bundle();
+		data.putBoolean(HANDLE_KEY_ISSILENT, isSilent);
+
+		Message msg = Message.obtain(null, HANDLE_REFRESH_ADAPTER);
+		msg.setData(data);
+
+		if (null != uiUpdateHandler)
+			uiUpdateHandler.sendMessage(msg);
 	}
 
 	/**
@@ -223,7 +265,7 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 
 		@Override
 		public void onChange(boolean selfChange, Uri uri) {
-			refreshCursorLoader(false);
+			postRefreshCursorLoader(false);
 		}
 
 		@Override
