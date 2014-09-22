@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <integer name="default_parallel_download">4</integer>
+    <!-- Pool size starts from 0 -->
+    <integer name="max_parallel_download">7</integer>
+    <integer name="default_parallel_download">3</integer>
 
 </resources>

@@ -29,6 +29,8 @@ import org.apache.http.params.HttpParams;
 import android.app.Service;
 import android.content.ContentValues;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.IBinder;
@@ -62,6 +64,10 @@ public class DownloadService extends Service {
 	// Map to keep track of async task
 	private HashMap<Integer, DownloadTask> downloadTasks = new HashMap<Integer, DownloadTask>();
 
+	// Shared preference instance
+	private SharedPreferences sharedPref;
+	private OnSharedPreferenceChangeListener sharedPrefChangeListener;
+
 	// Executor for parallel downloads
 	private ThreadPoolExecutor executor;
 
@@ -92,6 +98,8 @@ public class DownloadService extends Service {
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
+		registerPoolConfigureListener();
+
 		initDownloadPool();
 
 		return START_STICKY;
@@ -100,6 +108,13 @@ public class DownloadService extends Service {
 	@Override
 	public IBinder onBind(Intent intent) {
 		return mBinder;
+	}
+
+	@Override
+	public void onDestroy() {
+		unregisterPoolConfigureListener();
+
+		super.onDestroy();
 	}
 
 	/**
@@ -112,8 +127,42 @@ public class DownloadService extends Service {
 	}
 
 	/**
-	 * This method will init ThreadPoolExecutor with using {@link
-	 * PreferenceHelper.getDownloadPoolSize()}
+	 * This method will register shared preference change listener for pool
+	 * change event
+	 */
+	private void registerPoolConfigureListener() {
+		if (null == sharedPref)
+			sharedPref = PreferenceHelper
+					.getPreferenceInstance(getApplicationContext());
+
+		if (null == sharedPrefChangeListener)
+			sharedPrefChangeListener = new OnSharedPreferenceChangeListener() {
+
+				@Override
+				public void onSharedPreferenceChanged(
+						SharedPreferences sharedPreference, String key) {
+					if (PreferenceHelper.KEY_DOWNLOADPOOLSIZE.equals(key)) {
+						resetPoolSize(sharedPreference);
+					}
+				}
+			};
+
+		sharedPref
+				.registerOnSharedPreferenceChangeListener(sharedPrefChangeListener);
+	}
+
+	/**
+	 * This method will unregister pool configuration listener
+	 */
+	private void unregisterPoolConfigureListener() {
+		if (null == sharedPref && null != sharedPrefChangeListener)
+			sharedPref
+					.unregisterOnSharedPreferenceChangeListener(sharedPrefChangeListener);
+	}
+
+	/**
+	 * This method will init ThreadPoolExecutor with using
+	 * {@link PreferenceHelper #getDownloadPoolSize()}
 	 * 
 	 */
 	private void initDownloadPool() {
@@ -127,12 +176,19 @@ public class DownloadService extends Service {
 	 * This method will set core pool size and relative max pool size from
 	 * preferences. It will also call initDownloadPool() to ensure the pool
 	 * exists
+	 * 
+	 * @param sharedPreference
+	 *            is a preference that was changed
 	 */
-	public void ssetPoolSizeFromPref() {
+	public void resetPoolSize(SharedPreferences sharedPreference) {
 		initDownloadPool();
 
-		executor.setCorePoolSize(getCorePoolSizeFromPref());
-		executor.setMaximumPoolSize(getMaxPoolSizeFromPref());
+		int newPoolSize = sharedPreference.getInt(
+				PreferenceHelper.KEY_DOWNLOADPOOLSIZE,
+				PreferenceHelper.DEFAULT_POOLSIZE);
+
+		executor.setCorePoolSize(newPoolSize);
+		executor.setMaximumPoolSize(newPoolSize * POOL_MAX_MULTIPLIER);
 	}
 
 	/**

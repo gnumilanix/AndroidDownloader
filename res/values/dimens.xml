@@ -7,6 +7,7 @@
     <dimen name="list_padding">8dp</dimen>
     <dimen name="text_margin">8dp</dimen>
     <dimen name="text_padding">8dp</dimen>
+    <dimen name="item_padding">8dp</dimen>
     <dimen name="divider_height">2dp</dimen>
     <dimen name="divider_margin">4dp</dimen>
 

@@ -16,7 +16,7 @@ public class PreferenceHelper {
 	public static final String KEY_DOWNLOADPATH = "key_downloadpath";
 	public static final String KEY_DOWNLOADPOOLSIZE = "key_downloadpoolsize";
 
-	private static final String KEY_USERLEARNEDDRAWER = "navigation_drawer_learned";
+	public static final String KEY_USERLEARNEDDRAWER = "navigation_drawer_learned";
 
 	public static final String PATH_DOWNLOAD = "/Download";
 
@@ -114,5 +114,17 @@ public class PreferenceHelper {
 
 		return sharedPref.getInt(KEY_DOWNLOADPOOLSIZE, DEFAULT_POOLSIZE);
 
+	}
+
+	/**
+	 * This method will get shared preference instance for this application
+	 * 
+	 * @param context
+	 *            the base application context
+	 * @return shared preference instance
+	 */
+	public static SharedPreferences getPreferenceInstance(Context context) {
+		return context.getSharedPreferences(KEY_PREFERENCES,
+				Context.MODE_PRIVATE);
 	}
 }

@@ -5,30 +5,6 @@
     android:background="@color/dialog_background"
     android:orientation="vertical" >
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/dialog_title_background"
-        android:orientation="horizontal"
-        android:padding="@dimen/dialog_title_padding" >
-
-        <ImageView
-            android:id="@+id/iv_icon"
-            android:layout_width="@dimen/dialog_icon_size"
-            android:layout_height="@dimen/dialog_icon_size"
-            android:src="@drawable/ic_action_addtoqueue_dark" />
-
-        <TextView
-            android:id="@+id/tv_title"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginLeft="@dimen/dialog_title_padding"
-            android:gravity="center_vertical"
-            android:text="@string/addnew_title"
-            android:textAppearance="?android:attr/textAppearanceMedium"
-            android:textColor="@color/text_color_light" />
-    </LinearLayout>
-
     <EditText
         android:id="@+id/et_url"
         android:layout_width="match_parent"

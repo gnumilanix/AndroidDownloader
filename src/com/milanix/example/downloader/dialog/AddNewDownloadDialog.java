@@ -47,7 +47,8 @@ public class AddNewDownloadDialog extends DialogFragment implements
 		setListener();
 
 		return new AlertDialog.Builder(getActivity()).setView(rootView)
-				.create();
+				.setTitle(R.string.addnew_title)
+				.setIcon(R.drawable.ic_action_addtoqueue).create();
 	}
 
 	/**

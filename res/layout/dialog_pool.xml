@@ -6,18 +6,18 @@
     android:orientation="vertical"
     android:padding="@dimen/layout_padding" >
 
-    <TextView
-        android:id="@+id/delete_message"
+    <SeekBar
+        android:id="@+id/tasks_seekbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:max="@integer/max_parallel_download" />
+
+    <TextView
+        android:id="@+id/tasks_number"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
         android:padding="@dimen/layout_padding"
         android:textAppearance="?android:attr/textAppearanceMedium" />
-
-    <ListView
-        android:id="@+id/delete_list"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/list_padding" >
-    </ListView>
 
 </LinearLayout>

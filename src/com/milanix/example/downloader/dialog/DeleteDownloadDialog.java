@@ -54,6 +54,7 @@ public class DeleteDownloadDialog extends DialogFragment {
 		AlertDialog.Builder builder = new AlertDialog.Builder(getActivity())
 				.setView(rootView)
 				.setTitle(getString(R.string.download_delete))
+				.setIcon(R.drawable.ic_action_delete)
 				.setPositiveButton(R.string.btn_delete,
 						new DialogInterface.OnClickListener() {
 							public void onClick(DialogInterface dialog, int id) {

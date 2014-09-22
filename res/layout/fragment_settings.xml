@@ -4,11 +4,14 @@
     android:layout_height="fill_parent"
     android:background="@color/app_background"
     android:orientation="vertical"
-    android:padding="@dimen/navigation_drawer_padding" >
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin" >
 
     <TextView
         android:id="@+id/location_title"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:text="@string/title_downloadlocation"
@@ -26,7 +29,9 @@
         android:id="@+id/location_base"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/list_selector" >
+        android:addStatesFromChildren="true"
+        android:background="@drawable/list_selector"
+        android:descendantFocusability="beforeDescendants" >
 
         <ImageView
             android:id="@+id/location_icon"
@@ -61,7 +66,7 @@
 
     <TextView
         android:id="@+id/tasks_title"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/text_padding"
         android:text="@string/title_downloads"
@@ -79,7 +84,8 @@
         android:id="@+id/tasks_base"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/list_selector" >
+        android:background="@drawable/list_selector"
+        android:descendantFocusability="beforeDescendants" >
 
         <ImageView
             android:id="@+id/tasks_icon"

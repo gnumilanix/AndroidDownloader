@@ -24,6 +24,10 @@
     <string name="addnew_error_empty">URL cannot be empty</string>
     <string name="addnew_error_invalid">URL is not valid</string>
 
+    <!-- Task configure dialog strings -->
+    <string name="taskconfigure_title">Set parallel downloads</string>
+    <string name="taskconfigure_sucess">Parallel downloads set to %d</string>
+
     <!-- Downloads list strings -->
     <string name="download_date_notavailable">N/A</string>
     <string name="download_add_success">"%s added to the download queue"</string>
@@ -48,5 +52,10 @@
     <string name="title_sub_downloadlocation">Default download location</string>
     <string name="title_downloads">PARALLEL DOWNLOADS</string>
     <string name="title_sub_downloads">Max number of parallel downloads</string>
+
+    <plurals name="tasks_configured">
+        <item quantity="one">Download one by one</item>
+        <item quantity="other">%d parallel downloads</item>
+    </plurals>
 
 </resources>

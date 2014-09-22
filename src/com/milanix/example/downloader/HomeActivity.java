@@ -10,8 +10,6 @@ import android.os.StrictMode;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBar.Tab;
 import android.support.v7.app.ActionBarActivity;
-import android.view.Menu;
-import android.view.MenuItem;
 
 import com.milanix.example.downloader.fragment.DownloadedFragment;
 import com.milanix.example.downloader.fragment.DownloadingFragment;
@@ -99,22 +97,6 @@ public class HomeActivity extends ActionBarActivity {
 			downloadDir.mkdir();
 
 		PreferenceHelper.setDownloadPath(this, downloadDir.getAbsolutePath());
-	}
-
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		getMenuInflater().inflate(R.menu.menu_main, menu);
-		return true;
-	}
-
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		switch (item.getItemId()) {
-		case R.id.action_settings:
-			return true;
-		}
-
-		return super.onOptionsItemSelected(item);
 	}
 
 }
