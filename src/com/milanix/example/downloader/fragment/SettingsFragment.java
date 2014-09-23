@@ -7,6 +7,8 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.milanix.example.downloader.R;
+import com.milanix.example.downloader.dialog.PathConfigureDialog;
+import com.milanix.example.downloader.dialog.PathConfigureDialog.OnPathConfigureListener;
 import com.milanix.example.downloader.dialog.PoolConfigureDialog;
 import com.milanix.example.downloader.dialog.PoolConfigureDialog.OnPoolConfigureListener;
 import com.milanix.example.downloader.fragment.abs.AbstractFragment;
@@ -17,7 +19,7 @@ import com.milanix.example.downloader.util.ToastHelper;
  * This fragment contains settings configuration.
  */
 public class SettingsFragment extends AbstractFragment implements
-		View.OnClickListener, OnPoolConfigureListener {
+		View.OnClickListener, OnPoolConfigureListener, OnPathConfigureListener {
 
 	private View rootView;
 
@@ -75,8 +77,7 @@ public class SettingsFragment extends AbstractFragment implements
 	@Override
 	public void onClick(View view) {
 		if (view.getId() == R.id.location_base) {
-			ToastHelper.showToast(getActivity(),
-					"Location settings not yet implemented");
+			showPathConfigureDialog();
 		} else if (view.getId() == R.id.tasks_base) {
 			showTaskConfigureDialog();
 		}
@@ -93,6 +94,17 @@ public class SettingsFragment extends AbstractFragment implements
 				PoolConfigureDialog.class.getSimpleName());
 	}
 
+	/**
+	 * This method will show task configure dialog
+	 */
+	private void showPathConfigureDialog() {
+		PathConfigureDialog newFragment = new PathConfigureDialog();
+		newFragment.setTargetFragment(this, -1);
+		newFragment.setCancelable(true);
+		newFragment.show(getFragmentManager(),
+				PathConfigureDialog.class.getSimpleName());
+	}
+
 	@Override
 	public void onPoolConfigured(Integer poolSize) {
 		if (null != poolSize) {
@@ -102,5 +114,12 @@ public class SettingsFragment extends AbstractFragment implements
 			tasks_config.setText(getResources().getQuantityString(
 					R.plurals.tasks_configured, poolSize, poolSize));
 		}
+	}
+
+	@Override
+	public void onPathConfigured(String path) {
+		if (null != path)
+			ToastHelper.showToast(getActivity(), String.format(
+					getString(R.string.pathconfigure_sucess), path));
 	}
 }

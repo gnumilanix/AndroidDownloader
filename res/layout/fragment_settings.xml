@@ -39,7 +39,7 @@
             android:layout_height="wrap_content"
             android:layout_alignLeft="@+id/location_divider"
             android:layout_below="@+id/location_divider"
-            android:src="@drawable/ic_icon_location_light" />
+            android:src="@drawable/ic_icon_path_light" />
 
         <TextView
             android:id="@+id/location_subtitle"

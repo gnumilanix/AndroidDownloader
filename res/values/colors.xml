@@ -30,5 +30,9 @@
     <color name="download_success">#99CC00</color>
     <color name="download_fail">#FF4444</color>
     <color name="download_progress">#33B5E5</color>
+    
+    <!-- Navigation tabs color -->
+    <color name="navigation_tab_bg">#6FCFF2</color>
+    <color name="navigation_bg">#6FCFF2</color>
 
 </resources>

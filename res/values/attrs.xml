@@ -1,0 +1,16 @@
+<resources>
+
+    <declare-styleable name="navigationview">
+        <attr name="tab_background" format="reference" />
+        <attr name="tab_marginbefore" format="dimension" />
+        <attr name="tab_marginafter" format="dimension" />
+        <attr name="label_padding" format="dimension" />
+        <attr name="label_color" format="color" />
+        <attr name="label_gravity" format="enum">
+            <enum name="top" value="0" />
+            <enum name="bottom" value="1" />
+            <enum name="center" value="2" />
+        </attr>
+    </declare-styleable>
+
+</resources>

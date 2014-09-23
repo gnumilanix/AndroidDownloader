@@ -24,9 +24,13 @@
     <string name="addnew_error_empty">URL cannot be empty</string>
     <string name="addnew_error_invalid">URL is not valid</string>
 
-    <!-- Task configure dialog strings -->
+    <!-- Pool configure dialog strings -->
     <string name="taskconfigure_title">Set parallel downloads</string>
     <string name="taskconfigure_sucess">Parallel downloads set to %d</string>
+
+    <!-- Path configure dialog strings -->
+    <string name="pathconfigure_title">Set download location</string>
+    <string name="pathconfigure_sucess">Download location set to %s</string>
 
     <!-- Downloads list strings -->
     <string name="download_date_notavailable">N/A</string>

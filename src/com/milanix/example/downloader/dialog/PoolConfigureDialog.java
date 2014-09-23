@@ -70,7 +70,7 @@ public class PoolConfigureDialog extends DialogFragment implements
 
 		poolSize = PreferenceHelper.getDownloadPoolSize(getActivity());
 
-		tasks_seekbar.setProgress(poolSize);
+		tasks_seekbar.setProgress(poolSize - 1);
 		tasks_number.setText(getResources().getQuantityString(
 				R.plurals.tasks_configured, poolSize, poolSize));
 	}
