@@ -6,12 +6,20 @@
     android:orientation="vertical" >
 
     <com.milanix.example.downloader.view.NavigationView
-        android:id="@+id/navigationView"
+        android:id="@+id/navigation_folder"
         android:layout_width="match_parent"
         android:layout_height="40dp"
-        android:background="@color/navigation_bg"
-        navigationview:label_padding="8dp"
-        navigationview:label_color="#FFFFFF"
-        navigationview:tab_background="@color/navigation_tab_bg" />
+        navigationview:label_color="@color/navigation_tab_label_color"
+        navigationview:label_paddingLeft="4dp"
+        navigationview:label_paddingRight="12dp"
+        navigationview:label_textStyle="bold"
+        navigationview:tab_background="@drawable/navtab_bg" />
+
+    <ListView
+        android:id="@+id/list_folder"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="@dimen/list_padding" >
+    </ListView>
 
 </LinearLayout>

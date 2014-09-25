@@ -33,6 +33,7 @@
     
     <!-- Navigation tabs color -->
     <color name="navigation_tab_bg">#6FCFF2</color>
-    <color name="navigation_bg">#6FCFF2</color>
+    <color name="navigation_bg">#C5E4F0</color>
+    <color name="navigation_tab_label_color">#33B5E5</color>
 
 </resources>

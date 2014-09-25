@@ -2,14 +2,19 @@
 
     <declare-styleable name="navigationview">
         <attr name="tab_background" format="reference" />
-        <attr name="tab_marginbefore" format="dimension" />
-        <attr name="tab_marginafter" format="dimension" />
-        <attr name="label_padding" format="dimension" />
+        <attr name="label_paddingLeft" format="dimension" />
+        <attr name="label_paddingRight" format="dimension" />
         <attr name="label_color" format="color" />
         <attr name="label_gravity" format="enum">
-            <enum name="top" value="0" />
-            <enum name="bottom" value="1" />
-            <enum name="center" value="2" />
+            <enum name="top" value="48" />
+            <enum name="bottom" value="80" />
+            <enum name="center" value="16" />
+        </attr>
+        <attr name="label_textStyle" format="enum">
+            <enum name="normal" value="0" />
+            <enum name="bold" value="1" />
+            <enum name="bold_italic" value="2" />
+            <enum name="italic" value="3" />
         </attr>
     </declare-styleable>
 

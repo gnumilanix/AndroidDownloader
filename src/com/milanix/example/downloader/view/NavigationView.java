@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.view.Gravity;
@@ -24,22 +25,15 @@ import com.milanix.example.downloader.R;
  */
 public class NavigationView extends HorizontalScrollView {
 
-	// Label gravity
-	public static final int TOP = 0;
-	public static final int BOTTOM = 1;
-	public static final int CENTER = 2;
-
-	public static final int DEFAULT_LABELPADDING = 16;
-	public static final int DEFAULT_MARGINBEFORE = 0;
-	public static final int DEFAULT_MARGINAFTER = 16;
+	public static final int NONE = 0;
 
 	// Attributes
 	private Drawable tabBackground;
-	private int tabMarginBefore;
-	private int tabMarginAfter;
 	private int labelColor;
 	private int labelGravity;
-	private int labelPadding;
+	private int labelPaddingLeft;
+	private int labelPaddingRight;
+	private int labelTextStyle;
 
 	private Context context;
 	private LinearLayout root;
@@ -65,20 +59,18 @@ public class NavigationView extends HorizontalScrollView {
 			tabBackground = a
 					.getDrawable(R.styleable.navigationview_tab_background);
 
-			tabMarginBefore = a.getDimensionPixelSize(
-					R.styleable.navigationview_tab_marginbefore,
-					DEFAULT_MARGINBEFORE);
-			tabMarginAfter = a.getDimensionPixelSize(
-					R.styleable.navigationview_tab_marginafter,
-					DEFAULT_MARGINAFTER);
-
 			labelColor = a.getColor(R.styleable.navigationview_label_color,
 					Color.parseColor("#000000"));
 			labelGravity = a.getInteger(
-					R.styleable.navigationview_label_gravity, CENTER);
-			labelPadding = a.getDimensionPixelSize(
-					R.styleable.navigationview_label_padding,
-					DEFAULT_LABELPADDING);
+					R.styleable.navigationview_label_gravity,
+					Gravity.CENTER_VERTICAL);
+			labelTextStyle = a
+					.getInteger(R.styleable.navigationview_label_textStyle,
+							Typeface.NORMAL);
+			labelPaddingLeft = a.getDimensionPixelSize(
+					R.styleable.navigationview_label_paddingLeft, NONE);
+			labelPaddingRight = a.getDimensionPixelSize(
+					R.styleable.navigationview_label_paddingRight, NONE);
 		} finally {
 			a.recycle();
 		}
@@ -186,12 +178,67 @@ public class NavigationView extends HorizontalScrollView {
 	}
 
 	/**
+	 * @return the labelPaddingLeft
+	 */
+	public int getLabelPaddingLeft() {
+		return labelPaddingLeft;
+	}
+
+	/**
+	 * @return the labelPadding
+	 */
+	public int getLabelPaddingRight() {
+		return labelPaddingRight;
+	}
+
+	/**
+	 * @param labelPadding
+	 *            the labelPadding to set
+	 */
+	public void setLabelPadding(int labelPaddingLeft, int labelPaddingRight) {
+		this.labelPaddingLeft = labelPaddingLeft;
+		this.labelPaddingRight = labelPaddingRight;
+
+		invalidate();
+		requestLayout();
+	}
+
+	/**
+	 * @return the labelTextStyle
+	 */
+	public int getLabelTextStyle() {
+		return labelTextStyle;
+	}
+
+	/**
+	 * @param labelTextStyle
+	 *            the labelTextStyle to set
+	 */
+	public void setLabelTextStyle(int labelTextStyle) {
+		this.labelTextStyle = labelTextStyle;
+
+		invalidate();
+		requestLayout();
+	}
+
+	/**
 	 * This method will return navigation tabs in this view
 	 * 
 	 * @return list of navigation tabs
 	 */
 	public ArrayList<NavigationTab> getNavigationTabs() {
 		return navigationTabs;
+	}
+
+	/**
+	 * This method will clear all tabs from this navigationview
+	 */
+	public void clearNavigationTabs() {
+		if (null != root)
+			root.removeAllViews();
+
+		if (null != navigationTabs)
+			navigationTabs.clear();
 	}
 
 	/**
@@ -203,36 +250,21 @@ public class NavigationView extends HorizontalScrollView {
 		if (null != root && null != navigationTabs && null != navigationTab) {
 			final TextView tab = new TextView(context);
 			tab.setId(navigationTabs.size());
-			tab.setTextColor(labelColor);
+			tab.setTextColor(getLabelColor());
+			tab.setGravity(getLabelGravity());
+			tab.setTypeface(null, getLabelTextStyle());
 
 			if (null != navigationTab.label)
-				tab.setText(navigationTab.label);
+				tab.setText(navigationTab.label.toUpperCase());
 
 			if (null != tabBackground)
 				tab.setBackground(tabBackground);
 
-			tab.setPadding(labelPadding, labelPadding / 2, labelPadding,
-					labelPadding / 2);
-
-			switch (getLabelGravity()) {
-			case TOP:
-				tab.setGravity(Gravity.TOP);
-
-				break;
-			case BOTTOM:
-				tab.setGravity(Gravity.BOTTOM);
-
-				break;
-			default:
-				tab.setGravity(Gravity.CENTER_VERTICAL);
-
-				break;
-			}
+			tab.setPadding(getLabelPaddingLeft(), NONE, getLabelPaddingRight(),
+					NONE);
 
 			LinearLayout.LayoutParams tabParams = new LinearLayout.LayoutParams(
 					LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT);
-			tabParams.setMargins(tabMarginBefore, 0, tabMarginAfter, 0);
-
 			tab.setLayoutParams(tabParams);
 
 			if (null != navigationTab.callback) {
