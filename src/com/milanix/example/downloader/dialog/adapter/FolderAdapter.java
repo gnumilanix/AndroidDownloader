@@ -109,7 +109,7 @@ public class FolderAdapter extends BaseAdapter {
 	 */
 	public File getFolder(int position) {
 		if (position < folderList.size())
-			folderList.get(position);
+			return folderList.get(position);
 
 		return null;
 	}

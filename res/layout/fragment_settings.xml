@@ -10,15 +10,15 @@
     android:paddingTop="@dimen/activity_vertical_margin" >
 
     <TextView
-        android:id="@+id/location_title"
+        android:id="@+id/storage_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
-        android:text="@string/title_downloadlocation"
+        android:text="@string/title_storageconfiguration"
         android:textAppearance="?android:attr/textAppearanceSmall" />
 
     <View
-        android:id="@+id/location_divider"
+        android:id="@+id/storage_divider"
         android:layout_width="wrap_content"
         android:layout_height="@dimen/divider_height"
         android:layout_marginBottom="@dimen/divider_margin"
@@ -37,8 +37,8 @@
             android:id="@+id/location_icon"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignLeft="@+id/location_divider"
-            android:layout_below="@+id/location_divider"
+            android:layout_alignLeft="@+id/storage_divider"
+            android:layout_below="@+id/storage_divider"
             android:src="@drawable/ic_icon_path_light" />
 
         <TextView
@@ -54,7 +54,7 @@
             android:textStyle="bold" />
 
         <TextView
-            android:id="@+id/location_path"
+            android:id="@+id/location_config"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignLeft="@+id/location_subtitle"
@@ -64,16 +64,56 @@
             android:textAppearance="?android:attr/textAppearanceSmall" />
     </RelativeLayout>
 
-    <TextView
-        android:id="@+id/tasks_title"
+    <RelativeLayout
+        android:id="@+id/warning_base"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/text_padding"
-        android:text="@string/title_downloads"
+        android:addStatesFromChildren="true"
+        android:background="@drawable/list_selector"
+        android:descendantFocusability="beforeDescendants" >
+
+        <ImageView
+            android:id="@+id/warning_icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignLeft="@+id/storage_divider"
+            android:layout_below="@+id/storage_divider"
+            android:src="@drawable/ic_icon_warning_light" />
+
+        <TextView
+            android:id="@+id/warning_subtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_alignTop="@+id/warning_icon"
+            android:layout_marginLeft="@dimen/text_padding"
+            android:layout_toRightOf="@+id/warning_icon"
+            android:text="@string/title_sub_downloadsize"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/warning_config"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignLeft="@+id/warning_subtitle"
+            android:layout_alignRight="@+id/warning_subtitle"
+            android:layout_below="@+id/warning_subtitle"
+            android:text="Warn when >= 25MB"
+            android:textAppearance="?android:attr/textAppearanceSmall" />
+    </RelativeLayout>
+
+    <TextView
+        android:id="@+id/connection_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/text_padding"
+        android:text="@string/title_connectionconfiguration"
         android:textAppearance="?android:attr/textAppearanceSmall" />
 
     <View
-        android:id="@+id/tasks_divider"
+        android:id="@+id/connection_divider"
         android:layout_width="wrap_content"
         android:layout_height="@dimen/divider_height"
         android:layout_marginBottom="@dimen/divider_margin"
@@ -91,8 +131,8 @@
             android:id="@+id/tasks_icon"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignLeft="@+id/tasks_divider"
-            android:layout_below="@+id/tasks_divider"
+            android:layout_alignLeft="@+id/connection_divider"
+            android:layout_below="@+id/connection_divider"
             android:src="@drawable/ic_icon_task_light" />
 
         <TextView
@@ -115,6 +155,45 @@
             android:layout_alignRight="@+id/tasks_subtitle"
             android:layout_below="@+id/tasks_subtitle"
             android:text="5 parallel downloads"
+            android:textAppearance="?android:attr/textAppearanceSmall" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/network_base"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/text_padding"
+        android:background="@drawable/list_selector"
+        android:descendantFocusability="beforeDescendants" >
+
+        <ImageView
+            android:id="@+id/network_icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignLeft="@+id/connection_divider"
+            android:layout_below="@+id/connection_divider"
+            android:src="@drawable/ic_icon_network_light" />
+
+        <TextView
+            android:id="@+id/network_subtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_alignTop="@+id/network_icon"
+            android:layout_marginLeft="@dimen/text_padding"
+            android:layout_toRightOf="@+id/network_icon"
+            android:text="@string/title_sub_downloadnetwork"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/network_config"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignLeft="@+id/network_subtitle"
+            android:layout_alignRight="@+id/network_subtitle"
+            android:layout_below="@+id/network_subtitle"
+            android:text="Both wifi and mobile network"
             android:textAppearance="?android:attr/textAppearanceSmall" />
     </RelativeLayout>
 

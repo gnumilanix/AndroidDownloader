@@ -90,13 +90,20 @@ public class HomeActivity extends ActionBarActivity {
 	 * This method will set download path if not set previously or not exist
 	 */
 	private void setDownloadPath() {
-		File downloadDir = new File(Environment.getExternalStorageDirectory()
-				+ PreferenceHelper.PATH_DOWNLOAD);
+		File currentDownloadRoot = new File(
+				PreferenceHelper.getDownloadPath(this));
 
-		if (!downloadDir.exists() || !downloadDir.isDirectory())
-			downloadDir.mkdir();
+		if (null == currentDownloadRoot || !currentDownloadRoot.exists()
+				|| !currentDownloadRoot.isDirectory()) {
+			File downloadDir = new File(
+					Environment.getExternalStorageDirectory()
+							+ PreferenceHelper.PATH_DOWNLOAD);
 
-		PreferenceHelper.setDownloadPath(this, downloadDir.getAbsolutePath());
+			if (!downloadDir.exists() || !downloadDir.isDirectory())
+				downloadDir.mkdir();
+
+			PreferenceHelper.setDownloadPath(this,
+					downloadDir.getAbsolutePath());
+		}
 	}
-
 }

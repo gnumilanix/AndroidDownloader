@@ -26,16 +26,24 @@ import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.IBinder;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
+import com.milanix.example.downloader.HomeActivity;
+import com.milanix.example.downloader.R;
 import com.milanix.example.downloader.data.dao.Download;
 import com.milanix.example.downloader.data.dao.Download.DownloadListener;
 import com.milanix.example.downloader.data.dao.Download.DownloadState;
@@ -44,7 +52,9 @@ import com.milanix.example.downloader.data.dao.Download.TaskState;
 import com.milanix.example.downloader.data.database.DownloadsDatabase;
 import com.milanix.example.downloader.data.database.util.QueryHelper;
 import com.milanix.example.downloader.data.provider.DownloadContentProvider;
+import com.milanix.example.downloader.dialog.NetworkConfigureDialog.NetworkType;
 import com.milanix.example.downloader.util.FileUtils;
+import com.milanix.example.downloader.util.FileUtils.StorageSize;
 import com.milanix.example.downloader.util.IOUtils;
 import com.milanix.example.downloader.util.NetworkUtils;
 import com.milanix.example.downloader.util.PreferenceHelper;
@@ -58,15 +68,35 @@ import com.milanix.example.downloader.util.TextHelper;
  */
 public class DownloadService extends Service {
 
-	// Map to support multiple callback with same ids but different caller
-	private HashMap<Integer, HashSet<DownloadListener>> attachedCallbacks = new HashMap<Integer, HashSet<DownloadListener>>();
+	// Notification ids and tags
+	private static final int NOTIFICATION_ID_WARNING = 1000;
 
-	// Map to keep track of async task
-	private HashMap<Integer, DownloadTask> downloadTasks = new HashMap<Integer, DownloadTask>();
+	private static final int NOTIFICATION_REQCODE_CONTINUE = NOTIFICATION_ID_WARNING;
+
+	private static final String NOTIFICATION_TAG_WARNING = "notification_tag_warning";
+
+	private static final String ACTION_CONTINUE = "action_continue";
+	private static final String ACTION_CANCEL = "action_cancel";
+
+	private static final String KEY_DOWNLOADID = "KEY_DOWNLOADID";
+
+	private NotificationManager notificationManager;
 
 	// Shared preference instance
 	private SharedPreferences sharedPref;
 	private OnSharedPreferenceChangeListener sharedPrefChangeListener;
+
+	// Download user configured params
+	private int downloadPoolSize;
+	private NetworkType downloadNetworkType;
+	private int downloadWarningSize;
+	private StorageSize downloadWarningType;
+
+	// Map to keep track of async task
+	private HashMap<Integer, DownloadTask> downloadTasks = new HashMap<Integer, DownloadTask>();
+
+	// Map to support multiple callback with same ids but different caller
+	private HashMap<Integer, HashSet<DownloadListener>> attachedCallbacks = new HashMap<Integer, HashSet<DownloadListener>>();
 
 	// Executor for parallel downloads
 	private ThreadPoolExecutor executor;
@@ -98,11 +128,33 @@ public class DownloadService extends Service {
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
-		registerPoolConfigureListener();
-
-		initDownloadPool();
+		init();
 
 		return START_STICKY;
+	}
+
+	/**
+	 * This method will init params that is required for this service to work
+	 * optimally
+	 */
+	private void init() {
+		sharedPref = PreferenceHelper
+				.getPreferenceInstance(getApplicationContext());
+
+		downloadPoolSize = PreferenceHelper
+				.getDownloadPoolSize(getApplicationContext());
+		downloadNetworkType = PreferenceHelper
+				.getDownloadNetwork(getApplicationContext());
+		downloadWarningSize = PreferenceHelper
+				.getDownloadWarningSize(getApplicationContext());
+		downloadWarningType = PreferenceHelper
+				.getDownloadWarningType(getApplicationContext());
+
+		notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+
+		registerConfigurationListener();
+
+		initDownloadPool();
 	}
 
 	@Override
@@ -112,9 +164,21 @@ public class DownloadService extends Service {
 
 	@Override
 	public void onDestroy() {
-		unregisterPoolConfigureListener();
+		clean();
 
 		super.onDestroy();
+	}
+
+	/**
+	 * This method will cleanup params that were initialized
+	 */
+	private void clean() {
+		unregisterPoolConfigureListener();
+
+		if (null != notificationManager) {
+			notificationManager.cancel(NOTIFICATION_TAG_WARNING,
+					NOTIFICATION_ID_WARNING);
+		}
 	}
 
 	/**
@@ -127,14 +191,56 @@ public class DownloadService extends Service {
 	}
 
 	/**
+	 * This method will show notification for given downloadId
+	 * 
+	 * @param downloadId
+	 *            to be attached to this notification
+	 */
+	private void showWarningNotification(int downloadId) {
+		Intent resultIntent = new Intent(this, HomeActivity.class);
+
+		PendingIntent resultPendingIntent = PendingIntent.getActivity(this, 0,
+				resultIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+
+		Intent continueIntent = new Intent(this, DownloadService.class);
+		continueIntent.setAction(ACTION_CONTINUE);
+		continueIntent.putExtra(KEY_DOWNLOADID, downloadId);
+
+		PendingIntent pendingIntentContinue = PendingIntent.getBroadcast(this,
+				NOTIFICATION_REQCODE_CONTINUE, continueIntent,
+				PendingIntent.FLAG_CANCEL_CURRENT);
+
+		NotificationCompat.Builder warningBuilder = new NotificationCompat.Builder(
+				this)
+				.setSmallIcon(R.drawable.ic_icon_warning_dark)
+				.setContentTitle(
+						getApplicationContext().getString(
+								R.string.download_size_exceeded_title))
+				.setContentText(
+						getApplicationContext().getString(
+								R.string.download_size_exceeded_message))
+				.setContentIntent(resultPendingIntent)
+				.setDefaults(Notification.DEFAULT_ALL)
+				.setStyle(
+						new NotificationCompat.BigTextStyle()
+								.bigText(getApplicationContext()
+										.getString(
+												R.string.download_size_exceeded_message)))
+				.addAction(
+						R.drawable.ic_action_resume_dark,
+						getApplicationContext()
+								.getString(R.string.btn_continue),
+						pendingIntentContinue);
+
+		notificationManager.notify(NOTIFICATION_TAG_WARNING,
+				NOTIFICATION_ID_WARNING, warningBuilder.build());
+	}
+
+	/**
 	 * This method will register shared preference change listener for pool
 	 * change event
 	 */
-	private void registerPoolConfigureListener() {
-		if (null == sharedPref)
-			sharedPref = PreferenceHelper
-					.getPreferenceInstance(getApplicationContext());
-
+	private void registerConfigurationListener() {
 		if (null == sharedPrefChangeListener)
 			sharedPrefChangeListener = new OnSharedPreferenceChangeListener() {
 
@@ -142,7 +248,21 @@ public class DownloadService extends Service {
 				public void onSharedPreferenceChanged(
 						SharedPreferences sharedPreference, String key) {
 					if (PreferenceHelper.KEY_DOWNLOADPOOLSIZE.equals(key)) {
-						resetPoolSize(sharedPreference);
+						downloadPoolSize = PreferenceHelper
+								.getDownloadPoolSize(getApplicationContext());
+
+						resetPoolSize();
+					} else if (PreferenceHelper.KEY_DOWNLOADNETWORK.equals(key)) {
+						downloadNetworkType = PreferenceHelper
+								.getDownloadNetwork(getApplicationContext());
+					} else if (PreferenceHelper.KEY_DOWNLOADWARNING_SIZE
+							.equals(key)) {
+						downloadWarningSize = PreferenceHelper
+								.getDownloadWarningSize(getApplicationContext());
+					} else if (PreferenceHelper.KEY_DOWNLOADWARNING_TYPE
+							.equals(key)) {
+						downloadWarningType = PreferenceHelper
+								.getDownloadWarningType(getApplicationContext());
 					}
 				}
 			};
@@ -180,15 +300,11 @@ public class DownloadService extends Service {
 	 * @param sharedPreference
 	 *            is a preference that was changed
 	 */
-	public void resetPoolSize(SharedPreferences sharedPreference) {
+	public void resetPoolSize() {
 		initDownloadPool();
 
-		int newPoolSize = sharedPreference.getInt(
-				PreferenceHelper.KEY_DOWNLOADPOOLSIZE,
-				PreferenceHelper.DEFAULT_POOLSIZE);
-
-		executor.setCorePoolSize(newPoolSize);
-		executor.setMaximumPoolSize(newPoolSize * POOL_MAX_MULTIPLIER);
+		executor.setCorePoolSize(downloadPoolSize);
+		executor.setMaximumPoolSize(downloadPoolSize * POOL_MAX_MULTIPLIER);
 	}
 
 	/**
@@ -562,93 +678,105 @@ public class DownloadService extends Service {
 					long fileSize = response.getEntity().getContentLength();
 					long tempfileSize = 0L;
 
-					if (!FileUtils.isStorageSpaceAvailable(fileSize)) {
-						notifyCallbacksFailed(download,
-								FailedReason.STORAGE_NOTAVAILABLE);
+					if (FileUtils.getStorageSizeAs(downloadWarningType,
+							fileSize) >= FileUtils.getStorageSizeAs(
+							downloadWarningType, downloadWarningSize)) {
+						download.setState(DownloadState.ADDED);
+
+						showWarningNotification(download.getId());
 					} else {
-						Log.d(getLogTag(), "storage available");
-
-						targetLocalFile = new File(download.getPath());
-
-						// If file exist mark completed otherwise progress
-						if (targetLocalFile.exists()
-								&& fileSize == targetLocalFile.length()) {
-							Log.d(getLogTag(), "file exists");
-
-							download.setState(DownloadState.COMPLETED);
+						if (!FileUtils.isStorageSpaceAvailable(fileSize)) {
+							notifyCallbacksFailed(download,
+									FailedReason.STORAGE_NOTAVAILABLE);
 						} else {
-							Log.d(getLogTag(), "file does not exist");
+							Log.d(getLogTag(), "storage available");
 
-							byte[] buffer = new byte[BUFFER_SIZE];
-							int chunkSize = 0;
-							int chunkCompleted = 0;
-							int chunkProgress = 0;
-							int chunkCopied = 0;
+							targetLocalFile = new File(download.getPath());
 
-							targetTempFile = new File(
-									FilenameUtils.getFullPath(download
-											.getPath()),
-									FilenameUtils.getName(download.getPath())
-											+ TEMP_SUFFIX);
+							// If file exist mark completed otherwise progress
+							if (targetLocalFile.exists()
+									&& fileSize == targetLocalFile.length()) {
+								Log.d(getLogTag(), "file exists");
 
-							// If temp file exist add header to request
-							// remaining
-							// one
-							if (targetTempFile.exists()) {
-								request.addHeader(RANGE_HEADER, String.format(
-										RANGE_VALUE, targetTempFile.length()));
+								download.setState(DownloadState.COMPLETED);
+							} else {
+								Log.d(getLogTag(), "file does not exist");
 
-								tempfileSize = targetTempFile.length();
+								byte[] buffer = new byte[BUFFER_SIZE];
+								int chunkSize = 0;
+								int chunkCompleted = 0;
+								int chunkProgress = 0;
+								int chunkCopied = 0;
 
-								chunkCompleted = (int) tempfileSize;
+								targetTempFile = new File(
+										FilenameUtils.getFullPath(download
+												.getPath()),
+										FilenameUtils.getName(download
+												.getPath()) + TEMP_SUFFIX);
 
-								Log.d(getLogTag(), "temp exists");
-							}
+								// If temp file exist add header to request
+								// remaining
+								// one
+								if (targetTempFile.exists()) {
+									request.addHeader(RANGE_HEADER, String
+											.format(RANGE_VALUE,
+													targetTempFile.length()));
 
-							targetWriteFile = new RandomAccessFile(
-									targetTempFile, "rw");
+									tempfileSize = targetTempFile.length();
 
-							bufferedFileStream = new BufferedInputStream(
-									remoteContentStream, BUFFER_SIZE);
+									chunkCompleted = (int) tempfileSize;
 
-							// Seek to target. If temp seeks to length otherwise
-							// 0
-							targetWriteFile.seek(targetWriteFile.length());
+									Log.d(getLogTag(), "temp exists");
+								}
 
-							while (-1 != (chunkSize = remoteContentStream
-									.read(buffer))) {
-								if (TaskState.RESUMED.equals(taskState)) {
-									if (isPauseNotified)
-										isPauseNotified = false;
+								targetWriteFile = new RandomAccessFile(
+										targetTempFile, "rw");
 
-									targetWriteFile.write(buffer, 0, chunkSize);
+								bufferedFileStream = new BufferedInputStream(
+										remoteContentStream, BUFFER_SIZE);
 
-									chunkCompleted += chunkSize;
-									chunkCopied += chunkSize;
+								// Seek to target. If temp seeks to length
+								// otherwise
+								// 0
+								targetWriteFile.seek(targetWriteFile.length());
 
-									chunkProgress = (int) ((double) chunkCompleted
-											/ (double) fileSize * 100.0);
+								while (-1 != (chunkSize = remoteContentStream
+										.read(buffer))) {
+									if (TaskState.RESUMED.equals(taskState)) {
+										if (isPauseNotified)
+											isPauseNotified = false;
 
-									publishProgress(chunkProgress);
-								} else {
-									if (!isPauseNotified) {
-										isPauseNotified = true;
+										targetWriteFile.write(buffer, 0,
+												chunkSize);
+
+										chunkCompleted += chunkSize;
+										chunkCopied += chunkSize;
+
+										chunkProgress = (int) ((double) chunkCompleted
+												/ (double) fileSize * 100.0);
 
 										publishProgress(chunkProgress);
+									} else {
+										if (!isPauseNotified) {
+											isPauseNotified = true;
+
+											publishProgress(chunkProgress);
+										}
 									}
 								}
-							}
 
-							if ((tempfileSize + chunkCopied) != fileSize
-									&& fileSize != -1) {
-								Log.d(getLogTag(), "Incomplete download");
+								if ((tempfileSize + chunkCopied) != fileSize
+										&& fileSize != -1) {
+									Log.d(getLogTag(), "Incomplete download");
 
-								throw new IOException("Download was incomplete");
-							} else {
-								Log.d(getLogTag(), "Complete download");
+									throw new IOException(
+											"Download was incomplete");
+								} else {
+									Log.d(getLogTag(), "Complete download");
 
-								targetTempFile.renameTo(targetLocalFile);
-								download.setState(DownloadState.COMPLETED);
+									targetTempFile.renameTo(targetLocalFile);
+									download.setState(DownloadState.COMPLETED);
+								}
 							}
 						}
 					}
@@ -765,6 +893,28 @@ public class DownloadService extends Service {
 		 */
 		public void setUncreatedTasks(HashSet<Integer> uncreatedTasks) {
 			this.uncreatedTasks = uncreatedTasks;
+		}
+
+	}
+
+	/**
+	 * Receiver that receives action to be recieved by the service
+	 * 
+	 * @author Milan
+	 * 
+	 */
+	public class ServiceActionReceiver extends BroadcastReceiver {
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			if (null != intent && null != intent.getExtras())
+				if (intent.getAction().equals(ACTION_CONTINUE)) {
+					int attachedDownloadId = intent.getIntExtra(KEY_DOWNLOADID,
+							-1);
+
+					if (attachedDownloadId > -1)
+						resumeDownload(new long[] { attachedDownloadId });
+				}
 		}
 
 	}

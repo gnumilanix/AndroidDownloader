@@ -1,6 +1,7 @@
 <resources>
 
     <declare-styleable name="navigationview">
+        <attr name="nav_background" format="reference" />
         <attr name="tab_background" format="reference" />
         <attr name="label_paddingLeft" format="dimension" />
         <attr name="label_paddingRight" format="dimension" />

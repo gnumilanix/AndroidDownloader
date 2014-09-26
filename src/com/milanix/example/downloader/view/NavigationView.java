@@ -28,6 +28,7 @@ public class NavigationView extends HorizontalScrollView {
 	public static final int NONE = 0;
 
 	// Attributes
+	private Drawable navBackground;
 	private Drawable tabBackground;
 	private int labelColor;
 	private int labelGravity;
@@ -56,6 +57,8 @@ public class NavigationView extends HorizontalScrollView {
 				R.styleable.navigationview, 0, 0);
 
 		try {
+			navBackground = a
+					.getDrawable(R.styleable.navigationview_nav_background);
 			tabBackground = a
 					.getDrawable(R.styleable.navigationview_tab_background);
 
@@ -111,11 +114,32 @@ public class NavigationView extends HorizontalScrollView {
 	private void init(Context context) {
 		this.context = context;
 
+		if (null != navBackground)
+			setBackground(navBackground);
+
 		root = new LinearLayout(context);
 		root.setOrientation(LinearLayout.HORIZONTAL);
 
 		addView(root, new ViewGroup.LayoutParams(LayoutParams.WRAP_CONTENT,
 				LayoutParams.MATCH_PARENT));
+	}
+
+	/**
+	 * @return the navBackground
+	 */
+	public Drawable getNavBackground() {
+		return navBackground;
+	}
+
+	/**
+	 * @param navBackground
+	 *            the navBackground to set
+	 */
+	public void setNavBackground(Drawable navBackground) {
+		this.navBackground = navBackground;
+
+		invalidate();
+		requestLayout();
 	}
 
 	/**
@@ -263,15 +287,13 @@ public class NavigationView extends HorizontalScrollView {
 			tab.setPadding(getLabelPaddingLeft(), NONE, getLabelPaddingRight(),
 					NONE);
 
-			LinearLayout.LayoutParams tabParams = new LinearLayout.LayoutParams(
-					LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT);
-			tab.setLayoutParams(tabParams);
-
 			if (null != navigationTab.callback) {
 				tab.setOnClickListener(new View.OnClickListener() {
 
 					@Override
 					public void onClick(View view) {
+						fullScroll(HorizontalScrollView.FOCUS_LEFT);
+
 						navigationTab.callback.OnNavigationTabClicked(
 								navigationTab, navigationTab.attachedObject);
 					}
@@ -280,7 +302,12 @@ public class NavigationView extends HorizontalScrollView {
 
 			navigationTabs.add(navigationTab);
 
+			LinearLayout.LayoutParams tabParams = new LinearLayout.LayoutParams(
+					LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT);
+
 			root.addView(tab, tabParams);
+			
+			requestLayout();
 		}
 	}
 

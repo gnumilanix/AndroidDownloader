@@ -391,17 +391,27 @@ public class FileUtils {
 	 * @return size
 	 */
 	public static long getAvailableStorage(StorageSize size) {
-		long availableStorageInBytes = getAvailableStorageInBytes();
+		return getStorageSizeAs(size, getAvailableStorageInBytes());
+	}
 
+	/**
+	 * This method will return storage in given size. If not the type it will
+	 * return in bytes
+	 * 
+	 * @param size
+	 *            is the StorageSize type
+	 * @return size
+	 */
+	public static long getStorageSizeAs(StorageSize size, long sizeInBytes) {
 		switch (size) {
 		case KB:
-			return availableStorageInBytes / SIZE_KB;
+			return sizeInBytes / SIZE_KB;
 		case MB:
-			return availableStorageInBytes / SIZE_MB;
+			return sizeInBytes / SIZE_MB;
 		case GB:
-			return availableStorageInBytes / SIZE_GB;
+			return sizeInBytes / SIZE_GB;
 		default:
-			return availableStorageInBytes;
+			return sizeInBytes;
 		}
 	}
 

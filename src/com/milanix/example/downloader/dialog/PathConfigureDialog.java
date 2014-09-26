@@ -59,8 +59,10 @@ public class PathConfigureDialog extends DialogFragment implements
 				.setPositiveButton(R.string.btn_ok,
 						new DialogInterface.OnClickListener() {
 							public void onClick(DialogInterface dialog, int id) {
-								// PreferenceHelper.setDownloadPath(getActivity(),
-								// downloadPath);
+								downloadPath = folderAdapter.getRootFile().getAbsolutePath();
+
+								PreferenceHelper.setDownloadPath(getActivity(),
+										downloadPath);
 
 								onPathConfigureListener
 										.onPathConfigured(downloadPath);

@@ -32,6 +32,9 @@
     <string name="pathconfigure_title">Set download location</string>
     <string name="pathconfigure_sucess">Download location set to %s</string>
 
+    <!-- Network configure dialog strings -->
+    <string name="networkconfigure_title">Download network</string>
+
     <!-- Downloads list strings -->
     <string name="download_date_notavailable">N/A</string>
     <string name="download_add_success">"%s added to the download queue"</string>
@@ -50,16 +53,36 @@
     <string name="btn_ok">OK</string>
     <string name="btn_cancel">Cancel</string>
     <string name="btn_delete">Delete</string>
+    <string name="btn_continue">Continue</string>
 
     <!-- Settings strings -->
-    <string name="title_downloadlocation">DOWNLOAD LOCATION</string>
+    <string name="title_storageconfiguration">STORAGE CONFIGURATION</string>
+    <string name="title_connectionconfiguration">CONNECTION CONFIGURATION</string>
     <string name="title_sub_downloadlocation">Default download location</string>
-    <string name="title_downloads">PARALLEL DOWNLOADS</string>
+    <string name="title_sub_downloadsize">Download size warning</string>
     <string name="title_sub_downloads">Max number of parallel downloads</string>
+    <string name="title_sub_downloadnetwork">Download only on</string>
+
+    <!-- Settings formattablestrings -->
+    <string name="title_size_configured">Warn when >= %s</string>
+    <string name="title_network_mobile">Only when on mobile network</string>
+    <string name="title_network_wifi">Only when on wifi</string>
+    <string name="title_network_both">Both wifi and mobile network</string>
 
     <plurals name="tasks_configured">
         <item quantity="one">Download one by one</item>
         <item quantity="other">%d parallel downloads</item>
     </plurals>
+
+    <!-- Network types the order depends on com.milanix.example.downloader.dialog.NetworkType -->
+    <string-array name="networktype">
+        <item>Wifi</item>
+        <item>Mobile network</item>
+        <item>Both</item>
+    </string-array>
+
+    <!-- Notification strings -->
+    <string name="download_size_exceeded_title">Download size exceeded</string>
+    <string name="download_size_exceeded_message">Download file size is greater than your max specified size. Do you want to continue downloading?</string>
 
 </resources>
