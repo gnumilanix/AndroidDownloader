@@ -1,21 +1,46 @@
 package com.milanix.example.downloader.data.dao;
 
+import com.milanix.example.downloader.data.database.DownloadsDatabase;
+import com.milanix.example.downloader.data.database.util.QueryHelper;
+import com.milanix.example.downloader.data.provider.DownloadContentProvider;
+
+import android.content.Context;
+import android.database.Cursor;
+
 /**
  * This is an {@link Download} dao
  * 
  * @author Milan
  * 
  */
-public class Download {
+public class Download extends AbstractDao<Download> {
 	/**
 	 * Enum for {@link Download} states
+	 * 
+	 * {@link #ADDED_AUTHORIZED} states that the download file passed all the
+	 * checks
+	 * 
+	 * {@link #ADDED_NOTAUTHORIZED} states that the download file has not passed
+	 * all the checks
+	 * 
+	 * {@link #DOWNLOADING} states that the download is in progress
+	 * 
+	 * {@link #COMPLETED} states that the download has been completed
+	 * 
+	 * {@link #FAILED} states that the download failed
+	 * 
+	 * {@link #CANCELLED} states that the download has been cancelled
+	 * 
+	 * {@link #UNKNOWN} states that the download state is unknown
 	 * 
 	 * @author Milan
 	 * 
 	 */
 	public static enum DownloadState {
-		ADDED("added"), DOWNLOADING("downloading"), COMPLETED("completed"), FAILED(
-				"failed"), CANCELLED("cancelled"), UNKNOWN("unknown");
+		ADDED_AUTHORIZED("added_authorized"), ADDED_NOTAUTHORIZED(
+				"added_notauthorized"), DOWNLOADING("downloading"), COMPLETED(
+				"completed"), FAILED("failed"), CANCELLED("cancelled"), UNKNOWN(
+				"unknown");
 
 		private final String name;
 
@@ -29,14 +54,18 @@ public class Download {
 		}
 
 		public static DownloadState getEnum(String value) {
-			if (ADDED.toString().equals(value))
-				return ADDED;
+			if (ADDED_AUTHORIZED.toString().equals(value))
+				return ADDED_AUTHORIZED;
+			if (ADDED_NOTAUTHORIZED.toString().equals(value))
+				return ADDED_NOTAUTHORIZED;
 			else if (DOWNLOADING.toString().equals(value))
 				return DOWNLOADING;
 			else if (COMPLETED.toString().equals(value))
 				return COMPLETED;
 			else if (FAILED.toString().equals(value))
 				return FAILED;
+			else if (CANCELLED.toString().equals(value))
+				return CANCELLED;
 			else
 				return UNKNOWN;
 		}
@@ -44,6 +73,10 @@ public class Download {
 
 	/**
 	 * Enum for download task state
+	 * 
+	 * {@link #RESUMED} states that the download state is resumed
+	 * 
+	 * {@link #PAUSED} states that the download state is paused
 	 * 
 	 * @author Milan
 	 * 
@@ -87,6 +120,13 @@ public class Download {
 	private DownloadState state;
 
 	/**
+	 * This must be defined to support retrieve
+	 */
+	public Download() {
+
+	};
+
+	/**
 	 * This is the default construtor of this class
 	 * 
 	 * @param id
@@ -109,6 +149,7 @@ public class Download {
 	/**
 	 * @return the id
 	 */
+	@Override
 	public Integer getId() {
 		return id;
 	}
@@ -209,6 +250,44 @@ public class Download {
 	 */
 	public void setState(DownloadState state) {
 		this.state = state;
+	}
+
+	@Override
+	public Download retrieve(Context context, int id) {
+		Cursor cursor = context.getContentResolver().query(
+				DownloadContentProvider.CONTENT_URI_DOWNLOADS, null,
+				QueryHelper.getWhere(DownloadsDatabase.COLUMN_ID, id, true),
+				null, null);
+
+		if (cursor.getCount() > 0)
+			if (cursor.moveToFirst()) {
+				setId(cursor.getInt(cursor
+						.getColumnIndex(DownloadsDatabase.COLUMN_ID)));
+
+				setUrl(cursor.getString(cursor
+						.getColumnIndex(DownloadsDatabase.COLUMN_URL)));
+				setName(cursor.getString(cursor
+						.getColumnIndex(DownloadsDatabase.COLUMN_NAME)));
+				setType(cursor.getInt(cursor
+						.getColumnIndex(DownloadsDatabase.COLUMN_TYPE)));
+				setDate(cursor.getLong(cursor
+						.getColumnIndex(DownloadsDatabase.COLUMN_DATE)));
+				setState(DownloadState.getEnum(cursor.getString(cursor
+						.getColumnIndex(DownloadsDatabase.COLUMN_STATE))));
+				setPath(cursor.getString(cursor
+						.getColumnIndex(DownloadsDatabase.COLUMN_PATH)));
+			}
+
+		return this;
+	}
+
+	@Override
+	public boolean isValid() {
+		if (null == this || null == this.getId() || null == this.getUrl()
+				|| null == this.getPath())
+			return false;
+
+		return true;
 	}
 
 	/**

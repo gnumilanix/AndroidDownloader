@@ -183,11 +183,8 @@ public class SettingsFragment extends AbstractFragment implements
 		case WIFI:
 			network_config.setText(getString(R.string.title_network_wifi));
 			break;
-		case MOBILE:
-			network_config.setText(getString(R.string.title_network_mobile));
-			break;
-		case BOTH:
-			network_config.setText(getString(R.string.title_network_both));
+		case ANY:
+			network_config.setText(getString(R.string.title_network_any));
 			break;
 		}
 	}

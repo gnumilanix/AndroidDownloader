@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.View;
@@ -28,8 +27,8 @@ public class NavigationView extends HorizontalScrollView {
 	public static final int NONE = 0;
 
 	// Attributes
-	private Drawable navBackground;
-	private Drawable tabBackground;
+	private int navBackground;
+	private int tabBackground;
 	private int labelColor;
 	private int labelGravity;
 	private int labelPaddingLeft;
@@ -57,10 +56,10 @@ public class NavigationView extends HorizontalScrollView {
 				R.styleable.navigationview, 0, 0);
 
 		try {
-			navBackground = a
-					.getDrawable(R.styleable.navigationview_nav_background);
-			tabBackground = a
-					.getDrawable(R.styleable.navigationview_tab_background);
+			navBackground = a.getResourceId(
+					R.styleable.navigationview_nav_background, NONE);
+			tabBackground = a.getResourceId(
+					R.styleable.navigationview_tab_background, NONE);
 
 			labelColor = a.getColor(R.styleable.navigationview_label_color,
 					Color.parseColor("#000000"));
@@ -114,8 +113,8 @@ public class NavigationView extends HorizontalScrollView {
 	private void init(Context context) {
 		this.context = context;
 
-		if (null != navBackground)
-			setBackground(navBackground);
+		if (NONE != navBackground)
+			setBackgroundResource(navBackground);
 
 		root = new LinearLayout(context);
 		root.setOrientation(LinearLayout.HORIZONTAL);
@@ -127,7 +126,7 @@ public class NavigationView extends HorizontalScrollView {
 	/**
 	 * @return the navBackground
 	 */
-	public Drawable getNavBackground() {
+	public Integer getNavBackground() {
 		return navBackground;
 	}
 
@@ -135,7 +134,7 @@ public class NavigationView extends HorizontalScrollView {
 	 * @param navBackground
 	 *            the navBackground to set
 	 */
-	public void setNavBackground(Drawable navBackground) {
+	public void setNavBackground(int navBackground) {
 		this.navBackground = navBackground;
 
 		invalidate();
@@ -168,7 +167,7 @@ public class NavigationView extends HorizontalScrollView {
 	/**
 	 * @return the tabBackground
 	 */
-	public Drawable getTabBackground() {
+	public int getTabBackground() {
 		return tabBackground;
 	}
 
@@ -176,7 +175,7 @@ public class NavigationView extends HorizontalScrollView {
 	 * @param tabBackground
 	 *            the tabBackground to set
 	 */
-	public void setTabBackground(Drawable tabBackground) {
+	public void setTabBackground(int tabBackground) {
 		this.tabBackground = tabBackground;
 
 		invalidate();
@@ -281,8 +280,8 @@ public class NavigationView extends HorizontalScrollView {
 			if (null != navigationTab.label)
 				tab.setText(navigationTab.label.toUpperCase());
 
-			if (null != tabBackground)
-				tab.setBackground(tabBackground);
+			if (NONE != tabBackground)
+				tab.setBackgroundResource(tabBackground);
 
 			tab.setPadding(getLabelPaddingLeft(), NONE, getLabelPaddingRight(),
 					NONE);
@@ -306,7 +305,7 @@ public class NavigationView extends HorizontalScrollView {
 					LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT);
 
 			root.addView(tab, tabParams);
-			
+
 			requestLayout();
 		}
 	}

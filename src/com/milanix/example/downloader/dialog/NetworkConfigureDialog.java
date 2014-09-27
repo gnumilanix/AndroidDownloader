@@ -25,7 +25,7 @@ public class NetworkConfigureDialog extends DialogFragment {
 	 * 
 	 */
 	public static enum NetworkType {
-		WIFI, MOBILE, BOTH
+		WIFI, ANY
 	}
 
 	private OnNetworkConfigureListener onNetworkConfigureListener;
@@ -46,19 +46,12 @@ public class NetworkConfigureDialog extends DialogFragment {
 							public void onClick(DialogInterface dialog,
 									int which) {
 								switch (which) {
-								case 2:
-									PreferenceHelper.setDownloadNetwork(
-											getActivity(), NetworkType.BOTH);
-
-									onNetworkConfigureListener
-											.onNetworkConfigured(NetworkType.BOTH);
-									break;
 								case 1:
 									PreferenceHelper.setDownloadNetwork(
-											getActivity(), NetworkType.MOBILE);
+											getActivity(), NetworkType.ANY);
 
 									onNetworkConfigureListener
-											.onNetworkConfigured(NetworkType.MOBILE);
+											.onNetworkConfigured(NetworkType.ANY);
 									break;
 								default:
 									PreferenceHelper.setDownloadNetwork(
@@ -95,9 +88,7 @@ public class NetworkConfigureDialog extends DialogFragment {
 	 */
 	private int getNetworkTypePosition(NetworkType type) {
 		switch (type) {
-		case BOTH:
-			return 2;
-		case MOBILE:
+		case ANY:
 			return 1;
 		default:
 			return 0;

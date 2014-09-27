@@ -48,6 +48,10 @@
         <item quantity="one">Do you want to delete following file?</item>
         <item quantity="other">Do you want to delete following files?</item>
     </plurals>
+    <plurals name="download_fresh_added">
+        <item quantity="one">One file has been added to the queue.</item>
+        <item quantity="other">Some files has been added to the queue.</item>
+    </plurals>
 
     <!-- Generic strings -->
     <string name="btn_ok">OK</string>
@@ -65,9 +69,8 @@
 
     <!-- Settings formattablestrings -->
     <string name="title_size_configured">Warn when >= %s</string>
-    <string name="title_network_mobile">Only when on mobile network</string>
     <string name="title_network_wifi">Only when on wifi</string>
-    <string name="title_network_both">Both wifi and mobile network</string>
+    <string name="title_network_any">On any network</string>
 
     <plurals name="tasks_configured">
         <item quantity="one">Download one by one</item>
@@ -76,9 +79,8 @@
 
     <!-- Network types the order depends on com.milanix.example.downloader.dialog.NetworkType -->
     <string-array name="networktype">
-        <item>Wifi</item>
-        <item>Mobile network</item>
-        <item>Both</item>
+        <item>Only when on wifi</item>
+        <item>On any network</item>
     </string-array>
 
     <!-- Notification strings -->

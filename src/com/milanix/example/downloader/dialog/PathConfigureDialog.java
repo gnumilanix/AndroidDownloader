@@ -59,7 +59,8 @@ public class PathConfigureDialog extends DialogFragment implements
 				.setPositiveButton(R.string.btn_ok,
 						new DialogInterface.OnClickListener() {
 							public void onClick(DialogInterface dialog, int id) {
-								downloadPath = folderAdapter.getRootFile().getAbsolutePath();
+								downloadPath = folderAdapter.getRootFile()
+										.getAbsolutePath();
 
 								PreferenceHelper.setDownloadPath(getActivity(),
 										downloadPath);
@@ -198,8 +199,14 @@ public class PathConfigureDialog extends DialogFragment implements
 					@Override
 					public void OnNavigationTabClicked(
 							NavigationTab navigationTab, Object attachedObject) {
-						if (attachedObject instanceof File)
-							setPathView((File) attachedObject);
+						if (attachedObject instanceof File) {
+							File tabFile = (File) attachedObject;
+
+							if (!tabFile.getAbsolutePath().equals(
+									folderAdapter.getRootFile()))
+								setPathView(tabFile);
+						}
+
 					}
 				}, file);
 

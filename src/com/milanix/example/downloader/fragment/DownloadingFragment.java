@@ -35,9 +35,7 @@ import com.milanix.example.downloader.fragment.adapter.DownloadListAdapter;
 import com.milanix.example.downloader.service.DownloadService;
 import com.milanix.example.downloader.service.DownloadService.DownloadBinder;
 import com.milanix.example.downloader.service.DownloadService.TaskStateResult;
-import com.milanix.example.downloader.util.FileUtils;
 import com.milanix.example.downloader.util.NetworkUtils;
-import com.milanix.example.downloader.util.PreferenceHelper;
 import com.milanix.example.downloader.util.ToastHelper;
 
 /**
@@ -45,7 +43,6 @@ import com.milanix.example.downloader.util.ToastHelper;
  */
 public class DownloadingFragment extends AbstractDownloadFragment implements
 		OnItemClickListener, OnAddNewDownloadListener {
-	private static final String TAG = DownloadingFragment.class.getSimpleName();
 
 	private DownloadService downloadService = null;
 
@@ -95,10 +92,14 @@ public class DownloadingFragment extends AbstractDownloadFragment implements
 			TaskStateResult result = downloadService
 					.resumeDownload(selectedIds);
 
-			for (Integer id : result.getUncreatedTasks()) {
-				Log.d(TAG, "Tasks not yet created " + id);
-
-				// pushDownloadToService(null);
+			if (null != result && null != result.getFreshTasks()
+					&& !result.getFreshTasks().isEmpty()) {
+				ToastHelper.showToast(
+						getActivity(),
+						getResources().getQuantityString(
+								R.plurals.download_fresh_added,
+								result.getFreshTasks().size(),
+								result.getFreshTasks().size()));
 			}
 		}
 	}
@@ -214,36 +215,25 @@ public class DownloadingFragment extends AbstractDownloadFragment implements
 	@Override
 	public void onNewDownloadAdded(Integer id) {
 		if (null != id) {
-			Cursor queriedCursor = getActivity().getContentResolver()
-					.query(DownloadContentProvider.CONTENT_URI_DOWNLOADS,
-							null,
-							QueryHelper.getWhere(DownloadsDatabase.COLUMN_ID,
-									id, true), null, null);
+			Download addedDownload = new Download().retrieve(getActivity(), id);
 
-			if (queriedCursor.getCount() > 0) {
-				if (queriedCursor.moveToFirst()) {
-					refreshCursorLoader(false);
+			if (null != addedDownload && null != addedDownload.getUrl()) {
+				refreshCursorLoader(false);
 
-					Download addedDownload = DownloadsDatabase
-							.getDownloadFromCursor(queriedCursor);
+				ToastHelper.showToast(getActivity(), String.format(
+						getString(R.string.download_add_success),
+						addedDownload.getUrl()));
 
-					ToastHelper.showToast(getActivity(), String.format(
-							getString(R.string.download_add_success),
-							addedDownload.getUrl()));
-
-					if (NetworkUtils.isNetworkConnected(getActivity()))
-						pushDownloadToService(addedDownload);
-					else
-						ToastHelper.showToast(getActivity(),
-								getString(R.string.download_disconnected));
-				} else {
+				if (NetworkUtils.isNetworkConnected(getActivity()))
+					pushDownloadToService(addedDownload);
+				else
 					ToastHelper.showToast(getActivity(),
-							getString(R.string.download_add_fail));
-				}
+							getString(R.string.download_disconnected));
 			} else {
 				ToastHelper.showToast(getActivity(),
 						getString(R.string.download_add_fail));
 			}
+
 		} else
 			ToastHelper.showToast(getActivity(),
 					getString(R.string.download_add_fail));
@@ -256,10 +246,6 @@ public class DownloadingFragment extends AbstractDownloadFragment implements
 	 */
 	private void pushDownloadToService(Download download) {
 		if (bound) {
-			download.setPath(FileUtils.getLocalDownloadPath(
-					PreferenceHelper.getDownloadPath(getActivity()),
-					download.getUrl()));
-
 			downloadService.attachCallback(download.getId(),
 					new DownloadListener() {
 
@@ -305,7 +291,7 @@ public class DownloadingFragment extends AbstractDownloadFragment implements
 						}
 					});
 
-			downloadService.downloadFile(download);
+			downloadService.downloadFile(download.getId());
 		}
 	}
 

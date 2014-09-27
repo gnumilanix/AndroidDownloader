@@ -22,6 +22,8 @@ import com.milanix.example.downloader.R;
 import com.milanix.example.downloader.data.dao.Download.DownloadState;
 import com.milanix.example.downloader.data.database.DownloadsDatabase;
 import com.milanix.example.downloader.data.provider.DownloadContentProvider;
+import com.milanix.example.downloader.util.FileUtils;
+import com.milanix.example.downloader.util.PreferenceHelper;
 import com.milanix.example.downloader.util.TextHelper;
 
 /**
@@ -102,7 +104,11 @@ public class AddNewDownloadDialog extends DialogFragment implements
 				FilenameUtils.getExtension(url));
 		values.put(DownloadsDatabase.COLUMN_DATE, new Date().getTime());
 		values.put(DownloadsDatabase.COLUMN_STATE,
-				DownloadState.ADDED.toString());
+				DownloadState.ADDED_NOTAUTHORIZED.toString());
+		values.put(
+				DownloadsDatabase.COLUMN_PATH,
+				FileUtils.getLocalDownloadPath(
+						PreferenceHelper.getDownloadPath(getActivity()), url));
 
 		Uri insertedContentURI = getActivity().getContentResolver().insert(
 				DownloadContentProvider.CONTENT_URI_DOWNLOADS, values);

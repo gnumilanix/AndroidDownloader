@@ -112,7 +112,7 @@ public class DownloadListAdapter extends CursorAdapter {
 						.getColumnIndex(DownloadsDatabase.COLUMN_STATE)));
 
 		if (DownloadState.DOWNLOADING.equals(state)
-				|| DownloadState.ADDED.equals(state)) {
+				|| DownloadState.ADDED_AUTHORIZED.equals(state)) {
 			final ProgressBar progressBar = holder.download_progress;
 
 			final DownloadListener callback = new DownloadListener() {

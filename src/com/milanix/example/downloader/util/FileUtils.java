@@ -6,12 +6,12 @@ import java.util.HashMap;
 
 import org.apache.commons.io.FilenameUtils;
 
-import com.milanix.example.downloader.R;
-
 import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
 import android.util.Log;
+
+import com.milanix.example.downloader.R;
 
 /**
  * This class contains file utils
