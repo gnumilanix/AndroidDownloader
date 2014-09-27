@@ -5,7 +5,7 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
 import com.milanix.example.downloader.dialog.NetworkConfigureDialog.NetworkType;
-import com.milanix.example.downloader.util.FileUtils.StorageSize;
+import com.milanix.example.downloader.util.FileUtils.ByteType;
 
 /**
  * This class contains helper method to work with shared preferences
@@ -19,8 +19,8 @@ public class PreferenceHelper {
 	public static final String KEY_DOWNLOADPATH = "key_downloadpath";
 	public static final String KEY_DOWNLOADPOOLSIZE = "key_downloadpoolsize";
 	public static final String KEY_DOWNLOADNETWORK = "key_network";
-	public static final String KEY_DOWNLOADWARNING_SIZE = "key_downloadwarning_size";
-	public static final String KEY_DOWNLOADWARNING_TYPE = "key_downloadwarning_type";
+	public static final String KEY_DOWNLOADLIMIT_SIZE = "key_downloadwarning_size";
+	public static final String KEY_DOWNLOADLIMIT_TYPE = "key_downloadwarning_type";
 
 	public static final String KEY_USERLEARNEDDRAWER = "navigation_drawer_learned";
 
@@ -28,7 +28,7 @@ public class PreferenceHelper {
 
 	public static final int DEFAULT_POOLSIZE = 5;
 	public static final int DEFAULT_WARNINGSIZE = 25;
-	public static final StorageSize DEFAULT_WARNINGTYPE = StorageSize.MB;
+	public static final ByteType DEFAULT_WARNINGTYPE = ByteType.MB;
 
 	/**
 	 * This method will set if user has learned navigation drawer. This will
@@ -100,45 +100,45 @@ public class PreferenceHelper {
 	 *            the base application context
 	 * @param storageType
 	 *            is the warning size
-	 * @param type
-	 *            is a storage ype
+	 * @param byteType
+	 *            is a byte type
 	 */
-	public static void setDownloadWarning(Context context, int size,
-			StorageSize storageType) {
+	public static void setDownloadLimit(Context context, int size,
+			ByteType byteType) {
 		SharedPreferences sharedPref = context.getSharedPreferences(
 				KEY_PREFERENCES, Context.MODE_PRIVATE);
 
 		SharedPreferences.Editor editor = sharedPref.edit();
-		editor.putInt(KEY_DOWNLOADWARNING_SIZE, size);
-		editor.putString(KEY_DOWNLOADWARNING_TYPE, storageType.toString());
+		editor.putInt(KEY_DOWNLOADLIMIT_SIZE, size);
+		editor.putString(KEY_DOWNLOADLIMIT_TYPE, byteType.toString());
 		editor.apply();
 	}
 
 	/**
-	 * This method will get the download warning size
+	 * This method will get the download limit size
 	 * 
 	 * @param is
 	 *            the base application context
 	 */
-	public static int getDownloadWarningSize(Context context) {
+	public static int getDownloadLimitSize(Context context) {
 		SharedPreferences sharedPref = context.getSharedPreferences(
 				KEY_PREFERENCES, Context.MODE_PRIVATE);
 
-		return sharedPref.getInt(KEY_DOWNLOADWARNING_SIZE, DEFAULT_WARNINGSIZE);
+		return sharedPref.getInt(KEY_DOWNLOADLIMIT_SIZE, DEFAULT_WARNINGSIZE);
 	}
 
 	/**
-	 * This method will get the download warning type
+	 * This method will get the download limit type
 	 * 
 	 * @param is
 	 *            the base application context
 	 */
-	public static StorageSize getDownloadWarningType(Context context) {
+	public static ByteType getDownloadLimitType(Context context) {
 		SharedPreferences sharedPref = context.getSharedPreferences(
 				KEY_PREFERENCES, Context.MODE_PRIVATE);
 
-		return StorageSize.valueOf(sharedPref.getString(
-				KEY_DOWNLOADWARNING_TYPE, StorageSize.MB.toString()));
+		return ByteType.valueOf(sharedPref.getString(KEY_DOWNLOADLIMIT_TYPE,
+				ByteType.MB.toString()));
 	}
 
 	/**

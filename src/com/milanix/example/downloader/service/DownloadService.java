@@ -67,7 +67,7 @@ import com.milanix.example.downloader.data.database.util.QueryHelper;
 import com.milanix.example.downloader.data.provider.DownloadContentProvider;
 import com.milanix.example.downloader.dialog.NetworkConfigureDialog.NetworkType;
 import com.milanix.example.downloader.util.FileUtils;
-import com.milanix.example.downloader.util.FileUtils.StorageSize;
+import com.milanix.example.downloader.util.FileUtils.ByteType;
 import com.milanix.example.downloader.util.IOUtils;
 import com.milanix.example.downloader.util.NetworkUtils;
 import com.milanix.example.downloader.util.PreferenceHelper;
@@ -111,8 +111,8 @@ public class DownloadService extends Service {
 	// Download user configured params
 	private static int downloadPoolSize;
 	private static NetworkType downloadNetworkType;
-	private static int downloadWarningSize;
-	private static StorageSize downloadWarningType;
+	private static int downloadLimitSize;
+	private static ByteType downloadLimitType;
 
 	// Map to keep track of async task
 	private static HashMap<Integer, DownloadTask> downloadTasks = new HashMap<Integer, DownloadTask>();
@@ -204,10 +204,10 @@ public class DownloadService extends Service {
 				.getDownloadPoolSize(getApplicationContext());
 		downloadNetworkType = PreferenceHelper
 				.getDownloadNetwork(getApplicationContext());
-		downloadWarningSize = PreferenceHelper
-				.getDownloadWarningSize(getApplicationContext());
-		downloadWarningType = PreferenceHelper
-				.getDownloadWarningType(getApplicationContext());
+		downloadLimitSize = PreferenceHelper
+				.getDownloadLimitSize(getApplicationContext());
+		downloadLimitType = PreferenceHelper
+				.getDownloadLimitType(getApplicationContext());
 
 		registerServiceActionReceiver();
 		registerConfigurationListener();
@@ -296,14 +296,14 @@ public class DownloadService extends Service {
 					} else if (PreferenceHelper.KEY_DOWNLOADNETWORK.equals(key)) {
 						downloadNetworkType = PreferenceHelper
 								.getDownloadNetwork(getApplicationContext());
-					} else if (PreferenceHelper.KEY_DOWNLOADWARNING_SIZE
+					} else if (PreferenceHelper.KEY_DOWNLOADLIMIT_SIZE
 							.equals(key)) {
-						downloadWarningSize = PreferenceHelper
-								.getDownloadWarningSize(getApplicationContext());
-					} else if (PreferenceHelper.KEY_DOWNLOADWARNING_TYPE
+						downloadLimitSize = PreferenceHelper
+								.getDownloadLimitSize(getApplicationContext());
+					} else if (PreferenceHelper.KEY_DOWNLOADLIMIT_TYPE
 							.equals(key)) {
-						downloadWarningType = PreferenceHelper
-								.getDownloadWarningType(getApplicationContext());
+						downloadLimitType = PreferenceHelper
+								.getDownloadLimitType(getApplicationContext());
 					}
 				}
 			};
@@ -351,7 +351,7 @@ public class DownloadService extends Service {
 
 			NotificationCompat.Builder warningBuilder = new NotificationCompat.Builder(
 					getStaticContext())
-					.setSmallIcon(R.drawable.ic_icon_warning_dark)
+					.setSmallIcon(R.drawable.ic_icon_limit_dark)
 					.setContentTitle(
 							getStaticContext().getString(
 									R.string.download_size_exceeded_title))
@@ -944,9 +944,9 @@ public class DownloadService extends Service {
 
 					if (DownloadState.ADDED_NOTAUTHORIZED.equals(download
 							.getState())
-							&& (FileUtils.getStorageSizeAs(downloadWarningType,
+							&& (FileUtils.getStorageSizeAs(downloadLimitType,
 									fileSize) >= FileUtils.getStorageSizeAs(
-									downloadWarningType, downloadWarningSize))) {
+									downloadLimitType, downloadLimitSize))) {
 						Log.d(getLogTag(), "not authorized and limit exceeded");
 
 						updateDownloadState(download,

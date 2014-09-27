@@ -65,7 +65,7 @@
     </RelativeLayout>
 
     <RelativeLayout
-        android:id="@+id/warning_base"
+        android:id="@+id/limit_base"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/text_padding"
@@ -74,32 +74,32 @@
         android:descendantFocusability="beforeDescendants" >
 
         <ImageView
-            android:id="@+id/warning_icon"
+            android:id="@+id/limit_icon"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignLeft="@+id/storage_divider"
             android:layout_below="@+id/storage_divider"
-            android:src="@drawable/ic_icon_warning_light" />
+            android:src="@drawable/ic_icon_limit_light" />
 
         <TextView
-            android:id="@+id/warning_subtitle"
+            android:id="@+id/limit_subtitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentRight="true"
-            android:layout_alignTop="@+id/warning_icon"
+            android:layout_alignTop="@+id/limit_icon"
             android:layout_marginLeft="@dimen/text_padding"
-            android:layout_toRightOf="@+id/warning_icon"
+            android:layout_toRightOf="@+id/limit_icon"
             android:text="@string/title_sub_downloadsize"
             android:textAppearance="?android:attr/textAppearanceSmall"
             android:textStyle="bold" />
 
         <TextView
-            android:id="@+id/warning_config"
+            android:id="@+id/limit_config"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignLeft="@+id/warning_subtitle"
-            android:layout_alignRight="@+id/warning_subtitle"
-            android:layout_below="@+id/warning_subtitle"
+            android:layout_alignLeft="@+id/limit_subtitle"
+            android:layout_alignRight="@+id/limit_subtitle"
+            android:layout_below="@+id/limit_subtitle"
             android:text="Warn when >= 25MB"
             android:textAppearance="?android:attr/textAppearanceSmall" />
     </RelativeLayout>

@@ -89,7 +89,7 @@ public class DownloadingFragment extends AbstractDownloadFragment implements
 	 */
 	private void resumeDownloads(long[] selectedIds) {
 		if (bound) {
-			TaskStateResult result = downloadService
+			TaskStateResult result = DownloadService
 					.resumeDownload(selectedIds);
 
 			if (null != result && null != result.getFreshTasks()
@@ -109,7 +109,7 @@ public class DownloadingFragment extends AbstractDownloadFragment implements
 	 */
 	private void pauseDownloads(long[] selectedIds) {
 		if (bound) {
-			downloadService.pauseDownload(selectedIds);
+			DownloadService.pauseDownload(selectedIds);
 		}
 	}
 
@@ -291,7 +291,7 @@ public class DownloadingFragment extends AbstractDownloadFragment implements
 						}
 					});
 
-			downloadService.downloadFile(download.getId());
+			DownloadService.downloadFile(download.getId());
 		}
 	}
 

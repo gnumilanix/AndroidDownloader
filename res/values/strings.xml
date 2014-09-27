@@ -35,6 +35,9 @@
     <!-- Network configure dialog strings -->
     <string name="networkconfigure_title">Download network</string>
 
+    <!-- Size limit configure dialog strings -->
+    <string name="limitconfigure_title">Size limit</string>
+
     <!-- Downloads list strings -->
     <string name="download_date_notavailable">N/A</string>
     <string name="download_add_success">"%s added to the download queue"</string>
@@ -68,7 +71,7 @@
     <string name="title_sub_downloadnetwork">Download only on</string>
 
     <!-- Settings formattablestrings -->
-    <string name="title_size_configured">Warn when >= %s</string>
+    <string name="title_size_configured">Warn when >= %1$s %2$s</string>
     <string name="title_network_wifi">Only when on wifi</string>
     <string name="title_network_any">On any network</string>
 

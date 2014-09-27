@@ -49,12 +49,12 @@ public class FileUtils {
 	}
 
 	/**
-	 * Enum to define storage types
+	 * Enum to define byte types
 	 * 
 	 * @author Milan
 	 * 
 	 */
-	public static enum StorageSize {
+	public static enum ByteType {
 		KB, MB, GB
 	}
 
@@ -386,12 +386,12 @@ public class FileUtils {
 	 * This method will return available storage in given size. If not the type
 	 * it will return in bytes
 	 * 
-	 * @param size
-	 *            is the StorageSize type
+	 * @param type
+	 *            is the byte type
 	 * @return size
 	 */
-	public static long getAvailableStorage(StorageSize size) {
-		return getStorageSizeAs(size, getAvailableStorageInBytes());
+	public static long getAvailableStorage(ByteType type) {
+		return getStorageSizeAs(type, getAvailableStorageInBytes());
 	}
 
 	/**
@@ -399,11 +399,11 @@ public class FileUtils {
 	 * return in bytes
 	 * 
 	 * @param size
-	 *            is the StorageSize type
+	 *            is the byte type
 	 * @return size
 	 */
-	public static long getStorageSizeAs(StorageSize size, long sizeInBytes) {
-		switch (size) {
+	public static long getStorageSizeAs(ByteType type, long sizeInBytes) {
+		switch (type) {
 		case KB:
 			return sizeInBytes / SIZE_KB;
 		case MB:

@@ -7,6 +7,8 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.milanix.example.downloader.R;
+import com.milanix.example.downloader.dialog.LimitConfigureDialog;
+import com.milanix.example.downloader.dialog.LimitConfigureDialog.OnLimitConfigureListener;
 import com.milanix.example.downloader.dialog.NetworkConfigureDialog;
 import com.milanix.example.downloader.dialog.NetworkConfigureDialog.NetworkType;
 import com.milanix.example.downloader.dialog.NetworkConfigureDialog.OnNetworkConfigureListener;
@@ -15,26 +17,26 @@ import com.milanix.example.downloader.dialog.PathConfigureDialog.OnPathConfigure
 import com.milanix.example.downloader.dialog.PoolConfigureDialog;
 import com.milanix.example.downloader.dialog.PoolConfigureDialog.OnPoolConfigureListener;
 import com.milanix.example.downloader.fragment.abs.AbstractFragment;
+import com.milanix.example.downloader.util.FileUtils.ByteType;
 import com.milanix.example.downloader.util.PreferenceHelper;
-import com.milanix.example.downloader.util.ToastHelper;
 
 /**
  * This fragment contains settings configuration.
  */
 public class SettingsFragment extends AbstractFragment implements
 		View.OnClickListener, OnPoolConfigureListener, OnPathConfigureListener,
-		OnNetworkConfigureListener {
+		OnNetworkConfigureListener, OnLimitConfigureListener {
 
 	private View rootView;
 
 	private ViewGroup location_base;
 	private ViewGroup tasks_base;
-	private ViewGroup warning_base;
+	private ViewGroup limit_base;
 	private ViewGroup network_base;
 
 	private TextView location_config;
 	private TextView tasks_config;
-	private TextView warning_config;
+	private TextView limit_config;
 	private TextView network_config;
 
 	@Override
@@ -60,13 +62,13 @@ public class SettingsFragment extends AbstractFragment implements
 	protected void setUI() {
 		location_base = (ViewGroup) rootView.findViewById(R.id.location_base);
 		tasks_base = (ViewGroup) rootView.findViewById(R.id.tasks_base);
-		warning_base = (ViewGroup) rootView.findViewById(R.id.warning_base);
+		limit_base = (ViewGroup) rootView.findViewById(R.id.limit_base);
 		network_base = (ViewGroup) rootView.findViewById(R.id.network_base);
 
 		location_config = (TextView) rootView
 				.findViewById(R.id.location_config);
 		tasks_config = (TextView) rootView.findViewById(R.id.tasks_config);
-		warning_config = (TextView) rootView.findViewById(R.id.warning_config);
+		limit_config = (TextView) rootView.findViewById(R.id.limit_config);
 		network_config = (TextView) rootView.findViewById(R.id.network_config);
 
 		location_config
@@ -75,6 +77,10 @@ public class SettingsFragment extends AbstractFragment implements
 				R.plurals.tasks_configured,
 				PreferenceHelper.getDownloadPoolSize(getActivity()),
 				PreferenceHelper.getDownloadPoolSize(getActivity())));
+		limit_config.setText(String.format(
+				getString(R.string.title_size_configured),
+				PreferenceHelper.getDownloadLimitSize(getActivity()),
+				PreferenceHelper.getDownloadLimitType(getActivity())));
 
 		setNetworkTypeString(PreferenceHelper.getDownloadNetwork(getActivity()));
 	}
@@ -84,7 +90,7 @@ public class SettingsFragment extends AbstractFragment implements
 		location_base.setOnClickListener(this);
 		tasks_base.setOnClickListener(this);
 		network_base.setOnClickListener(this);
-		warning_config.setOnClickListener(this);
+		limit_base.setOnClickListener(this);
 	}
 
 	@Override
@@ -100,8 +106,8 @@ public class SettingsFragment extends AbstractFragment implements
 			showTaskConfigureDialog();
 		} else if (view.getId() == R.id.network_base) {
 			showNetworkConfigureDialog();
-		} else if (view.getId() == R.id.warning_config) {
-			showWarningConfigureDialog();
+		} else if (view.getId() == R.id.limit_base) {
+			showlimitConfigureDialog();
 		}
 	}
 
@@ -139,37 +145,41 @@ public class SettingsFragment extends AbstractFragment implements
 	}
 
 	/**
-	 * This method will show storage warning configure dialog
+	 * This method will show storage limit configure dialog
 	 */
-	private void showWarningConfigureDialog() {
-		// TODO Auto-generated method stub
-
+	private void showlimitConfigureDialog() {
+		LimitConfigureDialog limitConfigureDialog = new LimitConfigureDialog();
+		limitConfigureDialog.setTargetFragment(this, -1);
+		limitConfigureDialog.setCancelable(true);
+		limitConfigureDialog.show(getFragmentManager(),
+				LimitConfigureDialog.class.getSimpleName());
 	}
 
 	@Override
 	public void onPoolConfigured(Integer poolSize) {
-		if (null != poolSize) {
-			ToastHelper.showToast(getActivity(), String.format(
-					getString(R.string.taskconfigure_sucess), poolSize));
-
-			tasks_config.setText(getResources().getQuantityString(
-					R.plurals.tasks_configured, poolSize, poolSize));
-		}
+		tasks_config.setText(getResources().getQuantityString(
+				R.plurals.tasks_configured,
+				PreferenceHelper.getDownloadPoolSize(getActivity()),
+				PreferenceHelper.getDownloadPoolSize(getActivity())));
 	}
 
 	@Override
 	public void onPathConfigured(String path) {
-		if (null != path) {
-			ToastHelper.showToast(getActivity(), String.format(
-					getString(R.string.pathconfigure_sucess), path));
-
-			location_config.setText(path);
-		}
+		location_config
+				.setText(PreferenceHelper.getDownloadPath(getActivity()));
 	}
 
 	@Override
 	public void onNetworkConfigured(NetworkType networkType) {
-		setNetworkTypeString(networkType);
+		setNetworkTypeString(PreferenceHelper.getDownloadNetwork(getActivity()));
+	}
+
+	@Override
+	public void onLimitConfigured(Integer size, ByteType type) {
+		limit_config.setText(String.format(
+				getString(R.string.title_size_configured),
+				PreferenceHelper.getDownloadLimitSize(getActivity()),
+				PreferenceHelper.getDownloadLimitType(getActivity())));
 	}
 
 	/**
@@ -188,4 +198,5 @@ public class SettingsFragment extends AbstractFragment implements
 			break;
 		}
 	}
+
 }
