@@ -61,6 +61,8 @@
     <string name="btn_cancel">Cancel</string>
     <string name="btn_delete">Delete</string>
     <string name="btn_continue">Continue</string>
+    <string name="btn_pause">Pause</string>
+    <string name="btn_resume">Resume</string>
 
     <!-- Settings strings -->
     <string name="title_storageconfiguration">STORAGE CONFIGURATION</string>
@@ -88,6 +90,8 @@
 
     <!-- Notification strings -->
     <string name="download_size_exceeded_title">Download size exceeded</string>
-    <string name="download_size_exceeded_message">Download file size is greater than your max specified size. Do you want to continue downloading?</string>
+    <string name="download_size_exceeded_message">File %1$s is over %2$s %3$s. Do you want to continue downloading?</string>
+    <string name="download_size_unknown_title">Failed to determine download size</string>
+    <string name="download_size_unknown_message">Failed to determine download size of file %s. Do you want to continue downloading?</string>
 
 </resources>

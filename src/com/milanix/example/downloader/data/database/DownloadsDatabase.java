@@ -1,12 +1,8 @@
 package com.milanix.example.downloader.data.database;
 
 import android.content.Context;
-import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-
-import com.milanix.example.downloader.data.dao.Download;
-import com.milanix.example.downloader.data.dao.Download.DownloadState;
 
 /**
  * This class contains logic for storing/retrieving and querying the database
@@ -34,6 +30,9 @@ public class DownloadsDatabase {
 	// Type of the file
 	public static final String COLUMN_TYPE = "type";
 
+	// Size of the file
+	public static final String COLUMN_SIZE = "size";
+
 	// Date the file was downloaded
 	public static final String COLUMN_DATE = "date";
 
@@ -50,7 +49,8 @@ public class DownloadsDatabase {
 				+ " integer primary key autoincrement," + COLUMN_URL
 				+ " varchar(1024)," + COLUMN_PATH + " varchar(1024),"
 				+ COLUMN_NAME + " varchar(1024)," + COLUMN_TYPE + " integer,"
-				+ COLUMN_DATE + " long," + COLUMN_STATE + " varchar(16));";
+				+ COLUMN_SIZE + " varchar(32)," + COLUMN_DATE + " long,"
+				+ COLUMN_STATE + " varchar(16));";
 
 		public DownloadsDBHelper(Context context) {
 			super(context, DATABASE_NAME, null, databaseVersion);
@@ -82,31 +82,6 @@ public class DownloadsDatabase {
 
 			onCreate(database);
 		}
-	}
-
-	/**
-	 * This method will return download object from the cursor
-	 * 
-	 * @param cursor
-	 *            to retrieve data from
-	 * @return download object if successfull otherwise null
-	 */
-	public static Download getDownloadFromCursor(Cursor cursor) {
-		if (null == cursor)
-			return null;
-
-		return new Download(cursor.getInt(cursor
-				.getColumnIndex(DownloadsDatabase.COLUMN_ID)),
-				cursor.getString(cursor
-						.getColumnIndex(DownloadsDatabase.COLUMN_URL)),
-				cursor.getString(cursor
-						.getColumnIndex(DownloadsDatabase.COLUMN_NAME)),
-				cursor.getInt(cursor
-						.getColumnIndex(DownloadsDatabase.COLUMN_TYPE)),
-				cursor.getLong(cursor
-						.getColumnIndex(DownloadsDatabase.COLUMN_DATE)),
-				DownloadState.getEnum(cursor.getString(cursor
-						.getColumnIndex(DownloadsDatabase.COLUMN_STATE))));
 	}
 
 }

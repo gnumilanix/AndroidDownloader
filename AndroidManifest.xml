@@ -48,7 +48,6 @@
             android:name="com.milanix.example.downloader.service.DownloadService$ServiceActionReceiver"
             android:enabled="true" >
             <intent-filter>
-                <action android:name="com.milanix.example.downloader.service.DownloadService.ACTION_CANCEL" />
                 <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
             </intent-filter>
         </receiver>

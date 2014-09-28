@@ -116,6 +116,7 @@ public class Download extends AbstractDao<Download> {
 	private String path;
 	private String name;
 	private Integer type;
+	private String size;
 	private Long date;
 	private DownloadState state;
 
@@ -137,11 +138,12 @@ public class Download extends AbstractDao<Download> {
 	 * @param state
 	 */
 	public Download(Integer id, String url, String name, Integer type,
-			Long date, DownloadState state) {
+			String size, Long date, DownloadState state) {
 		this.id = id;
 		this.url = url;
 		this.name = name;
 		this.type = type;
+		this.size = size;
 		this.date = date;
 		this.state = state;
 	}
@@ -223,6 +225,21 @@ public class Download extends AbstractDao<Download> {
 	}
 
 	/**
+	 * @return the size
+	 */
+	public String getSize() {
+		return size;
+	}
+
+	/**
+	 * @param size
+	 *            the size to set
+	 */
+	public void setSize(String size) {
+		this.size = size;
+	}
+
+	/**
 	 * @return the date
 	 */
 	public Long getDate() {
@@ -261,21 +278,38 @@ public class Download extends AbstractDao<Download> {
 
 		if (cursor.getCount() > 0)
 			if (cursor.moveToFirst()) {
-				setId(cursor.getInt(cursor
-						.getColumnIndex(DownloadsDatabase.COLUMN_ID)));
+				if (-1 != cursor.getColumnIndex(DownloadsDatabase.COLUMN_ID))
+					setId(cursor.getInt(cursor
+							.getColumnIndex(DownloadsDatabase.COLUMN_ID)));
 
-				setUrl(cursor.getString(cursor
-						.getColumnIndex(DownloadsDatabase.COLUMN_URL)));
-				setName(cursor.getString(cursor
-						.getColumnIndex(DownloadsDatabase.COLUMN_NAME)));
-				setType(cursor.getInt(cursor
-						.getColumnIndex(DownloadsDatabase.COLUMN_TYPE)));
-				setDate(cursor.getLong(cursor
-						.getColumnIndex(DownloadsDatabase.COLUMN_DATE)));
-				setState(DownloadState.getEnum(cursor.getString(cursor
-						.getColumnIndex(DownloadsDatabase.COLUMN_STATE))));
-				setPath(cursor.getString(cursor
-						.getColumnIndex(DownloadsDatabase.COLUMN_PATH)));
+				if (-1 != cursor.getColumnIndex(DownloadsDatabase.COLUMN_URL))
+					setUrl(cursor.getString(cursor
+							.getColumnIndex(DownloadsDatabase.COLUMN_URL)));
+
+				if (-1 != cursor.getColumnIndex(DownloadsDatabase.COLUMN_NAME))
+					setName(cursor.getString(cursor
+							.getColumnIndex(DownloadsDatabase.COLUMN_NAME)));
+
+				if (-1 != cursor.getColumnIndex(DownloadsDatabase.COLUMN_TYPE))
+					setType(cursor.getInt(cursor
+							.getColumnIndex(DownloadsDatabase.COLUMN_TYPE)));
+
+				if (-1 != cursor.getColumnIndex(DownloadsDatabase.COLUMN_SIZE))
+					setPath(cursor.getString(cursor
+							.getColumnIndex(DownloadsDatabase.COLUMN_SIZE)));
+
+				if (-1 != cursor.getColumnIndex(DownloadsDatabase.COLUMN_DATE))
+					setDate(cursor.getLong(cursor
+							.getColumnIndex(DownloadsDatabase.COLUMN_DATE)));
+
+				if (-1 != cursor.getColumnIndex(DownloadsDatabase.COLUMN_STATE))
+					setState(DownloadState.getEnum(cursor.getString(cursor
+							.getColumnIndex(DownloadsDatabase.COLUMN_STATE))));
+
+				if (-1 != cursor.getColumnIndex(DownloadsDatabase.COLUMN_PATH))
+					setPath(cursor.getString(cursor
+							.getColumnIndex(DownloadsDatabase.COLUMN_PATH)));
+
 			}
 
 		return this;

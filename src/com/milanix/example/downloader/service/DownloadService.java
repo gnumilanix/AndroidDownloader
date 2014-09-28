@@ -81,23 +81,36 @@ import com.milanix.example.downloader.util.TextHelper;
  */
 public class DownloadService extends Service {
 
-	// Notification ids and tags
+	// Notification ids
 	private static final int NOTIFICATION_ID_WARNING = 1000;
 
-	private static final int NOTIFICATION_REQCODE_CONTINUE = NOTIFICATION_ID_WARNING;
+	// Notification request codes
+	private static final int NOTIFICATION_REQCODE_CONTINUE = 1000;
+	private static final int NOTIFICATION_REQCODE_RESUME = 1001;
+	private static final int NOTIFICATION_REQCODE_PAUSE = 1002;
 
+	// Handler's whatss
+	private static final int HANDLE_NETWORK_CONNECTED = 0;
+	private static final int HANDLE_NETWORK_DISCONNECTED = 1;
+
+	private static final int HANDLE_CONTINUE_DOWNLOAD = 100;
+	private static final int HANDLE_PAUSE_DOWNLOAD = 101;
+	private static final int HANDLE_RESUME_DOWNLOAD = 102;
+
+	// Notification tags
 	private static final String NOTIFICATION_TAG_WARNING = "notification_tag_warning";
+	private static final String NOTIFICATION_TAG_PROGRESS = "notification_tag_progress";
 
+	// Notification actions
 	private static final String ACTION_CONTINUE = "action_continue";
+	private static final String ACTION_RESUME = "action_resume";
+	private static final String ACTION_PAUSE = "action_pause";
 
+	// Notification keys
 	private static final String KEY_DOWNLOADID = "key_downloadid";
 	private static final String KEY_NOTIFICATION_TAG = "key_notification_tag";
 	private static final String KEY_NOTIFICATION_ID = "key_notification_id";
 	private static final String KEY_DOWNLOAD_ACTIVEIDS = "key_download_activeids";
-
-	private static final int HANDLE_NETWORK_CONNECTED = 0;
-	private static final int HANDLE_NETWORK_DISCONNECTED = 1;
-	private static final int HANDLE_CONTINUE_DOWNLOAD = 100;
 
 	private static Context context;
 
@@ -105,13 +118,13 @@ public class DownloadService extends Service {
 	private static NotificationManager notificationManager;
 
 	// Shared preference instance
-	private static SharedPreferences sharedPref;
+	private static SharedPreferences sharedPreferenced;
 	private static OnSharedPreferenceChangeListener sharedPrefChangeListener;
 
 	// Download user configured params
-	private static int downloadPoolSize;
+	private static Integer downloadPoolSize;
 	private static NetworkType downloadNetworkType;
-	private static int downloadLimitSize;
+	private static Integer downloadLimitSize;
 	private static ByteType downloadLimitType;
 
 	// Map to keep track of async task
@@ -152,6 +165,18 @@ public class DownloadService extends Service {
 								.getInt(KEY_DOWNLOADID) });
 
 					break;
+				case HANDLE_RESUME_DOWNLOAD:
+					if (msg.getData().containsKey(KEY_DOWNLOADID))
+						resumeDownload(new long[] { msg.getData().getInt(
+								KEY_DOWNLOADID) });
+
+					break;
+				case HANDLE_PAUSE_DOWNLOAD:
+					if (msg.getData().containsKey(KEY_DOWNLOADID))
+						pauseDownload(new long[] { msg.getData().getInt(
+								KEY_DOWNLOADID) });
+
+					break;
 				case HANDLE_NETWORK_CONNECTED:
 					if (msg.getData().containsKey(KEY_DOWNLOAD_ACTIVEIDS))
 						resumeDownload(msg.getData().getLongArray(
@@ -183,6 +208,11 @@ public class DownloadService extends Service {
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		init();
 
+		// Don't move to init as init might be called after the service has
+		// started
+		registerServiceActionReceiver();
+		registerConfigurationListener();
+
 		return START_STICKY;
 	}
 
@@ -191,28 +221,42 @@ public class DownloadService extends Service {
 	 * optimally
 	 */
 	private void init() {
-		context = getApplicationContext();
+		if (null == context)
+			context = getApplicationContext();
 
-		serviceActionReceiver = new ServiceActionReceiver();
+		if (null == serviceActionReceiver)
+			serviceActionReceiver = new ServiceActionReceiver();
 
-		notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+		if (null == notificationManager) {
+			notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
-		sharedPref = PreferenceHelper
-				.getPreferenceInstance(getApplicationContext());
+			notificationManager.cancelAll();
+		}
 
-		downloadPoolSize = PreferenceHelper
-				.getDownloadPoolSize(getApplicationContext());
-		downloadNetworkType = PreferenceHelper
-				.getDownloadNetwork(getApplicationContext());
-		downloadLimitSize = PreferenceHelper
-				.getDownloadLimitSize(getApplicationContext());
-		downloadLimitType = PreferenceHelper
-				.getDownloadLimitType(getApplicationContext());
+		if (null == sharedPreferenced)
+			sharedPreferenced = PreferenceHelper
+					.getPreferenceInstance(getApplicationContext());
 
-		registerServiceActionReceiver();
-		registerConfigurationListener();
+		if (null == downloadPoolSize)
+			downloadPoolSize = PreferenceHelper
+					.getDownloadPoolSize(getApplicationContext());
 
-		initDownloadPool();
+		if (null == downloadNetworkType)
+			downloadNetworkType = PreferenceHelper
+					.getDownloadNetwork(getApplicationContext());
+
+		if (null == downloadLimitSize)
+			downloadLimitSize = PreferenceHelper
+					.getDownloadLimitSize(getApplicationContext());
+
+		if (null == downloadLimitType)
+			downloadLimitType = PreferenceHelper
+					.getDownloadLimitType(getApplicationContext());
+
+		if (null == executor)
+			executor = new ThreadPoolExecutor(getCorePoolSizeFromPref(),
+					getMaxPoolSizeFromPref(), POOL_KEEP_ALIVE,
+					TimeUnit.SECONDS, POOL_WORKQUEUE, POOL_THREAD_FACTORY);
 	}
 
 	@Override
@@ -265,6 +309,8 @@ public class DownloadService extends Service {
 		IntentFilter filter = new IntentFilter();
 		filter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
 		filter.addAction(ACTION_CONTINUE);
+		filter.addAction(ACTION_RESUME);
+		filter.addAction(ACTION_PAUSE);
 
 		getApplicationContext().registerReceiver(serviceActionReceiver, filter);
 	}
@@ -308,7 +354,7 @@ public class DownloadService extends Service {
 				}
 			};
 
-		sharedPref
+		sharedPreferenced
 				.registerOnSharedPreferenceChangeListener(sharedPrefChangeListener);
 	}
 
@@ -316,19 +362,84 @@ public class DownloadService extends Service {
 	 * This method will unregister pool configuration listener
 	 */
 	private void unregisterPoolConfigureListener() {
-		if (null == sharedPref && null != sharedPrefChangeListener)
-			sharedPref
+		if (null == sharedPreferenced && null != sharedPrefChangeListener)
+			sharedPreferenced
 					.unregisterOnSharedPreferenceChangeListener(sharedPrefChangeListener);
 	}
 
 	/**
-	 * This method will show notification for given downloadId
+	 * This method will show progress notification for given download
 	 * 
-	 * @param downloadId
+	 * @param download
 	 *            to be attached to this notification
 	 */
-	private static void showWarningNotification(int downloadId) {
-		if (null != getStaticContext()) {
+	private static void showProgressNotification(Download download) {
+		if (download.isValid() && null != getStaticContext()) {
+
+			Intent resultIntent = new Intent(getStaticContext(),
+					HomeActivity.class);
+
+			PendingIntent resultPendingIntent = PendingIntent.getActivity(
+					getStaticContext(), 0, resultIntent,
+					PendingIntent.FLAG_UPDATE_CURRENT);
+
+			Intent resumeIntent = new Intent(getStaticContext(),
+					ServiceActionReceiver.class);
+			resumeIntent.setAction(ACTION_RESUME);
+			resumeIntent.putExtra(KEY_DOWNLOADID, download.getId());
+			resumeIntent.putExtra(KEY_NOTIFICATION_TAG,
+					NOTIFICATION_TAG_PROGRESS);
+			resumeIntent.putExtra(KEY_NOTIFICATION_ID, download.getId());
+
+			Intent pauseIntent = new Intent(getStaticContext(),
+					ServiceActionReceiver.class);
+			pauseIntent.setAction(ACTION_PAUSE);
+			pauseIntent.putExtra(KEY_DOWNLOADID, download.getId());
+			pauseIntent.putExtra(KEY_NOTIFICATION_TAG,
+					NOTIFICATION_TAG_PROGRESS);
+			pauseIntent.putExtra(KEY_NOTIFICATION_ID, download.getId());
+
+			PendingIntent pendingIntentResume = PendingIntent.getBroadcast(
+					getStaticContext(), NOTIFICATION_REQCODE_RESUME,
+					resumeIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+			PendingIntent pendingIntentPause = PendingIntent.getBroadcast(
+					getStaticContext(), NOTIFICATION_REQCODE_PAUSE,
+					pauseIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+			NotificationCompat.Builder progressBuilder = new NotificationCompat.Builder(
+					getStaticContext());
+			progressBuilder
+					.setContentTitle(download.getName())
+					.setContentText(download.getUrl())
+					.setSmallIcon(R.drawable.ic_icon_download_dark)
+					.setProgress(0, 0, true)
+					.setContentIntent(resultPendingIntent)
+					.setDefaults(Notification.DEFAULT_ALL)
+					.setStyle(
+							new NotificationCompat.BigTextStyle()
+									.bigText(download.getUrl()))
+					.addAction(R.drawable.ic_action_resume_dark,
+							getStaticContext().getString(R.string.btn_resume),
+							pendingIntentResume)
+					.addAction(R.drawable.ic_action_pause_dark,
+							getStaticContext().getString(R.string.btn_pause),
+							pendingIntentPause).setOngoing(true);
+
+			notificationManager.notify(NOTIFICATION_TAG_PROGRESS,
+					download.getId(), progressBuilder.build());
+		}
+
+	}
+
+	/**
+	 * This method will show warning notification for given download
+	 * 
+	 * @param download
+	 *            to be attached to this notification
+	 */
+	private static void showWarningNotification(Download download) {
+		if (download.isValid() && null != getStaticContext()) {
 			Intent resultIntent = new Intent(getStaticContext(),
 					HomeActivity.class);
 
@@ -339,7 +450,7 @@ public class DownloadService extends Service {
 			Intent continueIntent = new Intent(getStaticContext(),
 					ServiceActionReceiver.class);
 			continueIntent.setAction(ACTION_CONTINUE);
-			continueIntent.putExtra(KEY_DOWNLOADID, downloadId);
+			continueIntent.putExtra(KEY_DOWNLOADID, download.getId());
 			continueIntent.putExtra(KEY_NOTIFICATION_TAG,
 					NOTIFICATION_TAG_WARNING);
 			continueIntent.putExtra(KEY_NOTIFICATION_ID,
@@ -349,22 +460,41 @@ public class DownloadService extends Service {
 					getStaticContext(), NOTIFICATION_REQCODE_CONTINUE,
 					continueIntent, PendingIntent.FLAG_CANCEL_CURRENT);
 
+			String message = "";
+			String title = "";
+
+			// Message context based on if size is determined or not
+			if (null == download.getSize()) {
+				title = getStaticContext().getString(
+						R.string.download_size_unknown_title);
+
+				message = String.format(
+						getStaticContext().getString(
+								R.string.download_size_unknown_message),
+						download.getName());
+			} else {
+				title = getStaticContext().getString(
+						R.string.download_size_exceeded_title);
+
+				message = String.format(
+						getStaticContext().getString(
+								R.string.download_size_exceeded_message),
+						download.getName(), PreferenceHelper
+								.getDownloadLimitSize(getStaticContext()),
+						PreferenceHelper
+								.getDownloadLimitType(getStaticContext()));
+			}
+
 			NotificationCompat.Builder warningBuilder = new NotificationCompat.Builder(
 					getStaticContext())
 					.setSmallIcon(R.drawable.ic_icon_limit_dark)
-					.setContentTitle(
-							getStaticContext().getString(
-									R.string.download_size_exceeded_title))
-					.setContentText(
-							getStaticContext().getString(
-									R.string.download_size_exceeded_message))
+					.setContentTitle(title)
+					.setContentText(message)
 					.setContentIntent(resultPendingIntent)
 					.setDefaults(Notification.DEFAULT_ALL)
 					.setStyle(
 							new NotificationCompat.BigTextStyle()
-									.bigText(getStaticContext()
-											.getString(
-													R.string.download_size_exceeded_message)))
+									.bigText(message))
 					.addAction(
 							R.drawable.ic_action_resume_dark,
 							getStaticContext().getString(R.string.btn_continue),
@@ -385,24 +515,26 @@ public class DownloadService extends Service {
 	public static void cancelNotification(Bundle bundle) {
 		if (null != notificationManager && null != bundle) {
 			Integer notificationId = bundle.getInt(KEY_NOTIFICATION_ID);
-			String notificationBundle = bundle.getString(KEY_NOTIFICATION_TAG);
+			String notificationTag = bundle.getString(KEY_NOTIFICATION_TAG);
 
-			if (null != notificationId && null != notificationBundle)
-				notificationManager.cancel(notificationBundle, notificationId);
+			cancelNotification(notificationTag, notificationId);
 		}
 
 	}
 
 	/**
-	 * This method will init ThreadPoolExecutor with using
-	 * {@link PreferenceHelper #getDownloadPoolSize()}
+	 * This method will cancel notification with given id and tag
 	 * 
+	 * @param notificationTag
+	 *            is the notifications tag
+	 * 
+	 * @param notificationId
+	 *            is the notification id
 	 */
-	private void initDownloadPool() {
-		if (null == executor)
-			executor = new ThreadPoolExecutor(getCorePoolSizeFromPref(),
-					getMaxPoolSizeFromPref(), POOL_KEEP_ALIVE,
-					TimeUnit.SECONDS, POOL_WORKQUEUE, POOL_THREAD_FACTORY);
+	public static void cancelNotification(String notificationTag,
+			Integer notificationId) {
+		if (null != notificationId && null != notificationTag)
+			notificationManager.cancel(notificationTag, notificationId);
 	}
 
 	/**
@@ -414,7 +546,7 @@ public class DownloadService extends Service {
 	 *            is a preference that was changed
 	 */
 	public void resetPoolSize() {
-		initDownloadPool();
+		init();
 
 		executor.setCorePoolSize(downloadPoolSize);
 		executor.setMaximumPoolSize(downloadPoolSize * POOL_MAX_MULTIPLIER);
@@ -789,6 +921,26 @@ public class DownloadService extends Service {
 	}
 
 	/**
+	 * This method will update the given download size using a content provider
+	 * 
+	 * @param download
+	 *            is the download object
+	 * @state is the size is the download size/content length
+	 */
+	private static void updateDownloadSize(Download download, String size) {
+
+		ContentValues values = new ContentValues();
+		values.put(DownloadsDatabase.COLUMN_SIZE, size);
+
+		if (null != getStaticContext())
+			getStaticContext().getContentResolver().update(
+					DownloadContentProvider.CONTENT_URI_DOWNLOADS,
+					values,
+					QueryHelper.getWhere(DownloadsDatabase.COLUMN_ID,
+							download.getId(), true), null);
+	}
+
+	/**
 	 * This method will update the given download state using a content provider
 	 * 
 	 * @param download
@@ -820,10 +972,10 @@ public class DownloadService extends Service {
 	 */
 	private static void batchUpdateDownloadState(long[] downloadIds,
 			DownloadState state) {
-		ArrayList<ContentProviderOperation> deleteOperations = new ArrayList<ContentProviderOperation>();
+		ArrayList<ContentProviderOperation> updateOperations = new ArrayList<ContentProviderOperation>();
 
 		for (long downloadId : downloadIds) {
-			deleteOperations
+			updateOperations
 					.add(ContentProviderOperation
 							.newUpdate(
 									DownloadContentProvider.CONTENT_URI_DOWNLOADS)
@@ -838,7 +990,7 @@ public class DownloadService extends Service {
 			ContentProviderResult[] operationsResult = getStaticContext()
 					.getContentResolver()
 					.applyBatch(DownloadContentProvider.AUTHORITY,
-							deleteOperations);
+							updateOperations);
 
 			if (operationsResult.length > 0)
 				Log.d(getLogTag(), "Batch update successfull");
@@ -942,6 +1094,8 @@ public class DownloadService extends Service {
 					long fileSize = response.getEntity().getContentLength();
 					long tempfileSize = 0L;
 
+					updateDownlaodSize(fileSize);
+
 					if (DownloadState.ADDED_NOTAUTHORIZED.equals(download
 							.getState())
 							&& (FileUtils.getStorageSizeAs(downloadLimitType,
@@ -952,7 +1106,7 @@ public class DownloadService extends Service {
 						updateDownloadState(download,
 								DownloadState.ADDED_NOTAUTHORIZED);
 
-						showWarningNotification(download.getId());
+						showWarningNotification(download);
 					} else {
 						Log.d(getLogTag(), "authorized or limit not exceeded");
 
@@ -1014,6 +1168,8 @@ public class DownloadService extends Service {
 								// 0
 								targetWriteFile.seek(targetWriteFile.length());
 
+								showProgressNotification(download);
+
 								while (-1 != (chunkSize = remoteContentStream
 										.read(buffer))) {
 									if (TaskState.RESUMED.equals(taskState)) {
@@ -1043,13 +1199,20 @@ public class DownloadService extends Service {
 										&& fileSize != -1) {
 									Log.d(getLogTag(), "Incomplete download");
 
-									throw new IOException(
-											"Download was incomplete");
+									updateDownloadState(download,
+											DownloadState.FAILED);
+
+									notifyCallbacksFailed(download,
+											FailedReason.IO_ERROR);
 								} else {
 									Log.d(getLogTag(), "Complete download");
 
 									targetTempFile.renameTo(targetLocalFile);
 									download.setState(DownloadState.COMPLETED);
+
+									cancelNotification(
+											NOTIFICATION_TAG_PROGRESS,
+											download.getId());
 								}
 							}
 						}
@@ -1073,6 +1236,51 @@ public class DownloadService extends Service {
 					IOUtils.close(bufferedFileStream);
 				}
 			}
+		}
+
+		/**
+		 * This method will update download size
+		 */
+		private void updateDownlaodSize(long fileSize) {
+			if (null == download.getSize()) {
+				ByteType type = PreferenceHelper
+						.getDownloadLimitType(getStaticContext());
+
+				StringBuilder sizeBuilder = new StringBuilder("");
+
+				sizeBuilder.append(FileUtils.getStorageSizeAs(type, fileSize));
+				sizeBuilder.append(" ");
+				sizeBuilder.append(type.toString());
+
+				download.setSize(sizeBuilder.toString());
+
+				updateDownloadSize(download, download.getSize());
+			}
+		}
+
+		/**
+		 * This method will update download state for this task
+		 * 
+		 * @param state
+		 *            download state
+		 */
+		public void updateState(DownloadState state) {
+			if (null != download)
+				download.setState(state);
+		}
+
+		/**
+		 * This method will pause the current task.
+		 */
+		public synchronized void pauseTask() {
+			taskState = TaskState.PAUSED;
+		}
+
+		/**
+		 * This method will resume the current task.
+		 */
+		public synchronized void resumeTask() {
+			taskState = TaskState.RESUMED;
 		}
 
 		@Override
@@ -1107,31 +1315,6 @@ public class DownloadService extends Service {
 			notifyCallbacksProgress(taskState, download, values[0]);
 
 			super.onProgressUpdate(values);
-		}
-
-		/**
-		 * This method will update download state for this task
-		 * 
-		 * @param state
-		 *            download state
-		 */
-		public void updateState(DownloadState state) {
-			if (null == download)
-				download.setState(state);
-		}
-
-		/**
-		 * This method will pause the current task.
-		 */
-		public synchronized void pauseTask() {
-			taskState = TaskState.PAUSED;
-		}
-
-		/**
-		 * This method will resume the current task.
-		 */
-		public synchronized void resumeTask() {
-			taskState = TaskState.RESUMED;
 		}
 	}
 
@@ -1212,6 +1395,12 @@ public class DownloadService extends Service {
 
 					if (intent.getIntExtra(KEY_DOWNLOADID, -1) > -1)
 						postAction(intent.getExtras(), HANDLE_CONTINUE_DOWNLOAD);
+				} else if (intent.getAction().equals(ACTION_PAUSE)) {
+					if (intent.getIntExtra(KEY_DOWNLOADID, -1) > -1)
+						postAction(intent.getExtras(), HANDLE_PAUSE_DOWNLOAD);
+				} else if (intent.getAction().equals(ACTION_RESUME)) {
+					if (intent.getIntExtra(KEY_DOWNLOADID, -1) > -1)
+						postAction(intent.getExtras(), HANDLE_RESUME_DOWNLOAD);
 				}
 		}
 
