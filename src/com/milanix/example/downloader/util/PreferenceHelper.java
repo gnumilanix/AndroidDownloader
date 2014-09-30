@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
+import com.milanix.example.downloader.data.database.DownloadsDatabase;
+import com.milanix.example.downloader.data.database.util.QueryHelper;
 import com.milanix.example.downloader.dialog.NetworkConfigureDialog.NetworkType;
 import com.milanix.example.downloader.util.FileUtils.ByteType;
 
@@ -21,6 +23,8 @@ public class PreferenceHelper {
 	public static final String KEY_DOWNLOADNETWORK = "key_network";
 	public static final String KEY_DOWNLOADLIMIT_SIZE = "key_downloadwarning_size";
 	public static final String KEY_DOWNLOADLIMIT_TYPE = "key_downloadwarning_type";
+	public static final String KEY_ORDERING_FIELD = "key_ordering_field";
+	public static final String KEY_ORDERING_TYPE = "key_ordering_type";
 
 	public static final String KEY_USERLEARNEDDRAWER = "navigation_drawer_learned";
 
@@ -29,6 +33,9 @@ public class PreferenceHelper {
 	public static final int DEFAULT_POOLSIZE = 5;
 	public static final int DEFAULT_WARNINGSIZE = 25;
 	public static final ByteType DEFAULT_WARNINGTYPE = ByteType.MB;
+
+	public static final String DEFAULT_ORDERING_FIELD = DownloadsDatabase.COLUMN_DATE;
+	public static final String DEFAULT_ORDERING_TYPE = QueryHelper.ORDERING_DESC;
 
 	/**
 	 * This method will set if user has learned navigation drawer. This will
@@ -200,7 +207,53 @@ public class PreferenceHelper {
 				KEY_PREFERENCES, Context.MODE_PRIVATE);
 
 		return sharedPref.getInt(KEY_DOWNLOADPOOLSIZE, DEFAULT_POOLSIZE);
+	}
 
+	/**
+	 * This method will set the ordering type
+	 * 
+	 * @param is
+	 *            the base application context
+	 * @param orderingField
+	 *            is the ordering field
+	 * @param orderingType
+	 *            ordering method
+	 */
+	public static void setSortOrdering(Context context, String orderingField,
+			String orderingType) {
+		SharedPreferences sharedPref = context.getSharedPreferences(
+				KEY_PREFERENCES, Context.MODE_PRIVATE);
+
+		SharedPreferences.Editor editor = sharedPref.edit();
+		editor.putString(KEY_ORDERING_FIELD, orderingField);
+		editor.putString(KEY_ORDERING_TYPE, orderingType);
+		editor.apply();
+	}
+
+	/**
+	 * This method will get the ordering field
+	 * 
+	 * @param is
+	 *            the base application context
+	 */
+	public static String getSortOrderingField(Context context) {
+		SharedPreferences sharedPref = context.getSharedPreferences(
+				KEY_PREFERENCES, Context.MODE_PRIVATE);
+
+		return sharedPref.getString(KEY_ORDERING_FIELD, DEFAULT_ORDERING_FIELD);
+	}
+
+	/**
+	 * This method will get the ordering type
+	 * 
+	 * @param is
+	 *            the base application context
+	 */
+	public static String getSortOrderingType(Context context) {
+		SharedPreferences sharedPref = context.getSharedPreferences(
+				KEY_PREFERENCES, Context.MODE_PRIVATE);
+
+		return sharedPref.getString(KEY_ORDERING_TYPE, DEFAULT_ORDERING_TYPE);
 	}
 
 	/**

@@ -23,6 +23,7 @@ import com.milanix.example.downloader.data.database.DownloadsDatabase;
 import com.milanix.example.downloader.data.database.util.QueryHelper;
 import com.milanix.example.downloader.data.provider.DownloadContentProvider;
 import com.milanix.example.downloader.fragment.abs.AbstractDownloadFragment;
+import com.milanix.example.downloader.util.PreferenceHelper;
 
 /**
  * This fragment contains downloaded list and its related logic.
@@ -113,33 +114,14 @@ public class DownloadedFragment extends AbstractDownloadFragment implements
 	}
 
 	@Override
-	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-		super.onCreateOptionsMenu(menu, inflater);
-
-		inflater.inflate(R.menu.menu_downloaded, menu);
-	}
-
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-
-		switch (item.getItemId()) {
-		case R.id.action_refresh:
-			refreshCursorLoader(false);
-
-			return true;
-		default:
-			return super.onOptionsItemSelected(item);
-		}
-	}
-
-	@Override
 	public Loader<Cursor> onCreateLoader(int id, Bundle args) {
 		return new CursorLoader(getActivity(),
 				DownloadContentProvider.CONTENT_URI_DOWNLOADS, null,
 				QueryHelper.getWhere(DownloadsDatabase.COLUMN_STATE,
 						DownloadState.COMPLETED.toString(), true), null,
-				QueryHelper.getOrdering(DownloadsDatabase.COLUMN_ID,
-						QueryHelper.ORDERING_DESC));
+				QueryHelper.getOrdering(
+						PreferenceHelper.getSortOrderingField(getActivity()),
+						PreferenceHelper.getSortOrderingType(getActivity())));
 	}
 
 }

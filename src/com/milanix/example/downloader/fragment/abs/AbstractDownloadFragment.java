@@ -1,5 +1,7 @@
 package com.milanix.example.downloader.fragment.abs;
 
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.database.ContentObserver;
 import android.database.Cursor;
 import android.net.Uri;
@@ -9,6 +11,9 @@ import android.os.Message;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView.MultiChoiceModeListener;
@@ -18,8 +23,11 @@ import com.milanix.example.downloader.R;
 import com.milanix.example.downloader.data.provider.DownloadContentProvider;
 import com.milanix.example.downloader.dialog.DeleteDownloadDialog;
 import com.milanix.example.downloader.dialog.DeleteDownloadDialog.OnDeleteDownloadListener;
+import com.milanix.example.downloader.dialog.NetworkConfigureDialog;
+import com.milanix.example.downloader.dialog.SortConfigureDialog;
 import com.milanix.example.downloader.fragment.DownloadedFragment;
 import com.milanix.example.downloader.fragment.adapter.DownloadListAdapter;
+import com.milanix.example.downloader.util.PreferenceHelper;
 import com.milanix.example.downloader.util.ToastHelper;
 
 /**
@@ -41,6 +49,9 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 	protected View rootView;
 	protected ListView downloading_list;
 	protected DownloadListAdapter adapter;
+
+	protected SharedPreferences sharedPreferences;
+	protected OnSharedPreferenceChangeListener sharedPrefChangeListener;
 
 	protected Handler uiUpdateHandler = new Handler() {
 
@@ -72,6 +83,8 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 
 		setHasOptionsMenu(true);
 		setRetainInstance(true);
+
+		registerPreferenceChangeListener();
 	}
 
 	@Override
@@ -83,6 +96,13 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 		onInit();
 
 		return rootView;
+	}
+
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+
+		unregisterPreferenceChangeListener();
 	}
 
 	@Override
@@ -107,6 +127,42 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 		super.onInit();
 
 		setAdapter();
+	}
+
+	/**
+	 * This method will register preference change listener
+	 */
+	private void registerPreferenceChangeListener() {
+		if (null == sharedPreferences)
+			sharedPreferences = PreferenceHelper
+					.getPreferenceInstance(getActivity());
+
+		if (null == sharedPrefChangeListener)
+			sharedPrefChangeListener = new OnSharedPreferenceChangeListener() {
+
+				@Override
+				public void onSharedPreferenceChanged(
+						SharedPreferences sharedPreference, String key) {
+					if (PreferenceHelper.KEY_ORDERING_FIELD.equals(key)) {
+						refreshCursorLoader(true);
+					} else if (PreferenceHelper.KEY_ORDERING_TYPE.equals(key)) {
+						refreshCursorLoader(true);
+					}
+				}
+			};
+
+		sharedPreferences
+				.registerOnSharedPreferenceChangeListener(sharedPrefChangeListener);
+
+	}
+
+	/**
+	 * This method will unregister preference change listener
+	 */
+	private void unregisterPreferenceChangeListener() {
+		if (null == sharedPreferences && null != sharedPrefChangeListener)
+			sharedPreferences
+					.unregisterOnSharedPreferenceChangeListener(sharedPrefChangeListener);
 	}
 
 	@Override
@@ -218,6 +274,17 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 	}
 
 	/**
+	 * This method will show sort configure dialog
+	 */
+	private void showSortConfigureDialog() {
+		SortConfigureDialog sortConfigureDialog = new SortConfigureDialog();
+		sortConfigureDialog.setTargetFragment(this, -1);
+		sortConfigureDialog.setCancelable(true);
+		sortConfigureDialog.show(getFragmentManager(),
+				NetworkConfigureDialog.class.getSimpleName());
+	}
+
+	/**
 	 * This method will remove given ids from the database
 	 * 
 	 * @param downloadIds
@@ -230,6 +297,26 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 	@Override
 	public String getLogTag() {
 		return DownloadedFragment.class.getSimpleName();
+	}
+
+	@Override
+	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+		super.onCreateOptionsMenu(menu, inflater);
+
+		inflater.inflate(R.menu.menu_sort, menu);
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+
+		switch (item.getItemId()) {
+		case R.id.action_sort:
+			showSortConfigureDialog();
+
+			return true;
+		default:
+			return super.onOptionsItemSelected(item);
+		}
 	}
 
 	@Override

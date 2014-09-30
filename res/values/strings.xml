@@ -11,6 +11,7 @@
     <!-- Actionbar strings -->
     <string name="action_settings">Settings</string>
     <string name="action_refresh">Refresh</string>
+    <string name="action_sort">Sort</string>
     <string name="action_addnew">Add new</string>
     <string name="action_delete">Delete</string>
     <string name="action_pause">Pause</string>
@@ -87,6 +88,13 @@
         <item>Only when on wifi</item>
         <item>On any network</item>
     </string-array>
+
+    <!-- Orderng dialog -->
+    <string name="title_sortby">Sort By</string>
+    <string name="asc_added">Download added date</string>
+    <string name="dsc_added">Download added date</string>
+    <string name="asc_size">Download file size</string>
+    <string name="dsc_size">Download file size</string>
 
     <!-- Notification strings -->
     <string name="download_size_exceeded_title">Download size exceeded</string>

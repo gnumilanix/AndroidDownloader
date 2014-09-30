@@ -36,6 +36,7 @@ import com.milanix.example.downloader.service.DownloadService;
 import com.milanix.example.downloader.service.DownloadService.DownloadBinder;
 import com.milanix.example.downloader.service.DownloadService.TaskStateResult;
 import com.milanix.example.downloader.util.NetworkUtils;
+import com.milanix.example.downloader.util.PreferenceHelper;
 import com.milanix.example.downloader.util.ToastHelper;
 
 /**
@@ -199,10 +200,6 @@ public class DownloadingFragment extends AbstractDownloadFragment implements
 	public boolean onOptionsItemSelected(MenuItem item) {
 
 		switch (item.getItemId()) {
-		case R.id.action_refresh:
-			refreshCursorLoader(false);
-
-			return true;
 		case R.id.action_add:
 			showAddNewDialog();
 
@@ -321,8 +318,9 @@ public class DownloadingFragment extends AbstractDownloadFragment implements
 				DownloadContentProvider.CONTENT_URI_DOWNLOADS, null,
 				QueryHelper.getWhere(DownloadsDatabase.COLUMN_STATE,
 						DownloadState.COMPLETED.toString(), false), null,
-				QueryHelper.getOrdering(DownloadsDatabase.COLUMN_ID,
-						QueryHelper.ORDERING_DESC));
+				QueryHelper.getOrdering(
+						PreferenceHelper.getSortOrderingField(getActivity()),
+						PreferenceHelper.getSortOrderingType(getActivity())));
 	}
 
 }

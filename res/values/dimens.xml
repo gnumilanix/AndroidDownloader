@@ -10,7 +10,8 @@
     <dimen name="item_padding">8dp</dimen>
     <dimen name="divider_height">2dp</dimen>
     <dimen name="divider_margin">4dp</dimen>
-     <dimen name="folderitem_padding">4dp</dimen>
+    <dimen name="folderitem_padding">4dp</dimen>
+    <dimen name="list_radio_size">40dp</dimen>
 
     <!-- Dialog -->
     <dimen name="dialog_title_padding">8dp</dimen>
