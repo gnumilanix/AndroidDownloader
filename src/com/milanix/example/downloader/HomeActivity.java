@@ -10,7 +10,6 @@ import android.os.StrictMode;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBar.Tab;
 import android.support.v7.app.ActionBarActivity;
-import android.util.Log;
 
 import com.milanix.example.downloader.fragment.DownloadedFragment;
 import com.milanix.example.downloader.fragment.DownloadingFragment;
@@ -25,8 +24,6 @@ import com.milanix.example.downloader.util.PreferenceHelper;
  * 
  */
 public class HomeActivity extends ActionBarActivity {
-
-	private static final String TAG = HomeActivity.class.getSimpleName();
 
 	/**
 	 * This enum defines device definition to choose between layouts
@@ -56,9 +53,9 @@ public class HomeActivity extends ActionBarActivity {
 	 */
 	private void setDefinationBasedUI() {
 		if (DeviceDefinition.TABLET.equals(getDeviceDefinition())) {
-			Log.d(TAG, "This is a tablet");
+
 		} else {
-			Log.d(TAG, "This is a phone");
+
 		}
 	}
 

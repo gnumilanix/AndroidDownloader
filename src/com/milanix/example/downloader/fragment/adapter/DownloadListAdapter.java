@@ -19,7 +19,6 @@ import com.milanix.example.downloader.data.dao.Download;
 import com.milanix.example.downloader.data.dao.Download.DownloadListener;
 import com.milanix.example.downloader.data.dao.Download.DownloadState;
 import com.milanix.example.downloader.data.dao.Download.FailedReason;
-import com.milanix.example.downloader.data.dao.Download.TaskState;
 import com.milanix.example.downloader.data.database.DownloadsDatabase;
 import com.milanix.example.downloader.service.DownloadService;
 import com.milanix.example.downloader.util.FileUtils;
@@ -119,7 +118,8 @@ public class DownloadListAdapter extends CursorAdapter {
 				.getString(cursor
 						.getColumnIndex(DownloadsDatabase.COLUMN_STATE)));
 
-		if (DownloadState.DOWNLOADING.equals(state)) {
+		// Attach callbacks to files that are authorized to download
+		if (DownloadState.ADDED_AUTHORIZED.equals(state)) {
 			final ProgressBar progressBar = holder.download_progress;
 
 			final DownloadListener callback = new DownloadListener() {
@@ -142,8 +142,8 @@ public class DownloadListAdapter extends CursorAdapter {
 				}
 
 				@Override
-				public void onDownloadProgress(TaskState taskState,
-						Download download, Integer progress) {
+				public void onDownloadProgress(Download download,
+						Integer progress) {
 					if (null != progressBar && null != progress)
 						progressBar.setProgress(progress);
 				}
@@ -207,13 +207,14 @@ public class DownloadListAdapter extends CursorAdapter {
 							.getColumnIndex(DownloadsDatabase.COLUMN_URL))));
 		}
 
-		if (DownloadState.DOWNLOADING.equals(DownloadState.getEnum(cursor
+		// Show progress only if it's authorized
+		if (DownloadState.ADDED_AUTHORIZED.equals(DownloadState.getEnum(cursor
 				.getString(cursor
 						.getColumnIndex(DownloadsDatabase.COLUMN_STATE))))) {
 			holder.download_progress.setVisibility(View.VISIBLE);
 
 			holder.download_hint.setBackgroundColor(COLOR_HINT_PROGRESS);
-		} else if (DownloadState.ADDED_AUTHORIZED.equals(DownloadState
+		} else if (DownloadState.DOWNLOADING.equals(DownloadState
 				.getEnum(cursor.getString(cursor
 						.getColumnIndex(DownloadsDatabase.COLUMN_STATE))))) {
 			holder.download_progress.setVisibility(View.GONE);

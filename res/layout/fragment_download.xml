@@ -13,8 +13,19 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:horizontalSpacing="@dimen/grid_spacing"
-        android:verticalSpacing="@dimen/grid_spacing"
-        android:numColumns="@integer/grid_column" >
+        android:numColumns="@integer/grid_column"
+        android:verticalSpacing="@dimen/grid_spacing" >
     </GridView>
+
+    <ImageButton
+        android:id="@+id/download_add"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_margin="10dp"
+        android:background="@drawable/circle_selector"
+        android:padding="10dp"
+        android:src="@drawable/ic_action_add_dark" />
 
 </RelativeLayout>

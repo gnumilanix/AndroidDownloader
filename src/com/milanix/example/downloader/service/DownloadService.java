@@ -61,7 +61,6 @@ import com.milanix.example.downloader.data.dao.Download;
 import com.milanix.example.downloader.data.dao.Download.DownloadListener;
 import com.milanix.example.downloader.data.dao.Download.DownloadState;
 import com.milanix.example.downloader.data.dao.Download.FailedReason;
-import com.milanix.example.downloader.data.dao.Download.TaskState;
 import com.milanix.example.downloader.data.database.DownloadsDatabase;
 import com.milanix.example.downloader.data.database.util.QueryHelper;
 import com.milanix.example.downloader.data.provider.DownloadContentProvider;
@@ -582,7 +581,7 @@ public class DownloadService extends Service {
 	 *            is a id of the download
 	 * @return asynctask with given file handler
 	 */
-	public static DownloadTask downloadFile(Integer downloadId) {
+	public synchronized static DownloadTask downloadFile(Integer downloadId) {
 		if (null == downloadId)
 			return null;
 
@@ -613,7 +612,7 @@ public class DownloadService extends Service {
 	 *            with attached tasks to be paused
 	 * @return TaskStateResult of successfully paused task
 	 */
-	public static TaskStateResult pauseDownload(long[] ids) {
+	public synchronized static TaskStateResult pauseDownload(long[] ids) {
 		if (null == ids)
 			return null;
 
@@ -623,13 +622,16 @@ public class DownloadService extends Service {
 
 		for (Integer id : listIds) {
 			if (null != id) {
+				/**
+				 * If contains task, pause, cancel then remove it
+				 */
 				if (downloadTasks.containsKey(id)) {
 					DownloadTask task = downloadTasks.get(id);
-					task.pauseTask();
+					task.cancel(true, true);
 
-					result.getSuccessTasks().add(task);
-				} else {
-					// Paused tasks need nothing to be done
+					downloadTasks.remove(id);
+
+					result.getTasks().add(task);
 				}
 			}
 		}
@@ -645,7 +647,7 @@ public class DownloadService extends Service {
 	 *            with attached tasks to be paused
 	 * @return TaskStateResult including success and newly added/fresh tasks
 	 */
-	public static TaskStateResult resumeDownload(long[] ids) {
+	public synchronized static TaskStateResult resumeDownload(long[] ids) {
 		if (null == ids)
 			return null;
 
@@ -655,16 +657,23 @@ public class DownloadService extends Service {
 
 		for (Integer id : listIds) {
 			if (null != id) {
+				/**
+				 * If contains task cancel and remove it as it should not have
+				 * been added before resume is called
+				 */
 				if (downloadTasks.containsKey(id)) {
 					DownloadTask task = downloadTasks.get(id);
-					task.resumeTask();
+					task.cancel(true);
 
-					result.getSuccessTasks().add(task);
+					downloadTasks.remove(id);
+
+					task = downloadFile(id);
+
+					result.getTasks().add(task);
 				} else {
-					DownloadTask freshTask = downloadFile(id);
+					DownloadTask task = downloadFile(id);
 
-					if (null != freshTask)
-						result.getFreshTasks().add(freshTask);
+					result.getFreshTasks().add(task);
 				}
 			}
 		}
@@ -678,7 +687,7 @@ public class DownloadService extends Service {
 	 * @param ids
 	 *            download id to authorize
 	 */
-	private static void authorizeAndBeginDownload(long[] ids) {
+	private synchronized static void authorizeAndBeginDownload(long[] ids) {
 		if (null == ids)
 			return;
 
@@ -688,14 +697,16 @@ public class DownloadService extends Service {
 
 		for (Integer id : listIds) {
 			if (null != id) {
+				/**
+				 * If contains task cancel and remove it as it should not have
+				 * been added before resume is called
+				 */
 				if (downloadTasks.containsKey(id)) {
 					DownloadTask task = downloadTasks.get(id);
-					task.updateState(DownloadState.ADDED_AUTHORIZED);
-					task.resumeTask();
-					task.initDownload();
-				} else {
-					downloadFile(id);
+					task.cancel(true);
 				}
+
+				downloadFile(id);
 			}
 		}
 	}
@@ -723,7 +734,7 @@ public class DownloadService extends Service {
 	 *            means those that are not paused.
 	 * @return all current active ids
 	 */
-	private static long[] getCurrentTaskIds(boolean isOnlyActive) {
+	private synchronized static long[] getCurrentTaskIds(boolean isOnlyActive) {
 
 		ArrayList<Integer> taskIds = new ArrayList<Integer>();
 
@@ -737,7 +748,9 @@ public class DownloadService extends Service {
 			DownloadTask task = taskPair.getValue();
 
 			if (null != task)
-				if (isOnlyActive && TaskState.RESUMED.equals(task.taskState)) {
+				if (isOnlyActive
+						&& DownloadState.DOWNLOADING.equals(task
+								.getDownloadState())) {
 					taskIds.add(taskPair.getKey());
 				} else {
 					taskIds.add(taskPair.getKey());
@@ -760,7 +773,7 @@ public class DownloadService extends Service {
 	 * 
 	 * @return all sucessfully cancelled tasks
 	 */
-	public HashSet<DownloadTask> cancelOngoingTasks() {
+	public synchronized HashSet<DownloadTask> cancelOngoingTasks() {
 		Collection<DownloadTask> ongoingTasks = downloadTasks.values();
 		HashSet<DownloadTask> cancelledTasks = new HashSet<DownloadTask>();
 
@@ -782,7 +795,8 @@ public class DownloadService extends Service {
 	 * @param callback
 	 *            is the callback
 	 */
-	public void attachCallback(final int id, final DownloadListener callback) {
+	public synchronized void attachCallback(final int id,
+			final DownloadListener callback) {
 		if (attachedCallbacks.containsKey(id)) {
 			if (!attachedCallbacks.get(id).contains(callback)) {
 				attachedCallbacks.get(id).add(callback);
@@ -807,7 +821,8 @@ public class DownloadService extends Service {
 	 * @param callback
 	 *            is the callback
 	 */
-	public void detachCallback(final int id, final DownloadListener callback) {
+	public synchronized void detachCallback(final int id,
+			final DownloadListener callback) {
 		if (attachedCallbacks.containsKey(id)) {
 			if (!attachedCallbacks.get(id).contains(callback)) {
 				attachedCallbacks.get(id).remove(callback);
@@ -906,15 +921,15 @@ public class DownloadService extends Service {
 	 * @param progress
 	 *            is the progress
 	 */
-	private static void notifyCallbacksProgress(final TaskState taskState,
-			final Download download, final int progress) {
+	private static void notifyCallbacksProgress(final Download download,
+			final int progress) {
 		if (null != download && null != download.getId()) {
 			if (attachedCallbacks.containsKey(download.getId())) {
 				final HashSet<DownloadListener> callbacks = attachedCallbacks
 						.get(download.getId());
 
 				for (DownloadListener callback : callbacks) {
-					callback.onDownloadProgress(taskState, download, progress);
+					callback.onDownloadProgress(download, progress);
 				}
 			}
 		}
@@ -1012,8 +1027,8 @@ public class DownloadService extends Service {
 	public static class DownloadTask extends AsyncTask<Void, Integer, Download> {
 
 		private Download download;
-		private TaskState taskState = TaskState.RESUMED;
-		private Boolean isPauseNotified = false;
+
+		private boolean preserveStateOnCancel = false;
 
 		private static final String RANGE_HEADER = "Range";
 		private static final String RANGE_VALUE = "bytes=%d-";
@@ -1050,7 +1065,6 @@ public class DownloadService extends Service {
 		 * 6.Check if file already exists.
 		 */
 		private void initDownload() {
-
 			if (!download.isValid()) {
 				Log.d(getLogTag(), "Parameters invalid");
 
@@ -1151,10 +1165,11 @@ public class DownloadService extends Service {
 									request.addHeader(RANGE_HEADER, String
 											.format(RANGE_VALUE,
 													targetTempFile.length()));
-									
+
 									response = downloadClient.execute(request);
 
-									remoteContentStream = response.getEntity().getContent();
+									remoteContentStream = response.getEntity()
+											.getContent();
 
 									tempfileSize = targetTempFile.length();
 
@@ -1176,29 +1191,19 @@ public class DownloadService extends Service {
 
 								showProgressNotification(download);
 
+								Log.d(getLogTag(), "download started");
+
 								while (-1 != (chunkSize = remoteContentStream
 										.read(buffer))) {
-									if (TaskState.RESUMED.equals(taskState)) {
-										if (isPauseNotified)
-											isPauseNotified = false;
+									targetWriteFile.write(buffer, 0, chunkSize);
 
-										targetWriteFile.write(buffer, 0,
-												chunkSize);
+									chunkCompleted += chunkSize;
+									chunkCopied += chunkSize;
 
-										chunkCompleted += chunkSize;
-										chunkCopied += chunkSize;
+									chunkProgress = (int) ((double) chunkCompleted
+											/ (double) fileSize * 100.0);
 
-										chunkProgress = (int) ((double) chunkCompleted
-												/ (double) fileSize * 100.0);
-
-										publishProgress(chunkProgress);
-									} else {
-										if (!isPauseNotified) {
-											isPauseNotified = true;
-
-											publishProgress(chunkProgress);
-										}
-									}
+									publishProgress(chunkProgress);
 								}
 
 								if ((tempfileSize + chunkCopied) != fileSize
@@ -1216,10 +1221,10 @@ public class DownloadService extends Service {
 									targetTempFile.renameTo(targetLocalFile);
 									download.setState(DownloadState.COMPLETED);
 								}
-
-								cancelNotification(NOTIFICATION_TAG_PROGRESS,
-										download.getId());
 							}
+
+							cancelNotification(NOTIFICATION_TAG_PROGRESS,
+									download.getId());
 						}
 					}
 
@@ -1264,33 +1269,40 @@ public class DownloadService extends Service {
 		}
 
 		/**
-		 * This method will update download state for this task
+		 * This method return the download state. if it does not exist it will
+		 * return state unknown
 		 * 
-		 * @param state
-		 *            download state
+		 * @return
 		 */
-		public void updateState(DownloadState state) {
-			if (null != download)
-				download.setState(state);
+		public DownloadState getDownloadState() {
+			if (null != download && null != download.getState())
+				return download.getState();
+
+			return DownloadState.UNKNOWN;
 		}
 
 		/**
-		 * This method will pause the current task.
+		 * This method will cancel this task allowing caller to persist the
+		 * download state. Useful when pausing download
+		 * 
+		 * @param preserveStateOnCancel
+		 *            if true will persist the current state on cancel
+		 * @param mayInterruptIfRunning
 		 */
-		public synchronized void pauseTask() {
-			taskState = TaskState.PAUSED;
-		}
+		public void cancel(boolean preserveStateOnCancel,
+				boolean mayInterruptIfRunning) {
+			this.preserveStateOnCancel = preserveStateOnCancel;
 
-		/**
-		 * This method will resume the current task.
-		 */
-		public synchronized void resumeTask() {
-			taskState = TaskState.RESUMED;
+			cancel(mayInterruptIfRunning);
 		}
 
 		@Override
 		protected void onCancelled(Download result) {
-			updateDownloadState(download, DownloadState.CANCELLED);
+			if (preserveStateOnCancel) {
+				if (null != download && null != download.getState())
+					updateDownloadState(download, download.getState());
+			} else
+				updateDownloadState(download, DownloadState.CANCELLED);
 
 			notifyCallbacksCancelled(result);
 
@@ -1317,7 +1329,8 @@ public class DownloadService extends Service {
 
 		@Override
 		protected void onProgressUpdate(Integer... values) {
-			notifyCallbacksProgress(taskState, download, values[0]);
+			// For now all
+			notifyCallbacksProgress(download, values[0]);
 
 			super.onProgressUpdate(values);
 		}
@@ -1332,23 +1345,22 @@ public class DownloadService extends Service {
 	 * 
 	 */
 	public static class TaskStateResult {
-		private HashSet<DownloadTask> successTasks = new HashSet<DownloadTask>();
-
+		private HashSet<DownloadTask> tasks = new HashSet<DownloadTask>();
 		private HashSet<DownloadTask> freshTasks = new HashSet<DownloadTask>();
 
 		/**
-		 * @return the successTasks
+		 * @return the tasks
 		 */
-		public HashSet<DownloadTask> getSuccessTasks() {
-			return successTasks;
+		public HashSet<DownloadTask> getTasks() {
+			return tasks;
 		}
 
 		/**
-		 * @param successTasks
-		 *            the successTasks to set
+		 * @param tasks
+		 *            the tasks to set
 		 */
-		public void setSuccessTasks(HashSet<DownloadTask> successTasks) {
-			this.successTasks = successTasks;
+		public void setTasks(HashSet<DownloadTask> tasks) {
+			this.tasks = tasks;
 		}
 
 		/**

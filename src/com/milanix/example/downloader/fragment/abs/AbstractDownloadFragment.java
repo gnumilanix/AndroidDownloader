@@ -1,5 +1,9 @@
 package com.milanix.example.downloader.fragment.abs;
 
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.database.ContentObserver;
@@ -7,28 +11,41 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.AbsListView.MultiChoiceModeListener;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.GridView;
+import android.widget.ImageButton;
 import android.widget.ListView;
 
 import com.milanix.example.downloader.R;
+import com.milanix.example.downloader.data.dao.Download;
+import com.milanix.example.downloader.data.dao.Download.DownloadListener;
+import com.milanix.example.downloader.data.dao.Download.FailedReason;
 import com.milanix.example.downloader.data.provider.DownloadContentProvider;
+import com.milanix.example.downloader.dialog.AddNewDownloadDialog;
+import com.milanix.example.downloader.dialog.AddNewDownloadDialog.OnAddNewDownloadListener;
 import com.milanix.example.downloader.dialog.DeleteDownloadDialog;
 import com.milanix.example.downloader.dialog.DeleteDownloadDialog.OnDeleteDownloadListener;
 import com.milanix.example.downloader.dialog.NetworkConfigureDialog;
 import com.milanix.example.downloader.dialog.SortConfigureDialog;
 import com.milanix.example.downloader.fragment.DownloadedFragment;
 import com.milanix.example.downloader.fragment.adapter.DownloadListAdapter;
+import com.milanix.example.downloader.service.DownloadService;
+import com.milanix.example.downloader.service.DownloadService.DownloadBinder;
+import com.milanix.example.downloader.util.NetworkUtils;
 import com.milanix.example.downloader.util.PreferenceHelper;
 import com.milanix.example.downloader.util.ToastHelper;
 
@@ -39,7 +56,8 @@ import com.milanix.example.downloader.util.ToastHelper;
  * 
  */
 public abstract class AbstractDownloadFragment extends AbstractFragment
-		implements OnDeleteDownloadListener, OnItemClickListener,
+		implements OnDeleteDownloadListener, OnAddNewDownloadListener,
+		OnItemClickListener, OnClickListener,
 		LoaderManager.LoaderCallbacks<Cursor> {
 
 	private static final int HANDLE_REFRESH_ADAPTER = 0;
@@ -50,12 +68,14 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 
 	protected View rootView;
 	protected GridView downloading_list;
+	protected ImageButton download_add;
 	protected DownloadListAdapter downloadListAdapter;
 
-	protected SharedPreferences sharedPreferences;
-	protected OnSharedPreferenceChangeListener sharedPrefChangeListener;
+	// Don't allow these fields to be changed by child classes
+	private SharedPreferences sharedPreferences;
+	private OnSharedPreferenceChangeListener sharedPrefChangeListener;
 
-	protected Handler uiUpdateHandler = new Handler() {
+	private Handler uiUpdateHandler = new Handler() {
 
 		@Override
 		public void handleMessage(Message msg) {
@@ -72,6 +92,26 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 			default:
 				super.handleMessage(msg);
 			}
+		}
+	};
+
+	private DownloadService downloadService = null;
+	private boolean bound = false;
+
+	private ServiceConnection connection = new ServiceConnection() {
+
+		@Override
+		public void onServiceConnected(ComponentName name, IBinder service) {
+			downloadService = ((DownloadBinder) service).getService();
+
+			bound = true;
+
+			setAdapter();
+		}
+
+		@Override
+		public void onServiceDisconnected(ComponentName name) {
+			bound = false;
 		}
 	};
 
@@ -121,14 +161,32 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 		super.onResume();
 	}
 
+	@Override
+	public void onStart() {
+		super.onStart();
+
+		getActivity().bindService(
+				new Intent(getActivity(), DownloadService.class), connection,
+				Context.BIND_AUTO_CREATE);
+	}
+
+	@Override
+	public void onStop() {
+		super.onStop();
+
+		if (bound) {
+			getActivity().unbindService(connection);
+
+			bound = false;
+		}
+	}
+
 	/**
 	 * Called to init view components
 	 */
 	@Override
 	protected void onInit() {
 		super.onInit();
-
-		setAdapter();
 	}
 
 	/**
@@ -171,6 +229,7 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 	protected void setUI() {
 		downloading_list = (GridView) rootView
 				.findViewById(R.id.downloading_list);
+		download_add = (ImageButton) rootView.findViewById(R.id.download_add);
 	}
 
 	@Override
@@ -179,6 +238,8 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 		downloading_list
 				.setMultiChoiceModeListener(getMultiChoiceModeListener());
 		downloading_list.setOnItemClickListener(this);
+
+		download_add.setOnClickListener(this);
 	}
 
 	/**
@@ -187,7 +248,8 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 	 * @param cursor
 	 */
 	protected void setAdapter() {
-		downloadListAdapter = new DownloadListAdapter(getActivity(), null, false);
+		downloadListAdapter = new DownloadListAdapter(getActivity(), null,
+				false, downloadService);
 
 		downloading_list.setAdapter(downloadListAdapter);
 
@@ -213,6 +275,24 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 		if (null != downloadContentObserver)
 			getActivity().getContentResolver().unregisterContentObserver(
 					downloadContentObserver);
+	}
+
+	/**
+	 * This method will return if service is bound
+	 * 
+	 * @return true if the service is bound, otherwise false
+	 */
+	protected boolean isBound() {
+		return bound;
+	}
+
+	/**
+	 * This method will return download service in this class
+	 * 
+	 * @return download service instance.
+	 */
+	protected DownloadService getDownloadService() {
+		return downloadService;
 	}
 
 	/**
@@ -259,6 +339,33 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 					getString(R.string.download_delete_fail));
 	}
 
+	@Override
+	public void onNewDownloadAdded(Integer id) {
+		if (null != id) {
+			Download addedDownload = new Download().retrieve(getActivity(), id);
+
+			if (null != addedDownload && null != addedDownload.getUrl()) {
+				refreshCursorLoader(false);
+
+				ToastHelper.showToast(getActivity(), String.format(
+						getString(R.string.download_add_success),
+						addedDownload.getUrl()));
+
+				if (NetworkUtils.isNetworkConnected(getActivity()))
+					pushDownloadToService(addedDownload);
+				else
+					ToastHelper.showToast(getActivity(),
+							getString(R.string.download_disconnected));
+			} else {
+				ToastHelper.showToast(getActivity(),
+						getString(R.string.download_add_fail));
+			}
+
+		} else
+			ToastHelper.showToast(getActivity(),
+					getString(R.string.download_add_fail));
+	}
+
 	/**
 	 * This method will show add new download dialog
 	 * 
@@ -288,6 +395,17 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 	}
 
 	/**
+	 * This method will show add new download dialog
+	 */
+	private void showAddNewDialog() {
+		DialogFragment newFragment = new AddNewDownloadDialog();
+		newFragment.setTargetFragment(this, -1);
+		newFragment.setCancelable(true);
+		newFragment.show(getFragmentManager(),
+				AddNewDownloadDialog.class.getSimpleName());
+	}
+
+	/**
 	 * This method will remove given ids from the database
 	 * 
 	 * @param downloadIds
@@ -295,6 +413,12 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 	 */
 	protected void removeDownloads(long[] downloadIds) {
 		showRemoveDialog(downloadIds);
+	}
+
+	@Override
+	public void onClick(View view) {
+		if (view.getId() == R.id.download_add)
+			showAddNewDialog();
 	}
 
 	@Override
@@ -306,7 +430,7 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
 		super.onCreateOptionsMenu(menu, inflater);
 
-		inflater.inflate(R.menu.menu_sort, menu);
+		inflater.inflate(R.menu.menu_download, menu);
 	}
 
 	@Override
@@ -317,8 +441,64 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 			showSortConfigureDialog();
 
 			return true;
+
 		default:
 			return super.onOptionsItemSelected(item);
+		}
+	}
+
+	/**
+	 * This method will push download to the service
+	 * 
+	 * @param download
+	 */
+	protected void pushDownloadToService(Download download) {
+		if (bound) {
+			downloadService.attachCallback(download.getId(),
+					new DownloadListener() {
+
+						@Override
+						public void onDownloadStarted(Download download) {
+							Log.d(getLogTag(),
+									"Download started " + download.getName());
+
+							postRefreshCursorLoader(false);
+						}
+
+						@Override
+						public void onDownloadCancelled(Download download) {
+							Log.d(getLogTag(),
+									"Download cancelled " + download.getName());
+
+							postRefreshCursorLoader(false);
+						}
+
+						@Override
+						public void onDownloadCompleted(Download download) {
+							Log.d(getLogTag(),
+									"Download completed " + download.getName());
+
+							postRefreshCursorLoader(false);
+						}
+
+						@Override
+						public void onDownloadFailed(Download download,
+								FailedReason reason) {
+							Log.d(getLogTag(),
+									"Download failed " + download.getName());
+
+							postRefreshCursorLoader(false);
+						}
+
+						@Override
+						public void onDownloadProgress(Download download,
+								Integer progress) {
+							Log.d(getLogTag(),
+									"Download paused " + download.getName());
+						}
+					});
+
+			DownloadService.downloadFile(download.getId());
 		}
 	}
 

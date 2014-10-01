@@ -39,8 +39,8 @@ public class Download extends AbstractDao<Download> {
 	public static enum DownloadState {
 		ADDED_AUTHORIZED("added_authorized"), ADDED_NOTAUTHORIZED(
 				"added_notauthorized"), DOWNLOADING("downloading"), COMPLETED(
-				"completed"), FAILED("failed"), CANCELLED("cancelled"), UNKNOWN(
-				"unknown");
+				"completed"), FAILED("failed"), CANCELLED("cancelled"), PAUSED(
+				"paused"), UNKNOWN("unknown");
 
 		private final String name;
 
@@ -69,20 +69,6 @@ public class Download extends AbstractDao<Download> {
 			else
 				return UNKNOWN;
 		}
-	}
-
-	/**
-	 * Enum for download task state
-	 * 
-	 * {@link #RESUMED} states that the download state is resumed
-	 * 
-	 * {@link #PAUSED} states that the download state is paused
-	 * 
-	 * @author Milan
-	 * 
-	 */
-	public static enum TaskState {
-		RESUMED, PAUSED
 	}
 
 	/**
@@ -372,8 +358,7 @@ public class Download extends AbstractDao<Download> {
 		 * 
 		 * @param int is a progress
 		 */
-		public void onDownloadProgress(TaskState taskState, Download download,
-				Integer progress);
+		public void onDownloadProgress(Download download, Integer progress);
 	}
 
 }
