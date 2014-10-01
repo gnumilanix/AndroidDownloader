@@ -83,7 +83,7 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 			case HANDLE_REFRESH_ADAPTER:
 				if (null != msg && null != msg.getData()
 						&& msg.getData().containsKey(HANDLE_KEY_ISSILENT))
-					refreshCursorLoader(msg.getData().containsKey(
+					refreshCursorLoader(msg.getData().getBoolean(
 							HANDLE_KEY_ISSILENT));
 				else
 					refreshCursorLoader(false);

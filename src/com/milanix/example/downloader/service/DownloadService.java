@@ -1021,6 +1021,23 @@ public class DownloadService extends Service {
 	/**
 	 * This is a task to download the file
 	 * 
+	 * 
+	 * This will perform validation and init download when all validation
+	 * passes. Validation is performed in the following steps:
+	 * 
+	 * 1.Check if parameters of {@link Download} is valid.
+	 * 
+	 * 2.Check if network is connected.
+	 * 
+	 * 3.Check if storage is writable.
+	 * 
+	 * 4.Check if file size exceeded. (If authorized by user this will be
+	 * ignored)
+	 * 
+	 * 5.Check if storage is available.
+	 * 
+	 * 6.Check if file already exists.
+	 * 
 	 * @author Milan
 	 * 
 	 */
@@ -1041,211 +1058,204 @@ public class DownloadService extends Service {
 
 		@Override
 		protected Download doInBackground(Void... arg) {
-			if (null != getStaticContext())
-				initDownload();
 
-			return download;
-		}
+			if (null != getStaticContext()) {
+				if (!download.isValid()) {
+					Log.d(getLogTag(), "Parameters invalid");
 
-		/**
-		 * This method will perform validation and init download when all
-		 * validation passes. Validation is performed in the following steps:
-		 * 
-		 * 1.Check if paramters of {@link Download} is valid.
-		 * 
-		 * 2.Check if network is connected.
-		 * 
-		 * 3.Check if storage is writable.
-		 * 
-		 * 4.Check if file size exceeded. (If authorized by user this will be
-		 * ignored)
-		 * 
-		 * 5.Check if storage is available.
-		 * 
-		 * 6.Check if file already exists.
-		 */
-		private void initDownload() {
-			if (!download.isValid()) {
-				Log.d(getLogTag(), "Parameters invalid");
+					updateDownloadState(download, DownloadState.FAILED);
 
-				updateDownloadState(download, DownloadState.FAILED);
+					notifyCallbacksFailed(download, FailedReason.UNKNOWN_ERROR);
+				} else if (!NetworkUtils.isNetworkConnected(getStaticContext())) {
+					Log.d(getLogTag(), "network disconnected");
 
-				notifyCallbacksFailed(download, FailedReason.UNKNOWN_ERROR);
-			} else if (!NetworkUtils.isNetworkConnected(getStaticContext())) {
-				Log.d(getLogTag(), "network disconnected");
+					notifyCallbacksFailed(download,
+							FailedReason.NETWORK_NOTAVAILABLE);
+				} else if (!FileUtils.isStorageWritable()) {
+					Log.d(getLogTag(), "storage not writable");
 
-				notifyCallbacksFailed(download,
-						FailedReason.NETWORK_NOTAVAILABLE);
-			} else if (!FileUtils.isStorageWritable()) {
-				Log.d(getLogTag(), "storage not writable");
+					notifyCallbacksFailed(download,
+							FailedReason.STORAGE_NOTWRITABLE);
+				} else {
+					Log.d(getLogTag(),
+							"parms valid, network available and storage writable");
 
-				notifyCallbacksFailed(download,
-						FailedReason.STORAGE_NOTWRITABLE);
-			} else {
-				Log.d(getLogTag(),
-						"parms valid, network available and storage writable");
+					InputStream remoteContentStream = null;
+					BufferedInputStream bufferedFileStream = null;
 
-				InputStream remoteContentStream = null;
-				BufferedInputStream bufferedFileStream = null;
+					File targetLocalFile = null;
+					File targetTempFile = null;
+					RandomAccessFile targetWriteFile = null;
 
-				File targetLocalFile = null;
-				File targetTempFile = null;
-				RandomAccessFile targetWriteFile = null;
+					try {
+						HttpClient downloadClient = NetworkUtils
+								.getHttpClient();
 
-				try {
-					HttpClient downloadClient = NetworkUtils.getHttpClient();
+						HttpParams params = new BasicHttpParams();
+						HttpConnectionParams.setSoTimeout(params, 60000);
 
-					HttpParams params = new BasicHttpParams();
-					HttpConnectionParams.setSoTimeout(params, 60000);
+						HttpGet request = new HttpGet(download.getUrl());
+						request.setParams(params);
 
-					HttpGet request = new HttpGet(download.getUrl());
-					request.setParams(params);
+						HttpResponse response = downloadClient.execute(request);
 
-					HttpResponse response = downloadClient.execute(request);
+						remoteContentStream = response.getEntity().getContent();
 
-					remoteContentStream = response.getEntity().getContent();
+						long fileSize = response.getEntity().getContentLength();
+						long tempfileSize = 0L;
 
-					long fileSize = response.getEntity().getContentLength();
-					long tempfileSize = 0L;
+						updateDownlaodSize(fileSize);
 
-					updateDownlaodSize(fileSize);
+						if (DownloadState.ADDED_NOTAUTHORIZED.equals(download
+								.getState())
+								&& (FileUtils.getStorageSizeAs(
+										downloadLimitType, fileSize) >= FileUtils
+										.getStorageSizeAs(downloadLimitType,
+												downloadLimitSize))) {
+							Log.d(getLogTag(),
+									"not authorized and limit exceeded");
 
-					if (DownloadState.ADDED_NOTAUTHORIZED.equals(download
-							.getState())
-							&& (FileUtils.getStorageSizeAs(downloadLimitType,
-									fileSize) >= FileUtils.getStorageSizeAs(
-									downloadLimitType, downloadLimitSize))) {
-						Log.d(getLogTag(), "not authorized and limit exceeded");
+							updateDownloadState(download,
+									DownloadState.ADDED_NOTAUTHORIZED);
 
-						updateDownloadState(download,
-								DownloadState.ADDED_NOTAUTHORIZED);
-
-						showWarningNotification(download);
-					} else {
-						Log.d(getLogTag(), "authorized and limit not exceeded");
-
-						updateDownloadState(download,
-								DownloadState.ADDED_AUTHORIZED);
-
-						if (!FileUtils.isStorageSpaceAvailable(fileSize)) {
-							notifyCallbacksFailed(download,
-									FailedReason.STORAGE_NOTAVAILABLE);
+							showWarningNotification(download);
 						} else {
-							Log.d(getLogTag(), "storage available");
+							Log.d(getLogTag(),
+									"authorized and limit not exceeded");
 
-							targetLocalFile = new File(download.getPath());
+							updateDownloadState(download,
+									DownloadState.ADDED_AUTHORIZED);
 
-							// If file exist mark completed otherwise progress
-							if (targetLocalFile.exists()
-									&& fileSize == targetLocalFile.length()) {
-								Log.d(getLogTag(), "file exists");
-
-								download.setState(DownloadState.COMPLETED);
+							if (!FileUtils.isStorageSpaceAvailable(fileSize)) {
+								notifyCallbacksFailed(download,
+										FailedReason.STORAGE_NOTAVAILABLE);
 							} else {
-								Log.d(getLogTag(), "file does not exist");
+								Log.d(getLogTag(), "storage available");
 
-								byte[] buffer = new byte[BUFFER_SIZE];
-								int chunkSize = 0;
-								int chunkCompleted = 0;
-								int chunkProgress = 0;
-								int chunkCopied = 0;
+								targetLocalFile = new File(download.getPath());
 
-								targetTempFile = new File(
-										FilenameUtils.getFullPath(download
-												.getPath()),
-										FilenameUtils.getName(download
-												.getPath()) + TEMP_SUFFIX);
+								// If file exist mark completed otherwise
+								// progress
+								if (targetLocalFile.exists()
+										&& fileSize == targetLocalFile.length()) {
+									Log.d(getLogTag(), "file exists");
 
-								/*
-								 * If temp file exist add header to request
-								 * remainin content
-								 */
-								if (targetTempFile.exists()
-										&& targetTempFile.length() < fileSize) {
-									request.addHeader(RANGE_HEADER, String
-											.format(RANGE_VALUE,
-													targetTempFile.length()));
-
-									response = downloadClient.execute(request);
-
-									remoteContentStream = response.getEntity()
-											.getContent();
-
-									tempfileSize = targetTempFile.length();
-
-									chunkCompleted = (int) tempfileSize;
-
-									Log.d(getLogTag(), "temp exists");
-								}
-
-								targetWriteFile = new RandomAccessFile(
-										targetTempFile, "rw");
-
-								bufferedFileStream = new BufferedInputStream(
-										remoteContentStream, BUFFER_SIZE);
-
-								// Seek to target. If temp seeks to length
-								// otherwise
-								// 0
-								targetWriteFile.seek(targetWriteFile.length());
-
-								showProgressNotification(download);
-
-								Log.d(getLogTag(), "download started");
-
-								while (-1 != (chunkSize = remoteContentStream
-										.read(buffer))) {
-									targetWriteFile.write(buffer, 0, chunkSize);
-
-									chunkCompleted += chunkSize;
-									chunkCopied += chunkSize;
-
-									chunkProgress = (int) ((double) chunkCompleted
-											/ (double) fileSize * 100.0);
-
-									publishProgress(chunkProgress);
-								}
-
-								if ((tempfileSize + chunkCopied) != fileSize
-										&& fileSize != -1) {
-									Log.d(getLogTag(), "Incomplete download");
-
-									updateDownloadState(download,
-											DownloadState.FAILED);
-
-									notifyCallbacksFailed(download,
-											FailedReason.IO_ERROR);
-								} else {
-									Log.d(getLogTag(), "Complete download");
-
-									targetTempFile.renameTo(targetLocalFile);
 									download.setState(DownloadState.COMPLETED);
+								} else {
+									Log.d(getLogTag(), "file does not exist");
+
+									byte[] buffer = new byte[BUFFER_SIZE];
+									int chunkSize = 0;
+									int chunkCompleted = 0;
+									int chunkProgress = 0;
+									int chunkCopied = 0;
+
+									targetTempFile = new File(
+											FilenameUtils.getFullPath(download
+													.getPath()),
+											FilenameUtils.getName(download
+													.getPath()) + TEMP_SUFFIX);
+
+									/*
+									 * If temp file exist add header to request
+									 * remainin content
+									 */
+									if (targetTempFile.exists()
+											&& targetTempFile.length() < fileSize) {
+										request.addHeader(
+												RANGE_HEADER,
+												String.format(RANGE_VALUE,
+														targetTempFile.length()));
+
+										response = downloadClient
+												.execute(request);
+
+										remoteContentStream = response
+												.getEntity().getContent();
+
+										tempfileSize = targetTempFile.length();
+
+										chunkCompleted = (int) tempfileSize;
+
+										Log.d(getLogTag(), "temp exists");
+									}
+
+									targetWriteFile = new RandomAccessFile(
+											targetTempFile, "rw");
+
+									bufferedFileStream = new BufferedInputStream(
+											remoteContentStream, BUFFER_SIZE);
+
+									// Seek to target. If temp seeks to length
+									// otherwise
+									// 0
+									targetWriteFile.seek(targetWriteFile
+											.length());
+
+									showProgressNotification(download);
+
+									Log.d(getLogTag(), "download started");
+
+									while (-1 != (chunkSize = remoteContentStream
+											.read(buffer))) {
+										targetWriteFile.write(buffer, 0,
+												chunkSize);
+
+										chunkCompleted += chunkSize;
+										chunkCopied += chunkSize;
+
+										chunkProgress = (int) ((double) chunkCompleted
+												/ (double) fileSize * 100.0);
+
+										publishProgress(chunkProgress);
+									}
+
+									if ((tempfileSize + chunkCopied) != fileSize
+											&& fileSize != -1) {
+										Log.d(getLogTag(),
+												"Incomplete download");
+
+										updateDownloadState(download,
+												DownloadState.FAILED);
+
+										notifyCallbacksFailed(download,
+												FailedReason.IO_ERROR);
+									} else {
+										Log.d(getLogTag(), "Complete download");
+
+										targetTempFile
+												.renameTo(targetLocalFile);
+										download.setState(DownloadState.COMPLETED);
+									}
 								}
+
+								cancelNotification(NOTIFICATION_TAG_PROGRESS,
+										download.getId());
 							}
-
-							cancelNotification(NOTIFICATION_TAG_PROGRESS,
-									download.getId());
 						}
+
+					} catch (ClientProtocolException ex) {
+						Log.e(getLogTag(), "IO exception occoured", ex);
+
+						updateDownloadState(download, DownloadState.FAILED);
+
+						notifyCallbacksFailed(download,
+								FailedReason.NETWORK_ERROR);
+					} catch (IOException ex) {
+						Log.e(getLogTag(), "IO exception occoured", ex);
+
+						updateDownloadState(download, DownloadState.FAILED);
+
+						notifyCallbacksFailed(download, FailedReason.IO_ERROR);
+					} finally {
+						IOUtils.close(targetWriteFile);
+						IOUtils.close(remoteContentStream);
+						IOUtils.close(bufferedFileStream);
 					}
-
-				} catch (ClientProtocolException ex) {
-					Log.e(getLogTag(), "IO exception occoured", ex);
-
-					updateDownloadState(download, DownloadState.FAILED);
-
-					notifyCallbacksFailed(download, FailedReason.NETWORK_ERROR);
-				} catch (IOException ex) {
-					Log.e(getLogTag(), "IO exception occoured", ex);
-
-					updateDownloadState(download, DownloadState.FAILED);
-
-					notifyCallbacksFailed(download, FailedReason.IO_ERROR);
-				} finally {
-					IOUtils.close(targetWriteFile);
-					IOUtils.close(remoteContentStream);
-					IOUtils.close(bufferedFileStream);
 				}
 			}
+
+			return download;
 		}
 
 		/**
