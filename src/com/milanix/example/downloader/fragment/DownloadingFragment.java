@@ -17,7 +17,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AbsListView.MultiChoiceModeListener;
 import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemClickListener;
 
 import com.milanix.example.downloader.R;
 import com.milanix.example.downloader.data.dao.Download;
@@ -43,7 +42,7 @@ import com.milanix.example.downloader.util.ToastHelper;
  * This fragment contains downloading list and its related logic.
  */
 public class DownloadingFragment extends AbstractDownloadFragment implements
-		OnItemClickListener, OnAddNewDownloadListener {
+		OnAddNewDownloadListener {
 
 	private DownloadService downloadService = null;
 
@@ -74,11 +73,16 @@ public class DownloadingFragment extends AbstractDownloadFragment implements
 	}
 
 	@Override
-	protected void setAdapter() {
-		adapter = new DownloadListAdapter(getActivity(), null, false,
-				downloadService);
+	public void setListener() {
+		super.setListener();
+	}
 
-		downloading_list.setAdapter(adapter);
+	@Override
+	protected void setAdapter() {
+		downloadListAdapter = new DownloadListAdapter(getActivity(), null,
+				false, downloadService);
+
+		downloading_list.setAdapter(downloadListAdapter);
 
 		getLoaderManager().initLoader(0, null, this);
 	}
@@ -186,7 +190,9 @@ public class DownloadingFragment extends AbstractDownloadFragment implements
 	@Override
 	public void onItemClick(AdapterView<?> parent, View view, int position,
 			long id) {
+		downloadListAdapter.setExpanded(position);
 
+		//refreshCursorLoader(true);
 	}
 
 	@Override

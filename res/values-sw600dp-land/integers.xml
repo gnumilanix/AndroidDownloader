@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Tablet 7 Landscape -->
+    <integer name="grid_column">3</integer>
+
+</resources>

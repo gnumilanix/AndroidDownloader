@@ -15,7 +15,6 @@ import android.view.View;
 import android.webkit.MimeTypeMap;
 import android.widget.AbsListView.MultiChoiceModeListener;
 import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemClickListener;
 
 import com.milanix.example.downloader.R;
 import com.milanix.example.downloader.data.dao.Download.DownloadState;
@@ -28,15 +27,7 @@ import com.milanix.example.downloader.util.PreferenceHelper;
 /**
  * This fragment contains downloaded list and its related logic.
  */
-public class DownloadedFragment extends AbstractDownloadFragment implements
-		OnItemClickListener {
-
-	@Override
-	public void setListener() {
-		super.setListener();
-
-		downloading_list.setOnItemClickListener(this);
-	}
+public class DownloadedFragment extends AbstractDownloadFragment {
 
 	@Override
 	public MultiChoiceModeListener getMultiChoiceModeListener() {
@@ -105,7 +96,7 @@ public class DownloadedFragment extends AbstractDownloadFragment implements
 	@Override
 	public void onItemClick(AdapterView<?> parent, View view, int position,
 			long id) {
-		Cursor cursor = adapter.getCursor();
+		Cursor cursor = downloadListAdapter.getCursor();
 
 		if (cursor.moveToPosition(position)) {
 			viewFile(cursor.getString(cursor

@@ -29,6 +29,9 @@ public class PoolConfigureDialog extends DialogFragment implements
 
 	private int poolSize = 0;
 
+	// Max pool based on the device core.
+	private int MAX_POOL_MULTIPLIER = 2;
+
 	private OnPoolConfigureListener onTaskConfigureListener;
 
 	@Override
@@ -71,6 +74,8 @@ public class PoolConfigureDialog extends DialogFragment implements
 		poolSize = PreferenceHelper.getDownloadPoolSize(getActivity());
 
 		tasks_seekbar.setProgress(poolSize - 1);
+		tasks_seekbar
+				.setMax((Runtime.getRuntime().availableProcessors() * MAX_POOL_MULTIPLIER) - 1);
 		tasks_number.setText(getResources().getQuantityString(
 				R.plurals.tasks_configured, poolSize, poolSize));
 	}

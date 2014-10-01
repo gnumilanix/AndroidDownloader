@@ -17,6 +17,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView.MultiChoiceModeListener;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.GridView;
 import android.widget.ListView;
 
 import com.milanix.example.downloader.R;
@@ -37,7 +39,7 @@ import com.milanix.example.downloader.util.ToastHelper;
  * 
  */
 public abstract class AbstractDownloadFragment extends AbstractFragment
-		implements OnDeleteDownloadListener,
+		implements OnDeleteDownloadListener, OnItemClickListener,
 		LoaderManager.LoaderCallbacks<Cursor> {
 
 	private static final int HANDLE_REFRESH_ADAPTER = 0;
@@ -47,8 +49,8 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 	private DownloadContentObserver downloadContentObserver;
 
 	protected View rootView;
-	protected ListView downloading_list;
-	protected DownloadListAdapter adapter;
+	protected GridView downloading_list;
+	protected DownloadListAdapter downloadListAdapter;
 
 	protected SharedPreferences sharedPreferences;
 	protected OnSharedPreferenceChangeListener sharedPrefChangeListener;
@@ -167,7 +169,7 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 
 	@Override
 	protected void setUI() {
-		downloading_list = (ListView) rootView
+		downloading_list = (GridView) rootView
 				.findViewById(R.id.downloading_list);
 	}
 
@@ -176,6 +178,7 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 		downloading_list.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
 		downloading_list
 				.setMultiChoiceModeListener(getMultiChoiceModeListener());
+		downloading_list.setOnItemClickListener(this);
 	}
 
 	/**
@@ -184,9 +187,9 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 	 * @param cursor
 	 */
 	protected void setAdapter() {
-		adapter = new DownloadListAdapter(getActivity(), null, false);
+		downloadListAdapter = new DownloadListAdapter(getActivity(), null, false);
 
-		downloading_list.setAdapter(adapter);
+		downloading_list.setAdapter(downloadListAdapter);
 
 		getLoaderManager().initLoader(0, null, this);
 	}
@@ -236,7 +239,7 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 	 *            if false will notify user otherwise nothing will be displayed
 	 */
 	protected void refreshCursorLoader(boolean isSilent) {
-		if (null != adapter) {
+		if (null != downloadListAdapter) {
 			getLoaderManager().restartLoader(0, null, this);
 
 			if (!isSilent)
@@ -324,12 +327,12 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 
 	@Override
 	public void onLoadFinished(Loader<Cursor> loader, Cursor newCursor) {
-		adapter.swapCursor(newCursor);
+		downloadListAdapter.swapCursor(newCursor);
 	}
 
 	@Override
 	public void onLoaderReset(Loader<Cursor> loader) {
-		adapter.swapCursor(null);
+		downloadListAdapter.swapCursor(null);
 	}
 
 	/**

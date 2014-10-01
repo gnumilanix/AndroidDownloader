@@ -1108,7 +1108,7 @@ public class DownloadService extends Service {
 
 						showWarningNotification(download);
 					} else {
-						Log.d(getLogTag(), "authorized or limit not exceeded");
+						Log.d(getLogTag(), "authorized and limit not exceeded");
 
 						updateDownloadState(download,
 								DownloadState.ADDED_AUTHORIZED);
@@ -1142,13 +1142,19 @@ public class DownloadService extends Service {
 										FilenameUtils.getName(download
 												.getPath()) + TEMP_SUFFIX);
 
-								// If temp file exist add header to request
-								// remaining
-								// one
-								if (targetTempFile.exists()) {
+								/*
+								 * If temp file exist add header to request
+								 * remainin content
+								 */
+								if (targetTempFile.exists()
+										&& targetTempFile.length() < fileSize) {
 									request.addHeader(RANGE_HEADER, String
 											.format(RANGE_VALUE,
 													targetTempFile.length()));
+									
+									response = downloadClient.execute(request);
+
+									remoteContentStream = response.getEntity().getContent();
 
 									tempfileSize = targetTempFile.length();
 
@@ -1209,11 +1215,10 @@ public class DownloadService extends Service {
 
 									targetTempFile.renameTo(targetLocalFile);
 									download.setState(DownloadState.COMPLETED);
-
-									cancelNotification(
-											NOTIFICATION_TAG_PROGRESS,
-											download.getId());
 								}
+
+								cancelNotification(NOTIFICATION_TAG_PROGRESS,
+										download.getId());
 							}
 						}
 					}

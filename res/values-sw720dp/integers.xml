@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Tablet 10-->
+    <integer name="grid_column">3</integer>
+
+</resources>

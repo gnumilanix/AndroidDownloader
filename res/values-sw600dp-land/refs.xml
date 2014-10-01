@@ -1,0 +1,6 @@
+<resources>
+
+    <!-- Tablet 7 Landscape -->
+    <item name="activity_multipane" type="layout">@layout/activity_home</item>
+
+</resources>

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <integer name="grid_column">1</integer>
+    <!-- Tablet 7-->
+    <integer name="grid_column">2</integer>
 
 </resources>

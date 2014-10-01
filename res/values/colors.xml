@@ -22,6 +22,7 @@
     <!-- List selector -->
     <color name="list_cab_active">#ABCDEF</color>
     <color name="list_cab_normal">#00000000</color>
+    <color name="list_cab_normal_expanded">#E7E7E7</color>
     <color name="list_pressed">#F0F0F0</color>
     <color name="list_selected">#F7F7F7</color>
     <color name="list_normal">#00000000</color>
@@ -30,7 +31,7 @@
     <color name="download_success">#99CC00</color>
     <color name="download_fail">#FF4444</color>
     <color name="download_progress">#33B5E5</color>
-    
+
     <!-- Navigation tabs color -->
     <color name="navigation_tab_bg">#6FCFF2</color>
     <color name="navigation_bg">#C5E4F0</color>

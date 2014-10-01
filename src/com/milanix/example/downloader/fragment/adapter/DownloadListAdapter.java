@@ -1,5 +1,7 @@
 package com.milanix.example.downloader.fragment.adapter;
 
+import java.util.HashMap;
+
 import android.content.Context;
 import android.database.Cursor;
 import android.graphics.Color;
@@ -35,6 +37,8 @@ public class DownloadListAdapter extends CursorAdapter {
 	private static final int COLOR_HINT_SUCCESS = Color.parseColor("#99CC00");
 	private static final int COLOR_HINT_FAILURE = Color.parseColor("#FF4444");
 	private static final int COLOR_HINT_PROGRESS = Color.parseColor("#33B5E5");
+
+	private HashMap<Long, Boolean> expandMap = new HashMap<Long, Boolean>();
 
 	public DownloadListAdapter(Context context, Cursor c, boolean autoRequery) {
 		super(context, c, autoRequery);
@@ -88,6 +92,10 @@ public class DownloadListAdapter extends CursorAdapter {
 		holder.download_name = (TextView) view.findViewById(R.id.download_name);
 		holder.download_date = (TextView) view.findViewById(R.id.download_date);
 		holder.download_url = (TextView) view.findViewById(R.id.download_url);
+		holder.download_size = (TextView) view.findViewById(R.id.download_size);
+
+		holder.row_base = (ViewGroup) view.findViewById(R.id.row_base);
+		holder.expand_base = (ViewGroup) view.findViewById(R.id.expand_base);
 
 		view.setTag(holder);
 
@@ -111,8 +119,7 @@ public class DownloadListAdapter extends CursorAdapter {
 				.getString(cursor
 						.getColumnIndex(DownloadsDatabase.COLUMN_STATE)));
 
-		if (DownloadState.DOWNLOADING.equals(state)
-				|| DownloadState.ADDED_AUTHORIZED.equals(state)) {
+		if (DownloadState.DOWNLOADING.equals(state)) {
 			final ProgressBar progressBar = holder.download_progress;
 
 			final DownloadListener callback = new DownloadListener() {
@@ -178,22 +185,38 @@ public class DownloadListAdapter extends CursorAdapter {
 	 */
 	private void setData(Context context, final ViewHolder holder,
 			final Cursor cursor) {
+		if (-1 != cursor.getColumnIndex(DownloadsDatabase.COLUMN_NAME))
+			holder.download_name.setText(cursor.getString(cursor
+					.getColumnIndex(DownloadsDatabase.COLUMN_NAME)));
 
-		holder.download_name.setText(cursor.getString(cursor
-				.getColumnIndex(DownloadsDatabase.COLUMN_NAME)));
-		holder.download_date.setText(TextHelper.getRelativeDateString(cursor
-				.getLong(cursor.getColumnIndex(DownloadsDatabase.COLUMN_DATE)),
-				context.getString(R.string.download_date_notavailable)));
-		holder.download_url.setText(cursor.getString(cursor
-				.getColumnIndex(DownloadsDatabase.COLUMN_URL)));
-		holder.download_icon.setImageResource(FileUtils
-				.getFileTypeBasedRes(cursor.getString(cursor
-						.getColumnIndex(DownloadsDatabase.COLUMN_URL))));
+		if (-1 != cursor.getColumnIndex(DownloadsDatabase.COLUMN_DATE))
+			holder.download_date.setText(TextHelper.getRelativeDateString(
+					cursor.getLong(cursor
+							.getColumnIndex(DownloadsDatabase.COLUMN_DATE)),
+					context.getString(R.string.download_date_notavailable)));
+
+		if (-1 != cursor.getColumnIndex(DownloadsDatabase.COLUMN_SIZE))
+			holder.download_size.setText(cursor.getString(cursor
+					.getColumnIndex(DownloadsDatabase.COLUMN_SIZE)));
+
+		if (-1 != cursor.getColumnIndex(DownloadsDatabase.COLUMN_URL)) {
+			holder.download_url.setText(cursor.getString(cursor
+					.getColumnIndex(DownloadsDatabase.COLUMN_URL)));
+			holder.download_icon.setImageResource(FileUtils
+					.getFileTypeBasedRes(cursor.getString(cursor
+							.getColumnIndex(DownloadsDatabase.COLUMN_URL))));
+		}
 
 		if (DownloadState.DOWNLOADING.equals(DownloadState.getEnum(cursor
 				.getString(cursor
 						.getColumnIndex(DownloadsDatabase.COLUMN_STATE))))) {
 			holder.download_progress.setVisibility(View.VISIBLE);
+
+			holder.download_hint.setBackgroundColor(COLOR_HINT_PROGRESS);
+		} else if (DownloadState.ADDED_AUTHORIZED.equals(DownloadState
+				.getEnum(cursor.getString(cursor
+						.getColumnIndex(DownloadsDatabase.COLUMN_STATE))))) {
+			holder.download_progress.setVisibility(View.GONE);
 
 			holder.download_hint.setBackgroundColor(COLOR_HINT_PROGRESS);
 		} else if (DownloadState.COMPLETED.equals(DownloadState.getEnum(cursor
@@ -208,6 +231,38 @@ public class DownloadListAdapter extends CursorAdapter {
 			holder.download_hint.setBackgroundColor(COLOR_HINT_FAILURE);
 		}
 
+		holder.row_base.setBackgroundResource(R.drawable.list_cab_selector);
+		holder.expand_base.setVisibility(View.GONE);
+
+		if (-1 != cursor.getColumnIndex(DownloadsDatabase.COLUMN_ID)) {
+			long rowId = cursor.getInt(cursor
+					.getColumnIndex(DownloadsDatabase.COLUMN_ID));
+
+			if (expandMap.containsKey(rowId))
+				if (expandMap.get(rowId)) {
+					holder.row_base
+							.setBackgroundResource(R.drawable.list_cab_selector_expanded);
+
+					holder.expand_base.setVisibility(View.VISIBLE);
+				}
+		}
+
+	}
+
+	/**
+	 * This method will set expanded value for a given position
+	 * 
+	 * @param position
+	 */
+	public void setExpanded(int position) {
+		if (expandMap.containsKey(getItemId(position))) {
+			expandMap.put(getItemId(position),
+					!expandMap.get(getItemId(position)));
+		} else {
+			expandMap.put(getItemId(position), true);
+		}
+
+		notifyDataSetChanged();
 	}
 
 	/**
@@ -226,5 +281,9 @@ public class DownloadListAdapter extends CursorAdapter {
 		public TextView download_name;
 		public TextView download_date;
 		public TextView download_url;
+		public TextView download_size;
+
+		public ViewGroup row_base;
+		public ViewGroup expand_base;
 	}
 }

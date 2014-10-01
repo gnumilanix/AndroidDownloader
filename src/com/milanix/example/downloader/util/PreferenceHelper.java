@@ -30,7 +30,8 @@ public class PreferenceHelper {
 
 	public static final String PATH_DOWNLOAD = "/Download";
 
-	public static final int DEFAULT_POOLSIZE = 5;
+	public static final int DEFAULT_POOLSIZE = Runtime.getRuntime()
+			.availableProcessors();
 	public static final int DEFAULT_WARNINGSIZE = 25;
 	public static final ByteType DEFAULT_WARNINGTYPE = ByteType.MB;
 

@@ -1,0 +1,6 @@
+<resources>
+
+    <!-- Tablet 7-->
+    <item name="activity_multipane" type="layout">@layout/activity_home</item>
+
+</resources>

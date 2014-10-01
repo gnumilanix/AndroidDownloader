@@ -1,0 +1,5 @@
+<resources>
+
+    <item name="activity_singlepane" type="layout">@layout/activity_home</item>
+
+</resources>
