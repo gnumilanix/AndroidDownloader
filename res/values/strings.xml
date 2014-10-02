@@ -18,6 +18,8 @@
     <string name="action_resume">Resume</string>
     <string name="tab_downloading">Downloading</string>
     <string name="tab_downloaded">Downloaded</string>
+    <string name="tab_settings">Settings</string>
+    <string name="tab_browse">Browse</string>
 
     <!-- Add New dialog strings -->
     <string name="addnew_title">Add new download</string>

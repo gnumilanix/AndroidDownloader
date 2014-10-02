@@ -14,8 +14,8 @@
         navigationview:label_paddingLeft="4dp"
         navigationview:label_paddingRight="12dp"
         navigationview:label_textStyle="bold"
-        navigationview:nav_background="@drawable/nav_bg"
-        navigationview:tab_background="@drawable/navtab_bg" />
+        navigationview:nav_background="@drawable/bg_nav"
+        navigationview:tab_background="@drawable/bg_navtab" />
 
     <ListView
         android:id="@+id/list_folder"

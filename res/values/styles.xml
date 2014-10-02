@@ -1,6 +1,6 @@
 <resources>
 
-    <style name="AppBaseTheme" parent="@style/Theme.AppCompat.Light"></style>
+    <style name="AppBaseTheme" parent="@style/Theme.AppCompat"></style>
 
     <!-- Application Core theme. -->
     <style name="DownloaderTheme" parent="AppBaseTheme">
@@ -8,7 +8,7 @@
     </style>
 
     <!-- ActionBar theme -->
-    <style name="DownloaderTheme.ActionBar" parent="@style/Widget.AppCompat.Light.ActionBar">
+    <style name="DownloaderTheme.ActionBar" parent="@style/Widget.AppCompat.ActionBar">
         <item name="android:background">@color/actionbar_dark_background</item>
         <item name="android:titleTextStyle">@style/DownloaderTheme.ActionBar.Title</item>
         <item name="android:displayOptions">useLogo|showHome|showTitle</item>
@@ -21,6 +21,18 @@
 
     <style name="DownloaderTheme.ActionBar.Title" parent="@android:style/TextAppearance.Holo.Widget.ActionBar.Title">
         <item name="android:textColor">@color/actionbar_textcolor</item>
+    </style>
+
+    <style name="navigationdrawer_item">
+        <item name="android:textColor">@color/nav_title_color</item>
+        <item name="android:textSize">@dimen/navigation_drawer_text_size</item>
+        <item name="android:background">@color/navigation_tab_normal</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:paddingLeft">5dp</item>
+        <item name="android:paddingRight">5dp</item>
+        <item name="android:drawablePadding">@dimen/navigation_icon_padding</item>
     </style>
 
 </resources>

@@ -13,30 +13,21 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
-import android.support.v4.app.DialogFragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.AbsListView.MultiChoiceModeListener;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.GridView;
-import android.widget.ImageButton;
 import android.widget.ListView;
 
 import com.milanix.example.downloader.R;
-import com.milanix.example.downloader.data.dao.Download;
-import com.milanix.example.downloader.data.dao.Download.DownloadListener;
-import com.milanix.example.downloader.data.dao.Download.FailedReason;
 import com.milanix.example.downloader.data.provider.DownloadContentProvider;
-import com.milanix.example.downloader.dialog.AddNewDownloadDialog;
-import com.milanix.example.downloader.dialog.AddNewDownloadDialog.OnAddNewDownloadListener;
 import com.milanix.example.downloader.dialog.DeleteDownloadDialog;
 import com.milanix.example.downloader.dialog.DeleteDownloadDialog.OnDeleteDownloadListener;
 import com.milanix.example.downloader.dialog.NetworkConfigureDialog;
@@ -45,7 +36,6 @@ import com.milanix.example.downloader.fragment.DownloadedFragment;
 import com.milanix.example.downloader.fragment.adapter.DownloadListAdapter;
 import com.milanix.example.downloader.service.DownloadService;
 import com.milanix.example.downloader.service.DownloadService.DownloadBinder;
-import com.milanix.example.downloader.util.NetworkUtils;
 import com.milanix.example.downloader.util.PreferenceHelper;
 import com.milanix.example.downloader.util.ToastHelper;
 
@@ -56,8 +46,7 @@ import com.milanix.example.downloader.util.ToastHelper;
  * 
  */
 public abstract class AbstractDownloadFragment extends AbstractFragment
-		implements OnDeleteDownloadListener, OnAddNewDownloadListener,
-		OnItemClickListener, OnClickListener,
+		implements OnDeleteDownloadListener, OnItemClickListener,
 		LoaderManager.LoaderCallbacks<Cursor> {
 
 	private static final int HANDLE_REFRESH_ADAPTER = 0;
@@ -68,7 +57,6 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 
 	protected View rootView;
 	protected GridView downloading_list;
-	protected ImageButton download_add;
 	protected DownloadListAdapter downloadListAdapter;
 
 	// Don't allow these fields to be changed by child classes
@@ -229,7 +217,6 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 	protected void setUI() {
 		downloading_list = (GridView) rootView
 				.findViewById(R.id.downloading_list);
-		download_add = (ImageButton) rootView.findViewById(R.id.download_add);
 	}
 
 	@Override
@@ -238,8 +225,6 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 		downloading_list
 				.setMultiChoiceModeListener(getMultiChoiceModeListener());
 		downloading_list.setOnItemClickListener(this);
-
-		download_add.setOnClickListener(this);
 	}
 
 	/**
@@ -339,33 +324,6 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 					getString(R.string.download_delete_fail));
 	}
 
-	@Override
-	public void onNewDownloadAdded(Integer id) {
-		if (null != id) {
-			Download addedDownload = new Download().retrieve(getActivity(), id);
-
-			if (null != addedDownload && null != addedDownload.getUrl()) {
-				refreshCursorLoader(false);
-
-				ToastHelper.showToast(getActivity(), String.format(
-						getString(R.string.download_add_success),
-						addedDownload.getUrl()));
-
-				if (NetworkUtils.isNetworkConnected(getActivity()))
-					pushDownloadToService(addedDownload);
-				else
-					ToastHelper.showToast(getActivity(),
-							getString(R.string.download_disconnected));
-			} else {
-				ToastHelper.showToast(getActivity(),
-						getString(R.string.download_add_fail));
-			}
-
-		} else
-			ToastHelper.showToast(getActivity(),
-					getString(R.string.download_add_fail));
-	}
-
 	/**
 	 * This method will show add new download dialog
 	 * 
@@ -395,17 +353,6 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 	}
 
 	/**
-	 * This method will show add new download dialog
-	 */
-	private void showAddNewDialog() {
-		DialogFragment newFragment = new AddNewDownloadDialog();
-		newFragment.setTargetFragment(this, -1);
-		newFragment.setCancelable(true);
-		newFragment.show(getFragmentManager(),
-				AddNewDownloadDialog.class.getSimpleName());
-	}
-
-	/**
 	 * This method will remove given ids from the database
 	 * 
 	 * @param downloadIds
@@ -413,12 +360,6 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 	 */
 	protected void removeDownloads(long[] downloadIds) {
 		showRemoveDialog(downloadIds);
-	}
-
-	@Override
-	public void onClick(View view) {
-		if (view.getId() == R.id.download_add)
-			showAddNewDialog();
 	}
 
 	@Override
@@ -444,61 +385,6 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 
 		default:
 			return super.onOptionsItemSelected(item);
-		}
-	}
-
-	/**
-	 * This method will push download to the service
-	 * 
-	 * @param download
-	 */
-	protected void pushDownloadToService(Download download) {
-		if (bound) {
-			downloadService.attachCallback(download.getId(),
-					new DownloadListener() {
-
-						@Override
-						public void onDownloadStarted(Download download) {
-							Log.d(getLogTag(),
-									"Download started " + download.getName());
-
-							postRefreshCursorLoader(false);
-						}
-
-						@Override
-						public void onDownloadCancelled(Download download) {
-							Log.d(getLogTag(),
-									"Download cancelled " + download.getName());
-
-							postRefreshCursorLoader(false);
-						}
-
-						@Override
-						public void onDownloadCompleted(Download download) {
-							Log.d(getLogTag(),
-									"Download completed " + download.getName());
-
-							postRefreshCursorLoader(false);
-						}
-
-						@Override
-						public void onDownloadFailed(Download download,
-								FailedReason reason) {
-							Log.d(getLogTag(),
-									"Download failed " + download.getName());
-
-							postRefreshCursorLoader(false);
-						}
-
-						@Override
-						public void onDownloadProgress(Download download,
-								Integer progress) {
-							Log.d(getLogTag(),
-									"Download paused " + download.getName());
-						}
-					});
-
-			DownloadService.downloadFile(download.getId());
 		}
 	}
 

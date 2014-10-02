@@ -85,8 +85,14 @@ public class LimitConfigureDialog extends DialogFragment implements
 		size_picker = (NumberPicker) rootView.findViewById(R.id.size_picker);
 		type_picker = (NumberPicker) rootView.findViewById(R.id.type_picker);
 
+		size_picker
+				.setDescendantFocusability(NumberPicker.FOCUS_BLOCK_DESCENDANTS);
+		type_picker
+				.setDescendantFocusability(NumberPicker.FOCUS_BLOCK_DESCENDANTS);
+
 		limitSize = PreferenceHelper.getDownloadLimitSize(getActivity());
 		limitType = PreferenceHelper.getDownloadLimitType(getActivity());
+
 	}
 
 	/**

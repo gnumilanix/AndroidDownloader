@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/app_background"
+    android:divider="?android:attr/dividerHorizontal"
+    android:dividerPadding="@dimen/navigation_drawer_divider_padding"
+    android:orientation="vertical"
+    android:showDividers="middle" >
+
+    <TextView
+        android:id="@+id/tab_downloading"
+        style="@style/navigationdrawer_item"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/navigation_item_height"
+        android:drawableLeft="@drawable/ic_icon_task"
+        android:text="@string/tab_downloading" />
+
+    <TextView
+        android:id="@+id/tab_downloaded"
+        style="@style/navigationdrawer_item"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/navigation_item_height"
+        android:drawableLeft="@drawable/ic_icon_path"
+        android:text="@string/tab_downloaded" />
+
+    <TextView
+        android:id="@+id/tab_settings"
+        style="@style/navigationdrawer_item"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/navigation_item_height"
+        android:drawableLeft="@drawable/ic_action_settings"
+        android:text="@string/tab_settings" />
+
+    <TextView
+        android:id="@+id/tab_browse"
+        style="@style/navigationdrawer_item"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/navigation_item_height"
+        android:drawableLeft="@drawable/ic_action_browse"
+        android:text="@string/tab_browse"
+        android:visibility="gone" />
+
+</LinearLayout>

@@ -72,7 +72,7 @@ public class AddNewDownloadDialog extends DialogFragment implements
 	public void onAttach(Activity activity) {
 		super.onAttach(activity);
 		try {
-			onNewDownloadListener = (OnAddNewDownloadListener) getTargetFragment();
+			onNewDownloadListener = (OnAddNewDownloadListener) activity;
 		} catch (ClassCastException e) {
 			throw new ClassCastException(getTargetFragment().getTag()
 					+ " must implement OnAddNewDownloadListener");

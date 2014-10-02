@@ -6,14 +6,15 @@
     <color name="app_background_dark">#000000</color>
 
     <!-- Action Bar Colors -->
-    <color name="actionbar_dark_background">#7D7D7D</color>
-    <color name="actiontab_dark_background">#B7B7B7</color>
+    <color name="actionbar_dark_background">#4D73FF</color>
+    <color name="actiontab_dark_background">#AFBFFF</color>
     <color name="actionbar_textcolor">#FFFFFF</color>
 
     <!-- UI Compoment Colors -->
     <color name="text_color_light">#FFFFFF</color>
     <color name="text_color_dark">#444444</color>
     <color name="text_color_dark_light">#B7B7B7</color>
+    <color name="nav_title_color">#0099CC</color>
     <color name="dialog_title_background">#8D8D8D</color>
     <color name="dialog_background">#FFFFFF</color>
     <color name="divider_color">#E1E1E1</color>
@@ -36,5 +37,7 @@
     <color name="navigation_tab_bg">#6FCFF2</color>
     <color name="navigation_bg">#C5E4F0</color>
     <color name="navigation_tab_label_color">#33B5E5</color>
+    <color name="navigation_tab_normal">#00000000</color>
+    <color name="navigation_tab_selected">#E7E7E7</color>
 
 </resources>
