@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -82,11 +83,14 @@ public class DownloadService extends Service {
 
 	// Notification ids
 	private static final int NOTIFICATION_ID_WARNING = 1000;
+	private static final int NOTIFICATION_ID_COMPLETED = 1001;
+	private static final int NOTIFICATION_ID_FAILED = 1002;
 
 	// Notification request codes
 	private static final int NOTIFICATION_REQCODE_CONTINUE = 1000;
 	private static final int NOTIFICATION_REQCODE_RESUME = 1001;
 	private static final int NOTIFICATION_REQCODE_PAUSE = 1002;
+	private static final int NOTIFICATION_REQCODE_CLEAR = 1003;
 
 	// Handler's whatss
 	private static final int HANDLE_NETWORK_CONNECTED = 0;
@@ -99,11 +103,16 @@ public class DownloadService extends Service {
 	// Notification tags
 	private static final String NOTIFICATION_TAG_WARNING = "notification_tag_warning";
 	private static final String NOTIFICATION_TAG_PROGRESS = "notification_tag_progress";
+	private static final String NOTIFICATION_TAG_COMPLETED = "notification_tag_completed";
+	private static final String NOTIFICATION_TAG_FAILED = "notification_tag_failed";
+	private static final String NOTIFICATION_TAG_CLEAR = "notification_tag_clear";
 
 	// Notification actions
+
 	private static final String ACTION_CONTINUE = "action_continue";
 	private static final String ACTION_RESUME = "action_resume";
 	private static final String ACTION_PAUSE = "action_pause";
+	private static final String ACTION_CLEAR = "action_clear";
 
 	// Notification keys
 	private static final String KEY_DOWNLOADID = "key_downloadid";
@@ -125,6 +134,9 @@ public class DownloadService extends Service {
 	private static NetworkType downloadNetworkType;
 	private static Integer downloadLimitSize;
 	private static ByteType downloadLimitType;
+
+	// Completed and failed download name for notifications
+	private static HashSet<Download> completedDownloads = new HashSet<Download>();
 
 	// Map to keep track of async task
 	private static HashMap<Integer, DownloadTask> downloadTasks = new HashMap<Integer, DownloadTask>();
@@ -413,8 +425,8 @@ public class DownloadService extends Service {
 					.setContentText(download.getUrl())
 					.setSmallIcon(R.drawable.ic_icon_download_dark)
 					.setProgress(0, 0, true)
+					.setOngoing(true)
 					.setContentIntent(resultPendingIntent)
-					.setDefaults(Notification.DEFAULT_ALL)
 					.setStyle(
 							new NotificationCompat.BigTextStyle()
 									.bigText(download.getUrl()))
@@ -423,7 +435,7 @@ public class DownloadService extends Service {
 							pendingIntentResume)
 					.addAction(R.drawable.ic_action_pause_dark,
 							getStaticContext().getString(R.string.btn_pause),
-							pendingIntentPause).setOngoing(true);
+							pendingIntentPause);
 
 			notificationManager.notify(NOTIFICATION_TAG_PROGRESS,
 					download.getId(), progressBuilder.build());
@@ -491,6 +503,7 @@ public class DownloadService extends Service {
 					.setContentText(message)
 					.setContentIntent(resultPendingIntent)
 					.setDefaults(Notification.DEFAULT_ALL)
+					.setOngoing(true)
 					.setStyle(
 							new NotificationCompat.BigTextStyle()
 									.bigText(message))
@@ -501,6 +514,106 @@ public class DownloadService extends Service {
 
 			notificationManager.notify(NOTIFICATION_TAG_WARNING,
 					NOTIFICATION_ID_WARNING, warningBuilder.build());
+		}
+	}
+
+	/**
+	 * This method will show download completed notification for given download.
+	 * Depending on if it failed or succeed it will add to different
+	 * notification
+	 * 
+	 * @param download
+	 *            to be attached to this notification
+	 */
+	private static void showCompletedNotification(Download download) {
+		if (download.isValid() && null != getStaticContext()) {
+			completedDownloads.add(download);
+
+			String title = null;
+			String message = null;
+
+			String notificationTag = null;
+			Integer notificationId = null;
+
+			int completedCount = 0;
+			int failedCount = 0;
+
+			NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
+			inboxStyle.setBigContentTitle(message);
+
+			for (Download completedDownload : completedDownloads) {
+				if (DownloadState.COMPLETED.equals(download.getState())) {
+					inboxStyle.addLine(String.format(getStaticContext()
+							.getString(R.string.download_completed_message),
+							completedDownload.getName(), completedDownload
+									.getUrl()));
+
+					completedCount++;
+				} else if (DownloadState.FAILED.equals(download.getState())) {
+					inboxStyle.addLine(String.format(getStaticContext()
+							.getString(R.string.download_failed_message),
+							completedDownload.getName(), completedDownload
+									.getUrl()));
+
+					failedCount++;
+				}
+			}
+
+			if (DownloadState.COMPLETED.equals(download.getState())) {
+				title = getStaticContext().getString(
+						R.string.download_completed_title);
+
+				if (completedCount == 1)
+					message = getStaticContext().getResources()
+							.getQuantityString(
+									R.plurals.download_completed_subtitle,
+									completedCount, download.getName());
+				else
+					message = getStaticContext().getResources()
+							.getQuantityString(
+									R.plurals.download_completed_subtitle,
+									completedCount, completedCount);
+
+				notificationTag = NOTIFICATION_TAG_COMPLETED;
+				notificationId = NOTIFICATION_ID_COMPLETED;
+			} else if (DownloadState.FAILED.equals(download.getState())) {
+				title = getStaticContext().getString(
+						R.string.download_failed_title);
+
+				if (failedCount == 1)
+					message = getStaticContext().getResources()
+							.getQuantityString(
+									R.plurals.download_failed_subtitle,
+									completedCount, download.getName());
+				else
+					message = getStaticContext().getResources()
+							.getQuantityString(
+									R.plurals.download_failed_subtitle,
+									failedCount, failedCount);
+
+				notificationTag = NOTIFICATION_TAG_FAILED;
+				notificationId = NOTIFICATION_ID_FAILED;
+			}
+
+			Intent clearIntent = new Intent(getStaticContext(),
+					ServiceActionReceiver.class);
+			clearIntent.setAction(ACTION_CLEAR);
+			clearIntent.putExtra(KEY_NOTIFICATION_TAG, NOTIFICATION_TAG_CLEAR);
+			clearIntent.putExtra(KEY_NOTIFICATION_ID, notificationId);
+
+			PendingIntent pendingIntentClear = PendingIntent.getBroadcast(
+					getStaticContext(), NOTIFICATION_REQCODE_CLEAR,
+					clearIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+
+			NotificationCompat.Builder completedBuilder = new NotificationCompat.Builder(
+					getStaticContext())
+					.setSmallIcon(R.drawable.ic_icon_download_dark)
+					.setContentTitle(title).setContentText(message)
+					.setContentIntent(pendingIntentClear)
+					.setDefaults(Notification.DEFAULT_ALL).setStyle(inboxStyle);
+
+			notificationManager.notify(notificationTag, notificationId,
+					completedBuilder.build());
 		}
 	}
 
@@ -587,15 +700,27 @@ public class DownloadService extends Service {
 
 		Download download = new Download().retrieve(context, downloadId);
 
-		if (!download.isValid())
-			notifyCallbacksFailed(download, FailedReason.UNKNOWN_ERROR);
+		if (!download.isValid()) {
+			download.setState(DownloadState.FAILED);
+			download.setFailReason(FailedReason.UNKNOWN_ERROR);
+
+			updateDownloadState(download);
+
+			notifyCallbacksFailed(download);
+		}
 
 		// If contains task with given id return the reference instead
 		if (downloadTasks.containsKey(download.getId()))
 			return downloadTasks.get(download.getId());
 
-		if (TextHelper.isStringEmpty(download.getUrl()))
-			notifyCallbacksFailed(download, FailedReason.UNKNOWN_ERROR);
+		if (TextHelper.isStringEmpty(download.getUrl())) {
+			download.setState(DownloadState.FAILED);
+			download.setFailReason(FailedReason.UNKNOWN_ERROR);
+
+			updateDownloadState(download);
+
+			notifyCallbacksFailed(download);
+		}
 
 		DownloadTask taskToStart = new DownloadTask(download);
 		taskToStart.executeOnExecutor(executor);
@@ -895,8 +1020,7 @@ public class DownloadService extends Service {
 	 * @param download
 	 *            is the download object
 	 */
-	private static void notifyCallbacksFailed(final Download download,
-			final FailedReason reason) {
+	private static void notifyCallbacksFailed(final Download download) {
 		if (null != download && null != download.getId()) {
 			if (attachedCallbacks.containsKey(download.getId())) {
 				final HashSet<DownloadListener> callbacks = attachedCallbacks
@@ -905,7 +1029,7 @@ public class DownloadService extends Service {
 				download.setState(DownloadState.FAILED);
 
 				for (DownloadListener callback : callbacks) {
-					callback.onDownloadFailed(download, reason);
+					callback.onDownloadFailed(download);
 				}
 			}
 		}
@@ -956,18 +1080,27 @@ public class DownloadService extends Service {
 	}
 
 	/**
-	 * This method will update the given download state using a content provider
+	 * This method will update the given download state, path and failure reason
+	 * using a content provider
 	 * 
 	 * @param download
 	 *            is the download object
 	 * @state is the download state
 	 */
-	private static void updateDownloadState(Download download,
-			DownloadState state) {
+	private static void updateDownloadState(Download download) {
 
 		ContentValues values = new ContentValues();
 		values.put(DownloadsDatabase.COLUMN_PATH, download.getPath());
-		values.put(DownloadsDatabase.COLUMN_STATE, state.toString());
+		values.put(DownloadsDatabase.COLUMN_STATE, download.getState()
+				.toString());
+
+		if (null != download.getFailReason())
+			values.put(DownloadsDatabase.COLUMN_FAIL_REASON, download
+					.getFailReason().toString());
+
+		if (DownloadState.COMPLETED.equals(download.getState()))
+			values.put(DownloadsDatabase.COLUMN_DATE_COMPLETED,
+					download.getDateCompleted());
 
 		if (null != getStaticContext())
 			getStaticContext().getContentResolver().update(
@@ -1063,19 +1196,24 @@ public class DownloadService extends Service {
 				if (!download.isValid()) {
 					Log.d(getLogTag(), "Parameters invalid");
 
-					updateDownloadState(download, DownloadState.FAILED);
+					download.setState(DownloadState.FAILED);
+					download.setFailReason(FailedReason.UNKNOWN_ERROR);
 
-					notifyCallbacksFailed(download, FailedReason.UNKNOWN_ERROR);
+					updateDownloadState(download);
 				} else if (!NetworkUtils.isNetworkConnected(getStaticContext())) {
 					Log.d(getLogTag(), "network disconnected");
 
-					notifyCallbacksFailed(download,
-							FailedReason.NETWORK_NOTAVAILABLE);
+					download.setState(DownloadState.FAILED);
+					download.setFailReason(FailedReason.NETWORK_NOTAVAILABLE);
+
+					updateDownloadState(download);
 				} else if (!FileUtils.isStorageWritable()) {
 					Log.d(getLogTag(), "storage not writable");
 
-					notifyCallbacksFailed(download,
-							FailedReason.STORAGE_NOTWRITABLE);
+					download.setState(DownloadState.FAILED);
+					download.setFailReason(FailedReason.STORAGE_NOTWRITABLE);
+
+					updateDownloadState(download);
 				} else {
 					Log.d(getLogTag(),
 							"parms valid, network available and storage writable");
@@ -1108,27 +1246,29 @@ public class DownloadService extends Service {
 
 						if (DownloadState.ADDED_NOTAUTHORIZED.equals(download
 								.getState())
-								&& (FileUtils.getStorageSizeAs(
-										downloadLimitType, fileSize) >= FileUtils
-										.getStorageSizeAs(downloadLimitType,
-												downloadLimitSize))) {
+								&& fileSize >= FileUtils.getStorageSizeAsByte(
+										downloadLimitType, downloadLimitSize)) {
 							Log.d(getLogTag(),
 									"not authorized and limit exceeded");
 
-							updateDownloadState(download,
-									DownloadState.ADDED_NOTAUTHORIZED);
+							download.setState(DownloadState.ADDED_NOTAUTHORIZED);
+
+							updateDownloadState(download);
 
 							showWarningNotification(download);
 						} else {
 							Log.d(getLogTag(),
 									"authorized and limit not exceeded");
 
-							updateDownloadState(download,
-									DownloadState.ADDED_AUTHORIZED);
+							download.setState(DownloadState.ADDED_AUTHORIZED);
+
+							updateDownloadState(download);
 
 							if (!FileUtils.isStorageSpaceAvailable(fileSize)) {
-								notifyCallbacksFailed(download,
-										FailedReason.STORAGE_NOTAVAILABLE);
+								download.setState(DownloadState.FAILED);
+								download.setFailReason(FailedReason.STORAGE_NOTAVAILABLE);
+
+								updateDownloadState(download);
 							} else {
 								Log.d(getLogTag(), "storage available");
 
@@ -1141,6 +1281,10 @@ public class DownloadService extends Service {
 									Log.d(getLogTag(), "file exists");
 
 									download.setState(DownloadState.COMPLETED);
+									download.setDateCompleted(new Date()
+											.getTime());
+
+									updateDownloadState(download);
 								} else {
 									Log.d(getLogTag(), "file does not exist");
 
@@ -1215,17 +1359,21 @@ public class DownloadService extends Service {
 										Log.d(getLogTag(),
 												"Incomplete download");
 
-										updateDownloadState(download,
-												DownloadState.FAILED);
+										download.setState(DownloadState.FAILED);
+										download.setFailReason(FailedReason.FILE_INCOMPLETE);
 
-										notifyCallbacksFailed(download,
-												FailedReason.IO_ERROR);
+										updateDownloadState(download);
 									} else {
 										Log.d(getLogTag(), "Complete download");
 
 										targetTempFile
 												.renameTo(targetLocalFile);
+
 										download.setState(DownloadState.COMPLETED);
+										download.setDateCompleted(new Date()
+												.getTime());
+
+										updateDownloadState(download);
 									}
 								}
 
@@ -1237,21 +1385,24 @@ public class DownloadService extends Service {
 					} catch (ClientProtocolException ex) {
 						Log.e(getLogTag(), "IO exception occoured", ex);
 
-						updateDownloadState(download, DownloadState.FAILED);
+						download.setState(DownloadState.FAILED);
+						download.setFailReason(FailedReason.NETWORK_ERROR);
 
-						notifyCallbacksFailed(download,
-								FailedReason.NETWORK_ERROR);
+						updateDownloadState(download);
+
 					} catch (IOException ex) {
 						Log.e(getLogTag(), "IO exception occoured", ex);
 
-						updateDownloadState(download, DownloadState.FAILED);
+						download.setState(DownloadState.FAILED);
+						download.setFailReason(FailedReason.IO_ERROR);
 
-						notifyCallbacksFailed(download, FailedReason.IO_ERROR);
+						updateDownloadState(download);
 					} finally {
 						IOUtils.close(targetWriteFile);
 						IOUtils.close(remoteContentStream);
 						IOUtils.close(bufferedFileStream);
 					}
+
 				}
 			}
 
@@ -1310,9 +1461,11 @@ public class DownloadService extends Service {
 		protected void onCancelled(Download result) {
 			if (preserveStateOnCancel) {
 				if (null != download && null != download.getState())
-					updateDownloadState(download, download.getState());
-			} else
-				updateDownloadState(download, DownloadState.CANCELLED);
+					updateDownloadState(download);
+			} else {
+				download.setState(DownloadState.CANCELLED);
+				updateDownloadState(download);
+			}
 
 			notifyCallbacksCancelled(result);
 
@@ -1321,16 +1474,23 @@ public class DownloadService extends Service {
 
 		@Override
 		protected void onPostExecute(Download result) {
-			updateDownloadState(download, result.getState());
+			if (DownloadState.FAILED.equals(download.getState())) {
+				showCompletedNotification(download);
 
-			notifyCallbacksCompleted(result);
+				notifyCallbacksFailed(download);
+			} else if (DownloadState.COMPLETED.equals(download.getState())) {
+				showCompletedNotification(download);
+
+				notifyCallbacksCompleted(result);
+			}
 
 			super.onPostExecute(result);
 		}
 
 		@Override
 		protected void onPreExecute() {
-			updateDownloadState(download, DownloadState.DOWNLOADING);
+			download.setState(DownloadState.DOWNLOADING);
+			updateDownloadState(download);
 
 			notifyCallbacksStarted(download);
 
@@ -1428,7 +1588,11 @@ public class DownloadService extends Service {
 				} else if (intent.getAction().equals(ACTION_RESUME)) {
 					if (intent.getIntExtra(KEY_DOWNLOADID, -1) > -1)
 						postAction(intent.getExtras(), HANDLE_RESUME_DOWNLOAD);
+				} else if (intent.getAction().equals(ACTION_CLEAR)) {
+					cancelNotification(intent.getExtras());
+
 				}
+
 		}
 
 		/**

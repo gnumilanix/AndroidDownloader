@@ -1,11 +1,11 @@
 package com.milanix.example.downloader.data.dao;
 
+import android.content.Context;
+import android.database.Cursor;
+
 import com.milanix.example.downloader.data.database.DownloadsDatabase;
 import com.milanix.example.downloader.data.database.util.QueryHelper;
 import com.milanix.example.downloader.data.provider.DownloadContentProvider;
-
-import android.content.Context;
-import android.database.Cursor;
 
 /**
  * This is an {@link Download} dao
@@ -56,7 +56,7 @@ public class Download extends AbstractDao<Download> {
 		public static DownloadState getEnum(String value) {
 			if (ADDED_AUTHORIZED.toString().equals(value))
 				return ADDED_AUTHORIZED;
-			if (ADDED_NOTAUTHORIZED.toString().equals(value))
+			else if (ADDED_NOTAUTHORIZED.toString().equals(value))
 				return ADDED_NOTAUTHORIZED;
 			else if (DOWNLOADING.toString().equals(value))
 				return DOWNLOADING;
@@ -82,8 +82,8 @@ public class Download extends AbstractDao<Download> {
 				"External storage space is not available."), NETWORK_NOTAVAILABLE(
 				"Network is not available."), IO_ERROR(
 				"Error while reading/writing file."), NETWORK_ERROR(
-				"Error while downloading file."), UNKNOWN_ERROR(
-				"Unknown error occoured.");
+				"Error while downloading file."), FILE_INCOMPLETE(
+				"Incomplete file."), UNKNOWN_ERROR("Unknown error occoured.");
 
 		private final String name;
 
@@ -95,6 +95,23 @@ public class Download extends AbstractDao<Download> {
 		public String toString() {
 			return name;
 		}
+
+		public static FailedReason getEnum(String value) {
+			if (STORAGE_NOTWRITABLE.toString().equals(value))
+				return STORAGE_NOTWRITABLE;
+			else if (STORAGE_NOTAVAILABLE.toString().equals(value))
+				return STORAGE_NOTAVAILABLE;
+			else if (NETWORK_NOTAVAILABLE.toString().equals(value))
+				return NETWORK_NOTAVAILABLE;
+			else if (IO_ERROR.toString().equals(value))
+				return IO_ERROR;
+			else if (NETWORK_ERROR.toString().equals(value))
+				return NETWORK_ERROR;
+			else if (FILE_INCOMPLETE.toString().equals(value))
+				return FILE_INCOMPLETE;
+			else
+				return UNKNOWN_ERROR;
+		}
 	}
 
 	private Integer id;
@@ -103,8 +120,10 @@ public class Download extends AbstractDao<Download> {
 	private String name;
 	private Integer type;
 	private String size;
-	private Long date;
+	private Long dateAdded;
+	private Long dateCompleted;
 	private DownloadState state;
+	private FailedReason failReason;
 
 	/**
 	 * This must be defined to support retrieve
@@ -124,14 +143,16 @@ public class Download extends AbstractDao<Download> {
 	 * @param state
 	 */
 	public Download(Integer id, String url, String name, Integer type,
-			String size, Long date, DownloadState state) {
+			String size, Long dateAdded, DownloadState state,
+			FailedReason failReason) {
 		this.id = id;
 		this.url = url;
 		this.name = name;
 		this.type = type;
 		this.size = size;
-		this.date = date;
+		this.dateAdded = dateAdded;
 		this.state = state;
+		this.failReason = failReason;
 	}
 
 	/**
@@ -226,21 +247,6 @@ public class Download extends AbstractDao<Download> {
 	}
 
 	/**
-	 * @return the date
-	 */
-	public Long getDate() {
-		return date;
-	}
-
-	/**
-	 * @param date
-	 *            the date to set
-	 */
-	public void setDate(Long date) {
-		this.date = date;
-	}
-
-	/**
 	 * @return the state
 	 */
 	public DownloadState getState() {
@@ -253,6 +259,51 @@ public class Download extends AbstractDao<Download> {
 	 */
 	public void setState(DownloadState state) {
 		this.state = state;
+	}
+
+	/**
+	 * @return the failReason
+	 */
+	public FailedReason getFailReason() {
+		return failReason;
+	}
+
+	/**
+	 * @param failReason
+	 *            the failReason to set
+	 */
+	public void setFailReason(FailedReason failReason) {
+		this.failReason = failReason;
+	}
+
+	/**
+	 * @return the dateAdded
+	 */
+	public Long getDateAdded() {
+		return dateAdded;
+	}
+
+	/**
+	 * @param dateAdded
+	 *            the dateAdded to set
+	 */
+	public void setDateAdded(Long dateAdded) {
+		this.dateAdded = dateAdded;
+	}
+
+	/**
+	 * @return the dateCompleted
+	 */
+	public Long getDateCompleted() {
+		return dateCompleted;
+	}
+
+	/**
+	 * @param dateCompleted
+	 *            the dateCompleted to set
+	 */
+	public void setDateCompleted(Long dateCompleted) {
+		this.dateCompleted = dateCompleted;
 	}
 
 	@Override
@@ -284,13 +335,23 @@ public class Download extends AbstractDao<Download> {
 					setPath(cursor.getString(cursor
 							.getColumnIndex(DownloadsDatabase.COLUMN_SIZE)));
 
-				if (-1 != cursor.getColumnIndex(DownloadsDatabase.COLUMN_DATE))
-					setDate(cursor.getLong(cursor
-							.getColumnIndex(DownloadsDatabase.COLUMN_DATE)));
+				if (-1 != cursor
+						.getColumnIndex(DownloadsDatabase.COLUMN_DATE_ADDED))
+					setDateAdded(cursor
+							.getLong(cursor
+									.getColumnIndex(DownloadsDatabase.COLUMN_DATE_ADDED)));
 
-				if (-1 != cursor.getColumnIndex(DownloadsDatabase.COLUMN_STATE))
-					setState(DownloadState.getEnum(cursor.getString(cursor
-							.getColumnIndex(DownloadsDatabase.COLUMN_STATE))));
+				if (-1 != cursor
+						.getColumnIndex(DownloadsDatabase.COLUMN_DATE_COMPLETED))
+					setDateCompleted(cursor
+							.getLong(cursor
+									.getColumnIndex(DownloadsDatabase.COLUMN_DATE_COMPLETED)));
+
+				if (-1 != cursor
+						.getColumnIndex(DownloadsDatabase.COLUMN_FAIL_REASON))
+					setFailReason(FailedReason
+							.getEnum(cursor.getString(cursor
+									.getColumnIndex(DownloadsDatabase.COLUMN_FAIL_REASON))));
 
 				if (-1 != cursor.getColumnIndex(DownloadsDatabase.COLUMN_PATH))
 					setPath(cursor.getString(cursor
@@ -343,12 +404,13 @@ public class Download extends AbstractDao<Download> {
 		public void onDownloadCompleted(Download download);
 
 		/**
-		 * Called when download is failed
+		 * Called when download is failed. Includes DownloadState failed and
+		 * FailedReason will reason of failure
 		 * 
 		 * @param download
 		 *            object
 		 */
-		public void onDownloadFailed(Download download, FailedReason reason);
+		public void onDownloadFailed(Download download);
 
 		/**
 		 * Called when download progress in updated

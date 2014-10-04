@@ -34,10 +34,16 @@ public class DownloadsDatabase {
 	public static final String COLUMN_SIZE = "size";
 
 	// Date the file was downloaded
-	public static final String COLUMN_DATE = "date";
+	public static final String COLUMN_DATE_ADDED = "date_added";
+
+	// Date the file was downloaded
+	public static final String COLUMN_DATE_COMPLETED = "date_completed";
 
 	// State of the download
 	public static final String COLUMN_STATE = "state";
+
+	// Reason for failure
+	public static final String COLUMN_FAIL_REASON = "fail_reason";
 
 	private static final String DATABASE_NAME = "download_db";
 
@@ -47,10 +53,11 @@ public class DownloadsDatabase {
 		private static final String DATABASE_CREATE = "CREATE TABLE "
 				+ TABLE_DOWNLOADS + "(" + COLUMN_ID
 				+ " integer primary key autoincrement," + COLUMN_URL
-				+ " varchar(1024)," + COLUMN_PATH + " varchar(1024),"
-				+ COLUMN_NAME + " varchar(1024)," + COLUMN_TYPE + " integer,"
-				+ COLUMN_SIZE + " varchar(32)," + COLUMN_DATE + " long,"
-				+ COLUMN_STATE + " varchar(16));";
+				+ " varchar(1024)," + COLUMN_PATH + " varchar(2048),"
+				+ COLUMN_NAME + " varchar(512)," + COLUMN_TYPE + " integer,"
+				+ COLUMN_SIZE + " varchar(32)," + COLUMN_DATE_ADDED + " long,"
+				+ COLUMN_DATE_COMPLETED + " long," + COLUMN_STATE
+				+ " varchar(16)," + COLUMN_FAIL_REASON + " varchar(128));";
 
 		public DownloadsDBHelper(Context context) {
 			super(context, DATABASE_NAME, null, databaseVersion);

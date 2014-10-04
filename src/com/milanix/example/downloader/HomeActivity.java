@@ -331,10 +331,13 @@ public class HomeActivity extends ActionBarActivity implements
 						.getFragments();
 
 				for (Fragment existingFragment : existingFragments) {
-					if (existingFragment.getClass().equals(fragment.getClass()))
-						transaction.show(existingFragment);
-					else
-						transaction.hide(existingFragment);
+					if (null != existingFragment) {
+						if (existingFragment.getClass().equals(
+								fragment.getClass()))
+							transaction.show(existingFragment);
+						else
+							transaction.hide(existingFragment);
+					}
 				}
 
 				transaction.commit();

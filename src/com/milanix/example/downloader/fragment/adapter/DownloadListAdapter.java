@@ -18,7 +18,6 @@ import com.milanix.example.downloader.R;
 import com.milanix.example.downloader.data.dao.Download;
 import com.milanix.example.downloader.data.dao.Download.DownloadListener;
 import com.milanix.example.downloader.data.dao.Download.DownloadState;
-import com.milanix.example.downloader.data.dao.Download.FailedReason;
 import com.milanix.example.downloader.data.database.DownloadsDatabase;
 import com.milanix.example.downloader.service.DownloadService;
 import com.milanix.example.downloader.util.FileUtils;
@@ -137,8 +136,7 @@ public class DownloadListAdapter extends CursorAdapter {
 				}
 
 				@Override
-				public void onDownloadFailed(Download download,
-						FailedReason reason) {
+				public void onDownloadFailed(Download download) {
 				}
 
 				@Override
@@ -189,11 +187,26 @@ public class DownloadListAdapter extends CursorAdapter {
 			holder.download_name.setText(cursor.getString(cursor
 					.getColumnIndex(DownloadsDatabase.COLUMN_NAME)));
 
-		if (-1 != cursor.getColumnIndex(DownloadsDatabase.COLUMN_DATE))
-			holder.download_date.setText(TextHelper.getRelativeDateString(
-					cursor.getLong(cursor
-							.getColumnIndex(DownloadsDatabase.COLUMN_DATE)),
-					context.getString(R.string.download_date_notavailable)));
+		// If completed use completed date
+		if (DownloadState.COMPLETED.equals(DownloadState.getEnum(cursor
+				.getString(cursor
+						.getColumnIndex(DownloadsDatabase.COLUMN_STATE))))) {
+			if (-1 != cursor
+					.getColumnIndex(DownloadsDatabase.COLUMN_DATE_COMPLETED))
+				holder.download_date
+						.setText(TextHelper.getRelativeDateString(
+								cursor.getLong(cursor
+										.getColumnIndex(DownloadsDatabase.COLUMN_DATE_COMPLETED)),
+								context.getString(R.string.download_date_notavailable)));
+		} else {
+			if (-1 != cursor
+					.getColumnIndex(DownloadsDatabase.COLUMN_DATE_ADDED))
+				holder.download_date
+						.setText(TextHelper.getRelativeDateString(
+								cursor.getLong(cursor
+										.getColumnIndex(DownloadsDatabase.COLUMN_DATE_ADDED)),
+								context.getString(R.string.download_date_notavailable)));
+		}
 
 		if (-1 != cursor.getColumnIndex(DownloadsDatabase.COLUMN_SIZE))
 			holder.download_size.setText(cursor.getString(cursor

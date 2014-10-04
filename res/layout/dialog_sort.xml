@@ -21,6 +21,22 @@
         android:drawableLeft="@drawable/ic_icon_dscorder"
         android:padding="@dimen/text_padding"
         android:text="@string/dsc_added" />
+    
+        <RadioButton
+        android:id="@+id/asc_completed"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/list_radio_size"
+        android:drawableLeft="@drawable/ic_icon_ascorder"
+        android:padding="@dimen/text_padding"
+        android:text="@string/asc_completed" />
+
+    <RadioButton
+        android:id="@+id/dsc_completed"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/list_radio_size"
+        android:drawableLeft="@drawable/ic_icon_dscorder"
+        android:padding="@dimen/text_padding"
+        android:text="@string/dsc_completed" />
 
     <RadioButton
         android:id="@+id/asc_size"

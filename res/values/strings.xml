@@ -95,6 +95,8 @@
     <string name="title_sortby">Sort By</string>
     <string name="asc_added">Download added date</string>
     <string name="dsc_added">Download added date</string>
+    <string name="asc_completed">Download completed date</string>
+    <string name="dsc_completed">Download completed date</string>
     <string name="asc_size">Download file size</string>
     <string name="dsc_size">Download file size</string>
 
@@ -103,5 +105,18 @@
     <string name="download_size_exceeded_message">File %1$s is over %2$s %3$s. Do you want to continue downloading?</string>
     <string name="download_size_unknown_title">Failed to determine download size</string>
     <string name="download_size_unknown_message">Failed to determine download size of file %s. Do you want to continue downloading?</string>
+    <string name="download_completed_title">Download completed</string>
+    <string name="download_failed_title">Download failed</string>
+    <string name="download_completed_message">%1$s from %2$s</string>
+    <string name="download_failed_message">%1$s from %2$s</string>
+
+    <plurals name="download_completed_subtitle">
+        <item quantity="one">Successfully downloaded %s</item>
+        <item quantity="other">%d files sucessfully downloaded</item>
+    </plurals>
+    <plurals name="download_failed_subtitle">
+        <item quantity="one">Failed to download %s</item>
+        <item quantity="other">%d files failed to download</item>
+    </plurals>
 
 </resources>

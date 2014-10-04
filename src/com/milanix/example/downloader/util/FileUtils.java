@@ -55,7 +55,7 @@ public class FileUtils {
 	 * 
 	 */
 	public static enum ByteType {
-		KB, MB, GB
+		KB, MB, GB, BY
 	}
 
 	/*
@@ -412,6 +412,27 @@ public class FileUtils {
 			return sizeInBytes / SIZE_GB;
 		default:
 			return sizeInBytes;
+		}
+	}
+
+	/**
+	 * This method will return storage size as byte. If not the type it will
+	 * return in bytes
+	 * 
+	 * @param size
+	 *            is the byte type
+	 * @return size
+	 */
+	public static double getStorageSizeAsByte(ByteType type, double size) {
+		switch (type) {
+		case KB:
+			return size * SIZE_KB;
+		case MB:
+			return size * SIZE_MB;
+		case GB:
+			return size * SIZE_GB;
+		default:
+			return size;
 		}
 	}
 

@@ -35,7 +35,7 @@ public class PreferenceHelper {
 	public static final int DEFAULT_WARNINGSIZE = 25;
 	public static final ByteType DEFAULT_WARNINGTYPE = ByteType.MB;
 
-	public static final String DEFAULT_ORDERING_FIELD = DownloadsDatabase.COLUMN_DATE;
+	public static final String DEFAULT_ORDERING_FIELD = DownloadsDatabase.COLUMN_DATE_ADDED;
 	public static final String DEFAULT_ORDERING_TYPE = QueryHelper.ORDERING_DESC;
 
 	/**

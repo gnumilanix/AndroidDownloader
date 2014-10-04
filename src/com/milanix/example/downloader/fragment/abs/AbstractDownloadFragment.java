@@ -137,14 +137,14 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 
 	@Override
 	public void onPause() {
-		registerContentObserver();
+		unregisterContentObserver();
 
 		super.onPause();
 	}
 
 	@Override
 	public void onResume() {
-		unregisterContentObserver();
+		registerContentObserver();
 
 		super.onResume();
 	}
@@ -422,7 +422,7 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 
 		@Override
 		public void onChange(boolean selfChange, Uri uri) {
-			postRefreshCursorLoader(false);
+			postRefreshCursorLoader(true);
 		}
 
 		@Override

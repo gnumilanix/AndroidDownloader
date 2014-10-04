@@ -24,6 +24,8 @@ public class SortConfigureDialog extends DialogFragment implements
 
 	private RadioButton asc_added;
 	private RadioButton dsc_added;
+	private RadioButton asc_completed;
+	private RadioButton dsc_completed;
 	private RadioButton asc_size;
 	private RadioButton dsc_size;
 
@@ -49,18 +51,26 @@ public class SortConfigureDialog extends DialogFragment implements
 	private void setUI(View rootView) {
 		asc_added = (RadioButton) rootView.findViewById(R.id.asc_added);
 		dsc_added = (RadioButton) rootView.findViewById(R.id.dsc_added);
+		asc_completed = (RadioButton) rootView.findViewById(R.id.asc_completed);
+		dsc_completed = (RadioButton) rootView.findViewById(R.id.dsc_completed);
 		asc_size = (RadioButton) rootView.findViewById(R.id.asc_size);
 		dsc_size = (RadioButton) rootView.findViewById(R.id.dsc_size);
 
 		orderingField = PreferenceHelper.getSortOrderingField(getActivity());
 		orderingType = PreferenceHelper.getSortOrderingType(getActivity());
 
-		if (DownloadsDatabase.COLUMN_DATE.equals(orderingField)
+		if (DownloadsDatabase.COLUMN_DATE_ADDED.equals(orderingField)
 				&& QueryHelper.ORDERING_ASC.equals(orderingType))
 			asc_added.setChecked(true);
-		else if (DownloadsDatabase.COLUMN_DATE.equals(orderingField)
+		else if (DownloadsDatabase.COLUMN_DATE_ADDED.equals(orderingField)
 				&& QueryHelper.ORDERING_DESC.equals(orderingType))
 			dsc_added.setChecked(true);
+		else if (DownloadsDatabase.COLUMN_DATE_COMPLETED.equals(orderingField)
+				&& QueryHelper.ORDERING_ASC.equals(orderingType))
+			asc_completed.setChecked(true);
+		else if (DownloadsDatabase.COLUMN_DATE_COMPLETED.equals(orderingField)
+				&& QueryHelper.ORDERING_DESC.equals(orderingType))
+			dsc_completed.setChecked(true);
 		else if (DownloadsDatabase.COLUMN_SIZE.equals(orderingField)
 				&& QueryHelper.ORDERING_ASC.equals(orderingType))
 			asc_size.setChecked(true);
@@ -75,6 +85,8 @@ public class SortConfigureDialog extends DialogFragment implements
 	private void setListener() {
 		asc_added.setOnClickListener(this);
 		dsc_added.setOnClickListener(this);
+		asc_completed.setOnClickListener(this);
+		dsc_completed.setOnClickListener(this);
 		asc_size.setOnClickListener(this);
 		dsc_size.setOnClickListener(this);
 	}
@@ -84,12 +96,26 @@ public class SortConfigureDialog extends DialogFragment implements
 		switch (v.getId()) {
 		case R.id.asc_added:
 			PreferenceHelper.setSortOrdering(getActivity(),
-					DownloadsDatabase.COLUMN_DATE, QueryHelper.ORDERING_ASC);
+					DownloadsDatabase.COLUMN_DATE_ADDED,
+					QueryHelper.ORDERING_ASC);
 			break;
 		case R.id.dsc_added:
 			PreferenceHelper.setSortOrdering(getActivity(),
-					DownloadsDatabase.COLUMN_DATE, QueryHelper.ORDERING_DESC);
+					DownloadsDatabase.COLUMN_DATE_ADDED,
+					QueryHelper.ORDERING_DESC);
 			break;
+
+		case R.id.asc_completed:
+			PreferenceHelper.setSortOrdering(getActivity(),
+					DownloadsDatabase.COLUMN_DATE_COMPLETED,
+					QueryHelper.ORDERING_ASC);
+			break;
+		case R.id.dsc_completed:
+			PreferenceHelper.setSortOrdering(getActivity(),
+					DownloadsDatabase.COLUMN_DATE_COMPLETED,
+					QueryHelper.ORDERING_DESC);
+			break;
+
 		case R.id.asc_size:
 			PreferenceHelper.setSortOrdering(getActivity(),
 					DownloadsDatabase.COLUMN_SIZE, QueryHelper.ORDERING_ASC);
