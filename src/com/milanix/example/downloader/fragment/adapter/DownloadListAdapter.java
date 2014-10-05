@@ -96,7 +96,6 @@ public class DownloadListAdapter extends CursorAdapter {
 		holder.expand_base = (ViewGroup) view.findViewById(R.id.expand_base);
 
 		view.setTag(holder);
-
 		setListener(holder, cursor);
 
 		return view;
@@ -113,61 +112,57 @@ public class DownloadListAdapter extends CursorAdapter {
 	private void setListener(final ViewHolder holder, final Cursor cursor) {
 		final Integer id = cursor.getInt(cursor
 				.getColumnIndex(DownloadsDatabase.COLUMN_ID));
-		final DownloadState state = DownloadState.getEnum(cursor
-				.getString(cursor
-						.getColumnIndex(DownloadsDatabase.COLUMN_STATE)));
+		// final DownloadState state = DownloadState.getEnum(cursor
+		// .getString(cursor
+		// .getColumnIndex(DownloadsDatabase.COLUMN_STATE)));
 
 		// Attach callbacks to files that are authorized to download
-		if (DownloadState.ADDED_AUTHORIZED.equals(state)) {
-			final ProgressBar progressBar = holder.download_progress;
+		final ProgressBar progressBar = holder.download_progress;
 
-			final DownloadListener callback = new DownloadListener() {
+		final DownloadListener callback = new DownloadListener() {
 
-				@Override
-				public void onDownloadStarted(Download download) {
-				}
+			@Override
+			public void onDownloadStarted(Download download) {
+			}
 
-				@Override
-				public void onDownloadCancelled(Download download) {
-				}
+			@Override
+			public void onDownloadCancelled(Download download) {
+			}
 
-				@Override
-				public void onDownloadCompleted(Download download) {
-				}
+			@Override
+			public void onDownloadCompleted(Download download) {
+			}
 
-				@Override
-				public void onDownloadFailed(Download download) {
-				}
+			@Override
+			public void onDownloadFailed(Download download) {
+			}
 
-				@Override
-				public void onDownloadProgress(Download download,
-						Integer progress) {
-					if (null != progressBar && null != progress)
-						progressBar.setProgress(progress);
-				}
-			};
+			@Override
+			public void onDownloadProgress(Download download, Integer progress) {
+				if (null != progressBar && null != progress)
+					progressBar.setProgress(progress);
+			}
+		};
 
-			holder.download_progress
-					.addOnAttachStateChangeListener(new OnAttachStateChangeListener() {
+		holder.download_progress
+				.addOnAttachStateChangeListener(new OnAttachStateChangeListener() {
 
-						@Override
-						public void onViewAttachedToWindow(View view) {
-							if (null != downloadService && null != id
-									&& null != callback) {
-								downloadService.attachCallback(id, callback);
-							}
+					@Override
+					public void onViewAttachedToWindow(View view) {
+						if (null != downloadService && null != id
+								&& null != callback) {
+							downloadService.attachCallback(id, callback);
 						}
+					}
 
-						@Override
-						public void onViewDetachedFromWindow(View view) {
-							if (null != downloadService && null != id
-									&& null != callback) {
-								downloadService.detachCallback(id, callback);
-							}
+					@Override
+					public void onViewDetachedFromWindow(View view) {
+						if (null != downloadService && null != id
+								&& null != callback) {
+							downloadService.detachCallback(id, callback);
 						}
-					});
-		}
-
+					}
+				});
 	}
 
 	/**
@@ -215,6 +210,8 @@ public class DownloadListAdapter extends CursorAdapter {
 		if (-1 != cursor.getColumnIndex(DownloadsDatabase.COLUMN_URL)) {
 			holder.download_url.setText(cursor.getString(cursor
 					.getColumnIndex(DownloadsDatabase.COLUMN_URL)));
+			holder.download_url.setSelected(true);
+
 			holder.download_icon.setImageResource(FileUtils
 					.getFileTypeBasedRes(cursor.getString(cursor
 							.getColumnIndex(DownloadsDatabase.COLUMN_URL))));

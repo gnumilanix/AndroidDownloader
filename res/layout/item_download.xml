@@ -90,9 +90,8 @@
             android:layout_alignParentLeft="true"
             android:layout_alignParentRight="true"
             android:layout_alignParentTop="true"
-            android:ellipsize="end"
-            android:maxLines="2"
-            android:text="Small Text"
+            android:ellipsize="marquee"
+            android:singleLine="true"
             android:textAppearance="?android:attr/textAppearanceSmall" />
     </RelativeLayout>
 

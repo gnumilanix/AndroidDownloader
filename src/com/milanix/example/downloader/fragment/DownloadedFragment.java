@@ -43,6 +43,11 @@ public class DownloadedFragment extends AbstractDownloadFragment {
 					mode.finish();
 
 					return true;
+				case R.id.action_selectall:
+					if (selectAllItems())
+						mode.finish();
+
+					return true;
 				default:
 					return false;
 				}

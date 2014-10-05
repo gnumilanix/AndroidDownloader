@@ -21,9 +21,9 @@
     <color name="sttings_divider_color">#7D7D7D</color>
 
     <!-- List selector -->
-    <color name="list_cab_active">#ABCDEF</color>
+    <color name="list_cab_active">#A6BAFF</color>
     <color name="list_cab_normal">#00000000</color>
-    <color name="list_cab_normal_expanded">#E7E7E7</color>
+    <color name="list_cab_normal_expanded">#D0D9FF</color>
     <color name="list_pressed">#F0F0F0</color>
     <color name="list_selected">#F7F7F7</color>
     <color name="list_normal">#00000000</color>

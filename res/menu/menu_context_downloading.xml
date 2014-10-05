@@ -2,6 +2,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="com.milanix.example.downloader.HomeActivity" >
 
+        <item
+        android:id="@+id/action_selectall"
+        android:icon="@drawable/ic_action_selectall_light"
+        android:orderInCategory="100"
+        android:showAsAction="always"
+        android:title="@string/action_selectall"/>
+        
     <item
         android:id="@+id/action_resume"
         android:icon="@drawable/ic_action_resume_light"

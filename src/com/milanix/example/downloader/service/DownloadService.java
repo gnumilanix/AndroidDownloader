@@ -584,7 +584,7 @@ public class DownloadService extends Service {
 					message = getStaticContext().getResources()
 							.getQuantityString(
 									R.plurals.download_failed_subtitle,
-									completedCount, download.getName());
+									failedCount, download.getName());
 				else
 					message = getStaticContext().getResources()
 							.getQuantityString(
@@ -949,7 +949,7 @@ public class DownloadService extends Service {
 	public synchronized void detachCallback(final int id,
 			final DownloadListener callback) {
 		if (attachedCallbacks.containsKey(id)) {
-			if (!attachedCallbacks.get(id).contains(callback)) {
+			if (attachedCallbacks.get(id).contains(callback)) {
 				attachedCallbacks.get(id).remove(callback);
 
 				Log.d(getLogTag(), "Detaching callback");

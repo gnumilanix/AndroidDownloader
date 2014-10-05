@@ -362,6 +362,24 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 		showRemoveDialog(downloadIds);
 	}
 
+	/**
+	 * This method will select all items in the list
+	 * 
+	 * @return true if all items are selected, otherwise false
+	 * 
+	 */
+	protected boolean selectAllItems() {
+		if (downloading_list.getCount() == downloading_list
+				.getCheckedItemCount())
+			return true;
+
+		for (int i = 0; i < downloading_list.getCount(); i++) {
+			downloading_list.setItemChecked(i, true);
+		}
+
+		return false;
+	}
+
 	@Override
 	public String getLogTag() {
 		return DownloadedFragment.class.getSimpleName();
