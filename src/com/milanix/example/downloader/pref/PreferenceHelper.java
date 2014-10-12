@@ -26,6 +26,9 @@ public class PreferenceHelper {
 	public static final String KEY_ORDERING_FIELD = "key_ordering_field";
 	public static final String KEY_ORDERING_TYPE = "key_ordering_type";
 	public static final String KEY_IS_AUTOSTART = "key_autostart";
+	public static final String KEY_SCHEDULE = "key_schedule";
+	public static final String KEY_SCHEDULE_START = "key_schedule_start";
+	public static final String KEY_SCHEDULE_UNTIL = "key_schedule_until";
 
 	public static final String KEY_USERLEARNEDDRAWER = "navigation_drawer_learned";
 
@@ -36,6 +39,8 @@ public class PreferenceHelper {
 	public static final ByteType DEFAULT_WARNINGTYPE = ByteType.MB;
 	public static final String DEFAULT_ORDERING_FIELD = DownloadsDatabase.COLUMN_DATE_ADDED;
 	public static final String DEFAULT_ORDERING_TYPE = QueryHelper.ORDERING_DESC;
+	public static final String DEFAULT_SCHEDULE_START = "22:00";
+	public static final String DEFAULT_SCHEDULE_UNTIL = "06:00";
 
 	/**
 	 * This method will set if user has learned navigation drawer. This will
@@ -86,6 +91,68 @@ public class PreferenceHelper {
 	public static void setIsAutoStart(Context context, boolean isAutoStart) {
 		getPreferenceInstance(context).edit()
 				.putBoolean(KEY_IS_AUTOSTART, isAutoStart).apply();
+	}
+
+	/**
+	 * This method will get if schedule is enabled
+	 * 
+	 * @param is
+	 *            the base application context
+	 */
+	public static boolean getIsOnSchedule(Context context) {
+		return getPreferenceInstance(context).getBoolean(KEY_SCHEDULE, false);
+	}
+
+	/**
+	 * This method will set if schedule should be enabled
+	 * 
+	 * @param is
+	 *            the base application context
+	 * @param isAutoStart
+	 *            set true if service should auto start, otherwise false
+	 */
+	public static void setIsOnSchedule(Context context, boolean isOnSchedule) {
+		getPreferenceInstance(context).edit()
+				.putBoolean(KEY_SCHEDULE, isOnSchedule).apply();
+	}
+
+	/**
+	 * This method will set basic start-until schedule
+	 * 
+	 * @param is
+	 *            the base application context
+	 * @param start
+	 *            start of the schedule
+	 * @param until
+	 *            until the schedule should run
+	 */
+	public static void setBasicSchedule(Context context, String start,
+			String until) {
+		getPreferenceInstance(context).edit()
+				.putString(KEY_SCHEDULE_START, start)
+				.putString(KEY_SCHEDULE_UNTIL, until).apply();
+	}
+
+	/**
+	 * This method will get the schedule start time
+	 * 
+	 * @param is
+	 *            the base application context
+	 */
+	public static String getBasicScheduleStart(Context context) {
+		return getPreferenceInstance(context).getString(KEY_SCHEDULE_START,
+				DEFAULT_SCHEDULE_START);
+	}
+
+	/**
+	 * This method will get the schedule end time
+	 * 
+	 * @param is
+	 *            the base application context
+	 */
+	public static String getBasicScheduleUntil(Context context) {
+		return getPreferenceInstance(context).getString(KEY_SCHEDULE_UNTIL,
+				DEFAULT_SCHEDULE_UNTIL);
 	}
 
 	/**

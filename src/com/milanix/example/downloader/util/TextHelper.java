@@ -1,6 +1,16 @@
 package com.milanix.example.downloader.util;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+
+import android.content.Context;
+import android.text.TextUtils;
 import android.text.format.DateUtils;
+
+import com.milanix.example.downloader.pref.PreferenceHelper;
 
 /**
  * This method contains validator
@@ -88,5 +98,47 @@ public class TextHelper {
 		}
 
 		return downloadIdsString;
+	}
+
+	/**
+	 * This method will get date from given date string and format
+	 * 
+	 * @param context
+	 *            is the base application context
+	 * @param format
+	 *            is the expected format
+	 * @param dateString
+	 *            is the date
+	 * @return date if parsable, otherwise null
+	 */
+	public static Date getAsDate(Context context, String format,
+			String dateString) {
+		if (null == context || TextUtils.isEmpty(format)
+				|| TextUtils.isEmpty(dateString))
+			return null;
+
+		try {
+			return new SimpleDateFormat(format).parse(PreferenceHelper
+					.getBasicScheduleStart(context));
+		} catch (ParseException e) {
+			return null;
+		}
+	}
+
+	/**
+	 * This method will get calendar from given date
+	 * 
+	 * @param date
+	 *            is the date object
+	 * @return calendar if date is valid, otherwise null
+	 */
+	public static Calendar getDateAsCalendar(Date date) {
+		if (null == date)
+			return null;
+
+		Calendar calendar = new GregorianCalendar();
+		calendar.setTime(date);
+
+		return calendar;
 	}
 }

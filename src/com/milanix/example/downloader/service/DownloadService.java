@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -14,6 +15,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
@@ -30,6 +32,7 @@ import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 
+import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -81,17 +84,23 @@ import com.milanix.example.downloader.util.TextHelper;
  */
 public class DownloadService extends Service {
 
+	// Schedule format
+	public static final String SCHEDULE_DATE_FORMAT = "HH:mm";
+
 	// Notification ids
-	private static final int NOTIFICATION_ID_GENERAL = 1000;
-	private static final int NOTIFICATION_ID_WARNING = 1001;
-	private static final int NOTIFICATION_ID_COMPLETED = 1002;
-	private static final int NOTIFICATION_ID_FAILED = 1003;
+	private static final int NOTIFICATION_ID_WARNING = 1000;
+	private static final int NOTIFICATION_ID_COMPLETED = 1001;
+	private static final int NOTIFICATION_ID_FAILED = 1002;
 
 	// Notification request codes
 	private static final int NOTIFICATION_REQCODE_CONTINUE = 1000;
 	private static final int NOTIFICATION_REQCODE_RESUME = 1001;
 	private static final int NOTIFICATION_REQCODE_PAUSE = 1002;
 	private static final int NOTIFICATION_REQCODE_CLEAR = 1003;
+
+	// Alarm request codes
+	private static final int ALARM_REQCODE_SCHEDULE_START = 2000;
+	private static final int ALARM_REQCODE_SCHEDULE_UNTIL = 2001;
 
 	// Handler's whatss
 	private static final int HANDLE_NETWORK_CONNECTED = 0;
@@ -116,16 +125,24 @@ public class DownloadService extends Service {
 	private static final String ACTION_PAUSE = "action_pause";
 	private static final String ACTION_CLEAR = "action_clear";
 
+	private static final String ACTION_SCHEDULE_START = "action_schedule_start";
+	private static final String ACTION_SCHEDULE_UNTIL = "action_schedule_until";
+
 	// Notification keys
 	private static final String KEY_DOWNLOADID = "key_downloadid";
+	private static final String KEY_DOWNLOAD_ACTIVEIDS = "key_download_activeids";
+
 	private static final String KEY_NOTIFICATION_TAG = "key_notification_tag";
 	private static final String KEY_NOTIFICATION_ID = "key_notification_id";
-	private static final String KEY_DOWNLOAD_ACTIVEIDS = "key_download_activeids";
+
+	// Value constants
+	public static final int INTERVAL_DAY = 24 * 60 * 60 * 1000;
 
 	private static Context context;
 
 	private ServiceActionReceiver serviceActionReceiver;
 	private static NotificationManager notificationManager;
+	private static AlarmManager alarmManager;
 
 	// Shared preference instance
 	private static SharedPreferences sharedPreferenced;
@@ -136,6 +153,9 @@ public class DownloadService extends Service {
 	private static NetworkType downloadNetworkType;
 	private static Integer downloadLimitSize;
 	private static ByteType downloadLimitType;
+
+	// Ids for general notifications
+	private static TreeSet<Integer> generalNotificationIds = new TreeSet<Integer>();
 
 	// Completed and failed download name for notifications
 	private static HashSet<Download> completedDownloads = new HashSet<Download>();
@@ -240,11 +260,12 @@ public class DownloadService extends Service {
 		if (null == serviceActionReceiver)
 			serviceActionReceiver = new ServiceActionReceiver();
 
-		if (null == notificationManager) {
+		if (null == notificationManager)
 			notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
-			notificationManager.cancelAll();
-		}
+		if (null == alarmManager)
+			alarmManager = (AlarmManager) context
+					.getSystemService(Context.ALARM_SERVICE);
 
 		if (null == sharedPreferenced)
 			sharedPreferenced = PreferenceHelper
@@ -270,6 +291,8 @@ public class DownloadService extends Service {
 			executor = new ThreadPoolExecutor(getCorePoolSizeFromPref(),
 					getMaxPoolSizeFromPref(), POOL_KEEP_ALIVE,
 					TimeUnit.SECONDS, POOL_WORKQUEUE, POOL_THREAD_FACTORY);
+
+		scheduleAlarm();
 	}
 
 	@Override
@@ -294,6 +317,15 @@ public class DownloadService extends Service {
 		if (null != notificationManager) {
 			notificationManager.cancel(NOTIFICATION_TAG_WARNING,
 					NOTIFICATION_ID_WARNING);
+			notificationManager.cancel(NOTIFICATION_TAG_COMPLETED,
+					NOTIFICATION_ID_COMPLETED);
+			notificationManager.cancel(NOTIFICATION_TAG_FAILED,
+					NOTIFICATION_ID_FAILED);
+
+			for (Integer generalNotificationId : generalNotificationIds) {
+				notificationManager.cancel(NOTIFICATION_TAG_GENERAL,
+						generalNotificationId);
+			}
 		}
 	}
 
@@ -381,6 +413,60 @@ public class DownloadService extends Service {
 	}
 
 	/**
+	 * This method will schedule alarm. Internally it will apply two alarms, one
+	 * to start an schedule and one until the schedule should run.
+	 */
+	private void scheduleAlarm() {
+		if (PreferenceHelper.getIsOnSchedule(getStaticContext())) {
+			Date scheduleStartDate = TextHelper.getAsDate(context,
+					SCHEDULE_DATE_FORMAT,
+					PreferenceHelper.getBasicScheduleStart(getStaticContext()));
+
+			Date scheduleUntilDate = TextHelper.getAsDate(context,
+					SCHEDULE_DATE_FORMAT,
+					PreferenceHelper.getBasicScheduleUntil(getStaticContext()));
+
+			if (null != scheduleStartDate && null != scheduleUntilDate) {
+				Intent scheduleStartIntent = new Intent(getStaticContext(),
+						ServiceActionReceiver.class)
+						.setAction(ACTION_SCHEDULE_START);
+				Intent scheduleUntilIntent = new Intent(getStaticContext(),
+						ServiceActionReceiver.class)
+						.setAction(ACTION_SCHEDULE_UNTIL);
+
+				PendingIntent scheduleStartPendingIntent = PendingIntent
+						.getBroadcast(context, ALARM_REQCODE_SCHEDULE_START,
+								scheduleStartIntent,
+								PendingIntent.FLAG_UPDATE_CURRENT);
+				PendingIntent scheduleUntilPendingIntent = PendingIntent
+						.getBroadcast(context, ALARM_REQCODE_SCHEDULE_UNTIL,
+								scheduleUntilIntent,
+								PendingIntent.FLAG_UPDATE_CURRENT);
+
+				long triggerStartMillis = scheduleStartDate.getTime();
+				long triggerUntilMillis = scheduleUntilDate.getTime();
+
+				if (scheduleStartDate.getTime() < Calendar.getInstance()
+						.getTimeInMillis()
+						|| scheduleUntilDate.getTime() < Calendar.getInstance()
+								.getTimeInMillis()) {
+					triggerStartMillis = scheduleStartDate.getTime()
+							+ INTERVAL_DAY;
+					triggerUntilMillis = scheduleUntilDate.getTime()
+							+ INTERVAL_DAY;
+				}
+
+				alarmManager.setRepeating(AlarmManager.RTC_WAKEUP,
+						triggerStartMillis, AlarmManager.INTERVAL_DAY,
+						scheduleStartPendingIntent);
+				alarmManager.setRepeating(AlarmManager.RTC_WAKEUP,
+						triggerUntilMillis, AlarmManager.INTERVAL_DAY,
+						scheduleUntilPendingIntent);
+			}
+		}
+	}
+
+	/**
 	 * This method will show general notification message
 	 * 
 	 * @param icon
@@ -389,16 +475,33 @@ public class DownloadService extends Service {
 	 *            is a title to be shown in the notification
 	 * @param message
 	 *            is a message text to be shown in the notification
+	 * 
+	 * @return bundle attached to this notification. Contains notification tag
+	 *         and id. Callers can use it to cancel notification using
+	 *         cancelNotification();
 	 */
-	public static void showGeneralNotification(int icon, String title,
+	public static Bundle showGeneralNotification(int icon, String title,
 			String message) {
+
+		Intent notificationIntent = new Intent(getStaticContext(),
+				ServiceActionReceiver.class).putExtra(KEY_NOTIFICATION_TAG,
+				NOTIFICATION_TAG_CLEAR).putExtra(KEY_NOTIFICATION_ID,
+				generalNotificationIds.last() + 1);
+
+		PendingIntent notificationPendingIntent = PendingIntent.getActivity(
+				getStaticContext(), 0, notificationIntent,
+				PendingIntent.FLAG_UPDATE_CURRENT);
+
 		NotificationCompat.Builder serviceStartBuilder = new NotificationCompat.Builder(
 				getStaticContext()).setSmallIcon(R.drawable.ic_launcher)
 				.setContentTitle("Downloader service")
-				.setContentText("Downloader service has started");
+				.setContentText("Downloader service has started")
+				.setContentIntent(notificationPendingIntent);
 
 		notificationManager.notify(NOTIFICATION_TAG_GENERAL,
-				NOTIFICATION_ID_GENERAL, serviceStartBuilder.build());
+				generalNotificationIds.last() + 1, serviceStartBuilder.build());
+
+		return notificationIntent.getExtras();
 	}
 
 	/**
@@ -418,20 +521,16 @@ public class DownloadService extends Service {
 					PendingIntent.FLAG_UPDATE_CURRENT);
 
 			Intent resumeIntent = new Intent(getStaticContext(),
-					ServiceActionReceiver.class);
-			resumeIntent.setAction(ACTION_RESUME);
-			resumeIntent.putExtra(KEY_DOWNLOADID, download.getId());
-			resumeIntent.putExtra(KEY_NOTIFICATION_TAG,
-					NOTIFICATION_TAG_PROGRESS);
-			resumeIntent.putExtra(KEY_NOTIFICATION_ID, download.getId());
+					ServiceActionReceiver.class).setAction(ACTION_RESUME)
+					.putExtra(KEY_DOWNLOADID, download.getId())
+					.putExtra(KEY_NOTIFICATION_TAG, NOTIFICATION_TAG_PROGRESS)
+					.putExtra(KEY_NOTIFICATION_ID, download.getId());
 
 			Intent pauseIntent = new Intent(getStaticContext(),
-					ServiceActionReceiver.class);
-			pauseIntent.setAction(ACTION_PAUSE);
-			pauseIntent.putExtra(KEY_DOWNLOADID, download.getId());
-			pauseIntent.putExtra(KEY_NOTIFICATION_TAG,
-					NOTIFICATION_TAG_PROGRESS);
-			pauseIntent.putExtra(KEY_NOTIFICATION_ID, download.getId());
+					ServiceActionReceiver.class).setAction(ACTION_PAUSE)
+					.putExtra(KEY_DOWNLOADID, download.getId())
+					.putExtra(KEY_NOTIFICATION_TAG, NOTIFICATION_TAG_PROGRESS)
+					.putExtra(KEY_NOTIFICATION_ID, download.getId());
 
 			PendingIntent pendingIntentResume = PendingIntent.getBroadcast(
 					getStaticContext(), NOTIFICATION_REQCODE_RESUME,
@@ -482,13 +581,10 @@ public class DownloadService extends Service {
 					PendingIntent.FLAG_CANCEL_CURRENT);
 
 			Intent continueIntent = new Intent(getStaticContext(),
-					ServiceActionReceiver.class);
-			continueIntent.setAction(ACTION_CONTINUE);
-			continueIntent.putExtra(KEY_DOWNLOADID, download.getId());
-			continueIntent.putExtra(KEY_NOTIFICATION_TAG,
-					NOTIFICATION_TAG_WARNING);
-			continueIntent.putExtra(KEY_NOTIFICATION_ID,
-					NOTIFICATION_ID_WARNING);
+					ServiceActionReceiver.class).setAction(ACTION_CONTINUE)
+					.putExtra(KEY_DOWNLOADID, download.getId())
+					.putExtra(KEY_NOTIFICATION_TAG, NOTIFICATION_TAG_WARNING)
+					.putExtra(KEY_NOTIFICATION_ID, NOTIFICATION_ID_WARNING);
 
 			PendingIntent pendingIntentContinue = PendingIntent.getBroadcast(
 					getStaticContext(), NOTIFICATION_REQCODE_CONTINUE,
@@ -619,10 +715,9 @@ public class DownloadService extends Service {
 			}
 
 			Intent clearIntent = new Intent(getStaticContext(),
-					ServiceActionReceiver.class);
-			clearIntent.setAction(ACTION_CLEAR);
-			clearIntent.putExtra(KEY_NOTIFICATION_TAG, NOTIFICATION_TAG_CLEAR);
-			clearIntent.putExtra(KEY_NOTIFICATION_ID, notificationId);
+					ServiceActionReceiver.class).setAction(ACTION_CLEAR)
+					.putExtra(KEY_NOTIFICATION_TAG, NOTIFICATION_TAG_CLEAR)
+					.putExtra(KEY_NOTIFICATION_ID, notificationId);
 
 			PendingIntent pendingIntentClear = PendingIntent.getBroadcast(
 					getStaticContext(), NOTIFICATION_REQCODE_CLEAR,
