@@ -22,7 +22,7 @@ import com.milanix.example.downloader.data.database.DownloadsDatabase;
 import com.milanix.example.downloader.data.database.util.QueryHelper;
 import com.milanix.example.downloader.data.provider.DownloadContentProvider;
 import com.milanix.example.downloader.fragment.abs.AbstractDownloadFragment;
-import com.milanix.example.downloader.util.PreferenceHelper;
+import com.milanix.example.downloader.pref.PreferenceHelper;
 
 /**
  * This fragment contains downloaded list and its related logic.

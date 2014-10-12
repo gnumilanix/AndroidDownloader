@@ -22,8 +22,8 @@ import com.milanix.example.downloader.R;
 import com.milanix.example.downloader.data.dao.Download.DownloadState;
 import com.milanix.example.downloader.data.database.DownloadsDatabase;
 import com.milanix.example.downloader.data.provider.DownloadContentProvider;
+import com.milanix.example.downloader.pref.PreferenceHelper;
 import com.milanix.example.downloader.util.FileUtils;
-import com.milanix.example.downloader.util.PreferenceHelper;
 import com.milanix.example.downloader.util.TextHelper;
 
 /**

@@ -34,9 +34,9 @@ import com.milanix.example.downloader.dialog.NetworkConfigureDialog;
 import com.milanix.example.downloader.dialog.SortConfigureDialog;
 import com.milanix.example.downloader.fragment.DownloadedFragment;
 import com.milanix.example.downloader.fragment.adapter.DownloadListAdapter;
+import com.milanix.example.downloader.pref.PreferenceHelper;
 import com.milanix.example.downloader.service.DownloadService;
 import com.milanix.example.downloader.service.DownloadService.DownloadBinder;
-import com.milanix.example.downloader.util.PreferenceHelper;
 import com.milanix.example.downloader.util.ToastHelper;
 
 /**

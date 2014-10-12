@@ -11,7 +11,7 @@ import android.widget.RadioButton;
 import com.milanix.example.downloader.R;
 import com.milanix.example.downloader.data.database.DownloadsDatabase;
 import com.milanix.example.downloader.data.database.util.QueryHelper;
-import com.milanix.example.downloader.util.PreferenceHelper;
+import com.milanix.example.downloader.pref.PreferenceHelper;
 
 /**
  * This dialog allows user to configure download list sort type

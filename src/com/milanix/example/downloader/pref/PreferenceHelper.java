@@ -1,4 +1,4 @@
-package com.milanix.example.downloader.util;
+package com.milanix.example.downloader.pref;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -25,16 +25,15 @@ public class PreferenceHelper {
 	public static final String KEY_DOWNLOADLIMIT_TYPE = "key_downloadwarning_type";
 	public static final String KEY_ORDERING_FIELD = "key_ordering_field";
 	public static final String KEY_ORDERING_TYPE = "key_ordering_type";
+	public static final String KEY_IS_AUTOSTART = "key_autostart";
 
 	public static final String KEY_USERLEARNEDDRAWER = "navigation_drawer_learned";
 
-	public static final String PATH_DOWNLOAD = "/Download";
-
-	public static final int DEFAULT_POOLSIZE = Runtime.getRuntime()
+	public static final String DEFAULT_DOWNLOAD_FOLDER = "/Download";
+	public static final int DEFAULT_POOL_SIZE = Runtime.getRuntime()
 			.availableProcessors();
 	public static final int DEFAULT_WARNINGSIZE = 25;
 	public static final ByteType DEFAULT_WARNINGTYPE = ByteType.MB;
-
 	public static final String DEFAULT_ORDERING_FIELD = DownloadsDatabase.COLUMN_DATE_ADDED;
 	public static final String DEFAULT_ORDERING_TYPE = QueryHelper.ORDERING_DESC;
 
@@ -49,12 +48,8 @@ public class PreferenceHelper {
 	 *            false
 	 */
 	public static void setHasLearnedDrawer(Context context, boolean hasLearned) {
-		SharedPreferences defaultSharedPref = PreferenceManager
-				.getDefaultSharedPreferences(context);
-
-		SharedPreferences.Editor editor = defaultSharedPref.edit();
-		editor.putBoolean(KEY_USERLEARNEDDRAWER, hasLearned);
-		editor.apply();
+		PreferenceManager.getDefaultSharedPreferences(context).edit()
+				.putBoolean(KEY_USERLEARNEDDRAWER, hasLearned).apply();
 	}
 
 	/**
@@ -65,10 +60,32 @@ public class PreferenceHelper {
 	 *            the base application context
 	 */
 	public static boolean getHasLearnedDrawer(Context context) {
-		SharedPreferences defaultSharedPref = PreferenceManager
-				.getDefaultSharedPreferences(context);
+		return PreferenceManager.getDefaultSharedPreferences(context)
+				.getBoolean(KEY_USERLEARNEDDRAWER, false);
+	}
 
-		return defaultSharedPref.getBoolean(KEY_USERLEARNEDDRAWER, false);
+	/**
+	 * This method will get if auto start is enabled/disable by user
+	 * 
+	 * @param is
+	 *            the base application context
+	 */
+	public static boolean getIsAutoStart(Context context) {
+		return getPreferenceInstance(context)
+				.getBoolean(KEY_IS_AUTOSTART, true);
+	}
+
+	/**
+	 * This method will set auto start if enabled/disable by user
+	 * 
+	 * @param is
+	 *            the base application context
+	 * @param isAutoStart
+	 *            set true if service should auto start, otherwise false
+	 */
+	public static void setIsAutoStart(Context context, boolean isAutoStart) {
+		getPreferenceInstance(context).edit()
+				.putBoolean(KEY_IS_AUTOSTART, isAutoStart).apply();
 	}
 
 	/**
@@ -80,12 +97,8 @@ public class PreferenceHelper {
 	 *            is the url path
 	 */
 	public static void setDownloadPath(Context context, String url) {
-		SharedPreferences sharedPref = context.getSharedPreferences(
-				KEY_PREFERENCES, Context.MODE_PRIVATE);
-
-		SharedPreferences.Editor editor = sharedPref.edit();
-		editor.putString(KEY_DOWNLOADPATH, url);
-		editor.apply();
+		getPreferenceInstance(context).edit().putString(KEY_DOWNLOADPATH, url)
+				.apply();
 	}
 
 	/**
@@ -95,10 +108,7 @@ public class PreferenceHelper {
 	 *            the base application context
 	 */
 	public static String getDownloadPath(Context context) {
-		SharedPreferences sharedPref = context.getSharedPreferences(
-				KEY_PREFERENCES, Context.MODE_PRIVATE);
-
-		return sharedPref.getString(KEY_DOWNLOADPATH, "");
+		return getPreferenceInstance(context).getString(KEY_DOWNLOADPATH, "");
 	}
 
 	/**
@@ -113,13 +123,9 @@ public class PreferenceHelper {
 	 */
 	public static void setDownloadLimit(Context context, int size,
 			ByteType byteType) {
-		SharedPreferences sharedPref = context.getSharedPreferences(
-				KEY_PREFERENCES, Context.MODE_PRIVATE);
-
-		SharedPreferences.Editor editor = sharedPref.edit();
-		editor.putInt(KEY_DOWNLOADLIMIT_SIZE, size);
-		editor.putString(KEY_DOWNLOADLIMIT_TYPE, byteType.toString());
-		editor.apply();
+		getPreferenceInstance(context).edit()
+				.putInt(KEY_DOWNLOADLIMIT_SIZE, size)
+				.putString(KEY_DOWNLOADLIMIT_TYPE, byteType.toString()).apply();
 	}
 
 	/**
@@ -129,10 +135,8 @@ public class PreferenceHelper {
 	 *            the base application context
 	 */
 	public static int getDownloadLimitSize(Context context) {
-		SharedPreferences sharedPref = context.getSharedPreferences(
-				KEY_PREFERENCES, Context.MODE_PRIVATE);
-
-		return sharedPref.getInt(KEY_DOWNLOADLIMIT_SIZE, DEFAULT_WARNINGSIZE);
+		return getPreferenceInstance(context).getInt(KEY_DOWNLOADLIMIT_SIZE,
+				DEFAULT_WARNINGSIZE);
 	}
 
 	/**
@@ -142,11 +146,8 @@ public class PreferenceHelper {
 	 *            the base application context
 	 */
 	public static ByteType getDownloadLimitType(Context context) {
-		SharedPreferences sharedPref = context.getSharedPreferences(
-				KEY_PREFERENCES, Context.MODE_PRIVATE);
-
-		return ByteType.valueOf(sharedPref.getString(KEY_DOWNLOADLIMIT_TYPE,
-				ByteType.MB.toString()));
+		return ByteType.valueOf(getPreferenceInstance(context).getString(
+				KEY_DOWNLOADLIMIT_TYPE, ByteType.MB.toString()));
 	}
 
 	/**
@@ -158,12 +159,8 @@ public class PreferenceHelper {
 	 *            is the NetworkType
 	 */
 	public static void setDownloadNetwork(Context context, NetworkType network) {
-		SharedPreferences sharedPref = context.getSharedPreferences(
-				KEY_PREFERENCES, Context.MODE_PRIVATE);
-
-		SharedPreferences.Editor editor = sharedPref.edit();
-		editor.putString(KEY_DOWNLOADNETWORK, network.toString());
-		editor.apply();
+		getPreferenceInstance(context).edit()
+				.putString(KEY_DOWNLOADNETWORK, network.toString()).apply();
 	}
 
 	/**
@@ -173,11 +170,8 @@ public class PreferenceHelper {
 	 *            the base application context
 	 */
 	public static NetworkType getDownloadNetwork(Context context) {
-		SharedPreferences sharedPref = context.getSharedPreferences(
-				KEY_PREFERENCES, Context.MODE_PRIVATE);
-
-		return NetworkType.valueOf(sharedPref.getString(KEY_DOWNLOADNETWORK,
-				NetworkType.WIFI.toString()));
+		return NetworkType.valueOf(getPreferenceInstance(context).getString(
+				KEY_DOWNLOADNETWORK, NetworkType.WIFI.toString()));
 	}
 
 	/**
@@ -189,12 +183,8 @@ public class PreferenceHelper {
 	 *            is the max download pool size
 	 */
 	public static void setDownloadPoolSize(Context context, int poolSize) {
-		SharedPreferences sharedPref = context.getSharedPreferences(
-				KEY_PREFERENCES, Context.MODE_PRIVATE);
-
-		SharedPreferences.Editor editor = sharedPref.edit();
-		editor.putInt(KEY_DOWNLOADPOOLSIZE, poolSize);
-		editor.apply();
+		getPreferenceInstance(context).edit()
+				.putInt(KEY_DOWNLOADPOOLSIZE, poolSize).apply();
 	}
 
 	/**
@@ -204,10 +194,8 @@ public class PreferenceHelper {
 	 *            the base application context
 	 */
 	public static int getDownloadPoolSize(Context context) {
-		SharedPreferences sharedPref = context.getSharedPreferences(
-				KEY_PREFERENCES, Context.MODE_PRIVATE);
-
-		return sharedPref.getInt(KEY_DOWNLOADPOOLSIZE, DEFAULT_POOLSIZE);
+		return getPreferenceInstance(context).getInt(KEY_DOWNLOADPOOLSIZE,
+				DEFAULT_POOL_SIZE);
 	}
 
 	/**
@@ -222,13 +210,9 @@ public class PreferenceHelper {
 	 */
 	public static void setSortOrdering(Context context, String orderingField,
 			String orderingType) {
-		SharedPreferences sharedPref = context.getSharedPreferences(
-				KEY_PREFERENCES, Context.MODE_PRIVATE);
-
-		SharedPreferences.Editor editor = sharedPref.edit();
-		editor.putString(KEY_ORDERING_FIELD, orderingField);
-		editor.putString(KEY_ORDERING_TYPE, orderingType);
-		editor.apply();
+		getPreferenceInstance(context).edit()
+				.putString(KEY_ORDERING_FIELD, orderingField)
+				.putString(KEY_ORDERING_TYPE, orderingType).apply();
 	}
 
 	/**
@@ -238,10 +222,8 @@ public class PreferenceHelper {
 	 *            the base application context
 	 */
 	public static String getSortOrderingField(Context context) {
-		SharedPreferences sharedPref = context.getSharedPreferences(
-				KEY_PREFERENCES, Context.MODE_PRIVATE);
-
-		return sharedPref.getString(KEY_ORDERING_FIELD, DEFAULT_ORDERING_FIELD);
+		return getPreferenceInstance(context).getString(KEY_ORDERING_FIELD,
+				DEFAULT_ORDERING_FIELD);
 	}
 
 	/**
@@ -251,10 +233,8 @@ public class PreferenceHelper {
 	 *            the base application context
 	 */
 	public static String getSortOrderingType(Context context) {
-		SharedPreferences sharedPref = context.getSharedPreferences(
-				KEY_PREFERENCES, Context.MODE_PRIVATE);
-
-		return sharedPref.getString(KEY_ORDERING_TYPE, DEFAULT_ORDERING_TYPE);
+		return getPreferenceInstance(context).getString(KEY_ORDERING_TYPE,
+				DEFAULT_ORDERING_TYPE);
 	}
 
 	/**

@@ -69,8 +69,10 @@
     <string name="btn_resume">Resume</string>
 
     <!-- Settings strings -->
+    <string name="title_generalconfiguration">GENERAL CONFIGURATION</string>
     <string name="title_storageconfiguration">STORAGE CONFIGURATION</string>
     <string name="title_connectionconfiguration">CONNECTION CONFIGURATION</string>
+    <string name="title_sub_autostart">Auto start download</string>
     <string name="title_sub_downloadlocation">Default download location</string>
     <string name="title_sub_downloadsize">Download size warning</string>
     <string name="title_sub_downloads">Max number of parallel downloads</string>

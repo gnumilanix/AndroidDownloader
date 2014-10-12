@@ -15,8 +15,8 @@ import android.widget.NumberPicker;
 import android.widget.NumberPicker.OnValueChangeListener;
 
 import com.milanix.example.downloader.R;
+import com.milanix.example.downloader.pref.PreferenceHelper;
 import com.milanix.example.downloader.util.FileUtils.ByteType;
-import com.milanix.example.downloader.util.PreferenceHelper;
 
 /**
  * This dialog allows user to configure download limit

@@ -19,8 +19,8 @@ import android.widget.ListView;
 
 import com.milanix.example.downloader.R;
 import com.milanix.example.downloader.dialog.adapter.FolderAdapter;
+import com.milanix.example.downloader.pref.PreferenceHelper;
 import com.milanix.example.downloader.util.FileUtils;
-import com.milanix.example.downloader.util.PreferenceHelper;
 import com.milanix.example.downloader.view.NavigationView;
 import com.milanix.example.downloader.view.NavigationView.NavigationTab;
 import com.milanix.example.downloader.view.NavigationView.OnNavigationTabClickListener;

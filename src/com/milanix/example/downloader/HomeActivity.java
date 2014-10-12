@@ -33,9 +33,9 @@ import com.milanix.example.downloader.fragment.DownloadingFragment;
 import com.milanix.example.downloader.fragment.SettingsFragment;
 import com.milanix.example.downloader.navigation.NavigationDrawerFragment;
 import com.milanix.example.downloader.navigation.NavigationDrawerFragment.RootFragment;
+import com.milanix.example.downloader.pref.PreferenceHelper;
 import com.milanix.example.downloader.service.DownloadService;
 import com.milanix.example.downloader.util.NetworkUtils;
-import com.milanix.example.downloader.util.PreferenceHelper;
 import com.milanix.example.downloader.util.ToastHelper;
 
 /**
@@ -222,7 +222,7 @@ public class HomeActivity extends ActionBarActivity implements
 				|| !currentDownloadRoot.isDirectory()) {
 			File downloadDir = new File(
 					Environment.getExternalStorageDirectory()
-							+ PreferenceHelper.PATH_DOWNLOAD);
+							+ PreferenceHelper.DEFAULT_DOWNLOAD_FOLDER);
 
 			if (!downloadDir.exists() || !downloadDir.isDirectory())
 				downloadDir.mkdir();

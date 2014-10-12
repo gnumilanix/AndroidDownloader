@@ -4,6 +4,9 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
+import android.widget.Switch;
 import android.widget.TextView;
 
 import com.milanix.example.downloader.R;
@@ -17,17 +20,20 @@ import com.milanix.example.downloader.dialog.PathConfigureDialog.OnPathConfigure
 import com.milanix.example.downloader.dialog.PoolConfigureDialog;
 import com.milanix.example.downloader.dialog.PoolConfigureDialog.OnPoolConfigureListener;
 import com.milanix.example.downloader.fragment.abs.AbstractFragment;
+import com.milanix.example.downloader.pref.PreferenceHelper;
 import com.milanix.example.downloader.util.FileUtils.ByteType;
-import com.milanix.example.downloader.util.PreferenceHelper;
 
 /**
  * This fragment contains settings configuration.
  */
 public class SettingsFragment extends AbstractFragment implements
-		View.OnClickListener, OnPoolConfigureListener, OnPathConfigureListener,
-		OnNetworkConfigureListener, OnLimitConfigureListener {
+		View.OnClickListener, OnCheckedChangeListener, OnPoolConfigureListener,
+		OnPathConfigureListener, OnNetworkConfigureListener,
+		OnLimitConfigureListener {
 
 	private View rootView;
+
+	private Switch autostart_switch;
 
 	private ViewGroup location_base;
 	private ViewGroup tasks_base;
@@ -55,11 +61,16 @@ public class SettingsFragment extends AbstractFragment implements
 
 		onInit();
 
+		setData();
+
 		return rootView;
 	}
 
 	@Override
 	protected void setUI() {
+		autostart_switch = (Switch) rootView
+				.findViewById(R.id.autostart_switch);
+
 		location_base = (ViewGroup) rootView.findViewById(R.id.location_base);
 		tasks_base = (ViewGroup) rootView.findViewById(R.id.tasks_base);
 		limit_base = (ViewGroup) rootView.findViewById(R.id.limit_base);
@@ -70,6 +81,24 @@ public class SettingsFragment extends AbstractFragment implements
 		tasks_config = (TextView) rootView.findViewById(R.id.tasks_config);
 		limit_config = (TextView) rootView.findViewById(R.id.limit_config);
 		network_config = (TextView) rootView.findViewById(R.id.network_config);
+	}
+
+	@Override
+	protected void setListener() {
+		autostart_switch.setOnCheckedChangeListener(this);
+
+		location_base.setOnClickListener(this);
+		tasks_base.setOnClickListener(this);
+		network_base.setOnClickListener(this);
+		limit_base.setOnClickListener(this);
+	}
+
+	/**
+	 * This method will set the UI data
+	 */
+	private void setData() {
+		autostart_switch.setChecked(PreferenceHelper
+				.getIsAutoStart(getActivity()));
 
 		location_config
 				.setText(PreferenceHelper.getDownloadPath(getActivity()));
@@ -86,16 +115,15 @@ public class SettingsFragment extends AbstractFragment implements
 	}
 
 	@Override
-	protected void setListener() {
-		location_base.setOnClickListener(this);
-		tasks_base.setOnClickListener(this);
-		network_base.setOnClickListener(this);
-		limit_base.setOnClickListener(this);
+	public String getLogTag() {
+		return SettingsFragment.class.getSimpleName();
 	}
 
 	@Override
-	public String getLogTag() {
-		return SettingsFragment.class.getSimpleName();
+	public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+		if (buttonView.getId() == R.id.autostart_switch) {
+			PreferenceHelper.setIsAutoStart(getActivity(), isChecked);
+		}
 	}
 
 	@Override

@@ -17,9 +17,9 @@ import com.milanix.example.downloader.data.database.DownloadsDatabase;
 import com.milanix.example.downloader.data.database.util.QueryHelper;
 import com.milanix.example.downloader.data.provider.DownloadContentProvider;
 import com.milanix.example.downloader.fragment.abs.AbstractDownloadFragment;
+import com.milanix.example.downloader.pref.PreferenceHelper;
 import com.milanix.example.downloader.service.DownloadService;
 import com.milanix.example.downloader.service.DownloadService.TaskStateResult;
-import com.milanix.example.downloader.util.PreferenceHelper;
 import com.milanix.example.downloader.util.ToastHelper;
 
 /**

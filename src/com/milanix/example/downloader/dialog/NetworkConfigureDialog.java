@@ -9,7 +9,7 @@ import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
 
 import com.milanix.example.downloader.R;
-import com.milanix.example.downloader.util.PreferenceHelper;
+import com.milanix.example.downloader.pref.PreferenceHelper;
 
 /**
  * This dialog allows user to network configure downloads

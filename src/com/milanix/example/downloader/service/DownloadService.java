@@ -66,11 +66,11 @@ import com.milanix.example.downloader.data.database.DownloadsDatabase;
 import com.milanix.example.downloader.data.database.util.QueryHelper;
 import com.milanix.example.downloader.data.provider.DownloadContentProvider;
 import com.milanix.example.downloader.dialog.NetworkConfigureDialog.NetworkType;
+import com.milanix.example.downloader.pref.PreferenceHelper;
 import com.milanix.example.downloader.util.FileUtils;
 import com.milanix.example.downloader.util.FileUtils.ByteType;
 import com.milanix.example.downloader.util.IOUtils;
 import com.milanix.example.downloader.util.NetworkUtils;
-import com.milanix.example.downloader.util.PreferenceHelper;
 import com.milanix.example.downloader.util.TextHelper;
 
 /**
@@ -82,9 +82,10 @@ import com.milanix.example.downloader.util.TextHelper;
 public class DownloadService extends Service {
 
 	// Notification ids
-	private static final int NOTIFICATION_ID_WARNING = 1000;
-	private static final int NOTIFICATION_ID_COMPLETED = 1001;
-	private static final int NOTIFICATION_ID_FAILED = 1002;
+	private static final int NOTIFICATION_ID_GENERAL = 1000;
+	private static final int NOTIFICATION_ID_WARNING = 1001;
+	private static final int NOTIFICATION_ID_COMPLETED = 1002;
+	private static final int NOTIFICATION_ID_FAILED = 1003;
 
 	// Notification request codes
 	private static final int NOTIFICATION_REQCODE_CONTINUE = 1000;
@@ -101,6 +102,7 @@ public class DownloadService extends Service {
 	private static final int HANDLE_RESUME_DOWNLOAD = 102;
 
 	// Notification tags
+	private static final String NOTIFICATION_TAG_GENERAL = "notification_tag_general";
 	private static final String NOTIFICATION_TAG_WARNING = "notification_tag_warning";
 	private static final String NOTIFICATION_TAG_PROGRESS = "notification_tag_progress";
 	private static final String NOTIFICATION_TAG_COMPLETED = "notification_tag_completed";
@@ -376,6 +378,27 @@ public class DownloadService extends Service {
 		if (null == sharedPreferenced && null != sharedPrefChangeListener)
 			sharedPreferenced
 					.unregisterOnSharedPreferenceChangeListener(sharedPrefChangeListener);
+	}
+
+	/**
+	 * This method will show general notification message
+	 * 
+	 * @param icon
+	 *            is an icon to be shown in the notification
+	 * @param title
+	 *            is a title to be shown in the notification
+	 * @param message
+	 *            is a message text to be shown in the notification
+	 */
+	public static void showGeneralNotification(int icon, String title,
+			String message) {
+		NotificationCompat.Builder serviceStartBuilder = new NotificationCompat.Builder(
+				getStaticContext()).setSmallIcon(R.drawable.ic_launcher)
+				.setContentTitle("Downloader service")
+				.setContentText("Downloader service has started");
+
+		notificationManager.notify(NOTIFICATION_TAG_GENERAL,
+				NOTIFICATION_ID_GENERAL, serviceStartBuilder.build());
 	}
 
 	/**

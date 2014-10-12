@@ -13,7 +13,7 @@ import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 
 import com.milanix.example.downloader.R;
-import com.milanix.example.downloader.util.PreferenceHelper;
+import com.milanix.example.downloader.pref.PreferenceHelper;
 
 /**
  * This dialog allows user to configure number of tasks

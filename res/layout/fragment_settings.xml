@@ -10,9 +10,36 @@
     android:paddingTop="@dimen/activity_vertical_margin" >
 
     <TextView
+        android:id="@+id/general_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:text="@string/title_generalconfiguration"
+        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+    <View
+        android:id="@+id/general_divider"
+        android:layout_width="wrap_content"
+        android:layout_height="@dimen/divider_height"
+        android:layout_marginBottom="@dimen/divider_margin"
+        android:layout_marginTop="@dimen/divider_margin"
+        android:background="@color/sttings_divider_color" />
+
+    <Switch
+        android:id="@+id/autostart_switch"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:drawableLeft="@drawable/ic_icon_autostart_light"
+        android:drawablePadding="@dimen/text_padding"
+        android:text="@string/title_sub_autostart"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textStyle="bold" />
+
+    <TextView
         android:id="@+id/storage_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/text_padding"
         android:gravity="center_vertical"
         android:text="@string/title_storageconfiguration"
         android:textAppearance="?android:attr/textAppearanceSmall" />

@@ -14,7 +14,7 @@ import android.widget.TextView;
 
 import com.milanix.example.downloader.HomeActivity;
 import com.milanix.example.downloader.R;
-import com.milanix.example.downloader.util.PreferenceHelper;
+import com.milanix.example.downloader.pref.PreferenceHelper;
 
 /**
  * This is a navigation drawer fragment
