@@ -6,6 +6,9 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
@@ -118,6 +121,32 @@ public class BrowseFragment extends AbstractFragment implements
 	 */
 	private void openUrl(String url) {
 		tab_page.loadUrl(url);
+	}
+
+	@Override
+	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+		super.onCreateOptionsMenu(menu, inflater);
+
+		inflater.inflate(R.menu.menu_browse, menu);
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		ToastHelper.showToast(getActivity(), "Feature not yet implemeneted");
+
+		switch (item.getItemId()) {
+		case R.id.action_home:
+
+			return true;
+		case R.id.action_favourite:
+
+			return true;
+		case R.id.action_history:
+
+			return true;
+		default:
+			return super.onOptionsItemSelected(item);
+		}
 	}
 
 	/**

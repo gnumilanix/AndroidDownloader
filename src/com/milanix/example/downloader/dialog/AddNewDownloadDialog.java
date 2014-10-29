@@ -34,6 +34,7 @@ import com.milanix.example.downloader.util.TextHelper;
  */
 public class AddNewDownloadDialog extends DialogFragment implements
 		View.OnClickListener {
+	public static final String KEY_ADDNEW_URL = "addnew_url";
 
 	private TextView et_url;
 	private Button btn_ok;
@@ -47,6 +48,7 @@ public class AddNewDownloadDialog extends DialogFragment implements
 
 		setUI(rootView);
 		setListener();
+		setData(getArguments());
 
 		return new AlertDialog.Builder(getActivity()).setView(rootView)
 				.setTitle(R.string.addnew_title)
@@ -66,6 +68,16 @@ public class AddNewDownloadDialog extends DialogFragment implements
 	 */
 	private void setListener() {
 		btn_ok.setOnClickListener(this);
+	}
+
+	/**
+	 * Sets UI data with given bundle
+	 * 
+	 * @param arguments
+	 */
+	private void setData(Bundle arguments) {
+		if (null != arguments && arguments.containsKey(KEY_ADDNEW_URL))
+			et_url.setText(arguments.getString(KEY_ADDNEW_URL, ""));
 	}
 
 	@Override

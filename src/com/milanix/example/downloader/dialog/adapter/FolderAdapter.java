@@ -14,7 +14,7 @@ import android.widget.TextView;
 import com.milanix.example.downloader.R;
 
 /**
- * This method will create albums adapter
+ * This method will create folders adapter
  * 
  * @author Milan
  * 

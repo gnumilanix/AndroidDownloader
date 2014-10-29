@@ -4,6 +4,8 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 
+import org.apache.commons.validator.routines.UrlValidator;
+
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -16,10 +18,11 @@ import android.os.StrictMode;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
+import android.support.v7.app.ActionBar.OnNavigationListener;
 import android.support.v7.app.ActionBar.Tab;
 import android.support.v7.app.ActionBarActivity;
+import android.text.TextUtils;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ImageButton;
@@ -31,8 +34,8 @@ import com.milanix.example.downloader.fragment.BrowseFragment;
 import com.milanix.example.downloader.fragment.DownloadedFragment;
 import com.milanix.example.downloader.fragment.DownloadingFragment;
 import com.milanix.example.downloader.fragment.SettingsFragment;
-import com.milanix.example.downloader.navigation.NavigationDrawerFragment;
 import com.milanix.example.downloader.navigation.NavigationDrawerFragment.RootFragment;
+import com.milanix.example.downloader.navigation.NavigationSpinnerAdapter;
 import com.milanix.example.downloader.pref.PreferenceHelper;
 import com.milanix.example.downloader.service.DownloadService;
 import com.milanix.example.downloader.util.NetworkUtils;
@@ -45,10 +48,7 @@ import com.milanix.example.downloader.util.ToastHelper;
  * 
  */
 public class HomeActivity extends ActionBarActivity implements
-		NavigationDrawerFragment.NavigationDrawerCallbacks,
-		OnAddNewDownloadListener, OnClickListener {
-
-	private NavigationDrawerFragment navigationDrawerFragment;
+		OnNavigationListener, OnAddNewDownloadListener, OnClickListener {
 
 	private HashMap<RootFragment, Fragment> fragmentCache = new HashMap<RootFragment, Fragment>();
 
@@ -112,6 +112,8 @@ public class HomeActivity extends ActionBarActivity implements
 
 		setUI();
 		setListener();
+
+		handleIncoming(getIntent());
 	}
 
 	/**
@@ -129,13 +131,35 @@ public class HomeActivity extends ActionBarActivity implements
 	}
 
 	/**
+	 * Handles incoming intent
+	 * 
+	 * @param intent
+	 */
+	private void handleIncoming(Intent intent) {
+		if (null != intent && null != intent.getData()) {
+			String incomingUri = intent.getData().toString();
+
+			if (!TextUtils.isEmpty(incomingUri)
+					&& UrlValidator.getInstance().isValid(incomingUri)) {
+				Bundle bundle = new Bundle();
+				bundle.putString(AddNewDownloadDialog.KEY_ADDNEW_URL,
+						incomingUri);
+
+				showAddNewDialog(bundle);
+			}
+
+		}
+
+	}
+
+	/**
 	 * This method will set ui based on the device definition
 	 */
 	private void setDefinationBasedUI() {
 		if (DeviceDefinition.TABLET.equals(getDeviceDefinition())) {
 			addActionBarTabs();
 		} else {
-			setupNativationDrawer();
+			addActionBarSpinner();
 		}
 	}
 
@@ -155,12 +179,12 @@ public class HomeActivity extends ActionBarActivity implements
 	/**
 	 * This method will setup navigation drawer
 	 */
-	private void setupNativationDrawer() {
-		navigationDrawerFragment = (NavigationDrawerFragment) getSupportFragmentManager()
-				.findFragmentById(R.id.navigation_drawer);
-
-		navigationDrawerFragment.setUp(R.id.navigation_drawer,
-				(DrawerLayout) findViewById(R.id.drawer_layout));
+	private void addActionBarSpinner() {
+		ActionBar actionBar = getSupportActionBar();
+		actionBar.setDisplayShowTitleEnabled(false);
+		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
+		actionBar.setListNavigationCallbacks(
+				new NavigationSpinnerAdapter(this), this);
 	}
 
 	/**
@@ -168,6 +192,7 @@ public class HomeActivity extends ActionBarActivity implements
 	 */
 	private void addActionBarTabs() {
 		ActionBar actionBar = getSupportActionBar();
+		actionBar.setDisplayShowTitleEnabled(true);
 		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
 
 		Tab tab = actionBar
@@ -235,13 +260,8 @@ public class HomeActivity extends ActionBarActivity implements
 	@Override
 	public void onClick(View view) {
 		if (view.getId() == R.id.download_add) {
-			showAddNewDialog();
+			showAddNewDialog(null);
 		}
-	}
-
-	@Override
-	public void onNavigationDrawerItemSelected(RootFragment selectedFragment) {
-		switchToFragment(selectedFragment);
 	}
 
 	/**
@@ -303,13 +323,8 @@ public class HomeActivity extends ActionBarActivity implements
 			}
 
 			if (null != title && null != tag && null != fragment) {
-
-				if (RootFragment.BROWSE.equals(selectedFragment)) {
-					getSupportActionBar().hide();
-				} else {
-					getSupportActionBar().show();
-					getSupportActionBar().setTitle(title);
-				}
+				getSupportActionBar().show();
+				getSupportActionBar().setTitle(title);
 
 				invalidateOptionsMenu();
 
@@ -330,15 +345,16 @@ public class HomeActivity extends ActionBarActivity implements
 				List<Fragment> existingFragments = getSupportFragmentManager()
 						.getFragments();
 
-				for (Fragment existingFragment : existingFragments) {
-					if (null != existingFragment) {
-						if (existingFragment.getClass().equals(
-								fragment.getClass()))
-							transaction.show(existingFragment);
-						else
-							transaction.hide(existingFragment);
+				if (null != existingFragments && !existingFragments.isEmpty())
+					for (Fragment existingFragment : existingFragments) {
+						if (null != existingFragment) {
+							if (existingFragment.getClass().equals(
+									fragment.getClass()))
+								transaction.show(existingFragment);
+							else
+								transaction.hide(existingFragment);
+						}
 					}
-				}
 
 				transaction.commit();
 
@@ -348,9 +364,13 @@ public class HomeActivity extends ActionBarActivity implements
 
 	/**
 	 * This method will show add new download dialog
+	 * 
+	 * @param bundle
+	 *            to be passed
 	 */
-	private void showAddNewDialog() {
+	private void showAddNewDialog(Bundle bundle) {
 		DialogFragment newFragment = new AddNewDownloadDialog();
+		newFragment.setArguments(bundle);
 		newFragment.setCancelable(true);
 		newFragment.show(getSupportFragmentManager(),
 				AddNewDownloadDialog.class.getSimpleName());
@@ -389,6 +409,26 @@ public class HomeActivity extends ActionBarActivity implements
 		if (bound) {
 			DownloadService.downloadFile(download.getId());
 		}
+	}
+
+	@Override
+	public boolean onNavigationItemSelected(int position, long id) {
+		switch (position) {
+		case 0:
+			switchToFragment(RootFragment.DOWNLOADING);
+			return true;
+		case 1:
+			switchToFragment(RootFragment.DOWNLOADED);
+			return true;
+		case 2:
+			switchToFragment(RootFragment.SETTINGS);
+			return true;
+		case 3:
+			switchToFragment(RootFragment.BROWSE);
+			return true;
+		}
+
+		return false;
 	}
 
 }

@@ -15,6 +15,7 @@
     <color name="text_color_dark">#444444</color>
     <color name="text_color_dark_light">#B7B7B7</color>
     <color name="nav_title_color">#0099CC</color>
+    <color name="navigation_spinner_title_color">#FFFFFF</color>
     <color name="dialog_title_background">#8D8D8D</color>
     <color name="dialog_background">#FFFFFF</color>
     <color name="divider_color">#E1E1E1</color>
@@ -34,6 +35,7 @@
     <color name="download_progress">#33B5E5</color>
 
     <!-- Navigation tabs color -->
+
     <color name="navigation_tab_bg">#6FCFF2</color>
     <color name="navigation_bg">#C5E4F0</color>
     <color name="navigation_tab_label_color">#33B5E5</color>

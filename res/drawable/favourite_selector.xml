@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <item android:drawable="@drawable/ic_icon_favourited_light" android:state_pressed="true"></item>
-    <item android:drawable="@drawable/ic_icon_favourite_light"></item>
+    <item android:drawable="@drawable/ic_icon_favourited" android:state_pressed="true"></item>
+    <item android:drawable="@drawable/ic_icon_favourite_dark"></item>
 
 </selector>

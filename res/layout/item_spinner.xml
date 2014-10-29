@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/actionbar_dark_background"
+    android:orientation="vertical" >
+
+    <TextView
+        android:id="@+id/spinner_item"
+        style="@style/navigationspinner_item"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/navigation_item_height"
+        android:drawableLeft="@drawable/ic_icon_path"
+        android:text="@string/tab_downloaded" />
+
+</LinearLayout>

@@ -34,5 +34,17 @@
         <item name="android:paddingRight">5dp</item>
         <item name="android:drawablePadding">@dimen/navigation_icon_padding</item>
     </style>
+    
+        <style name="navigationspinner_item">
+        <item name="android:textColor">@color/navigation_spinner_title_color</item>
+        <item name="android:textSize">@dimen/navigation_drawer_text_size</item>
+        <item name="android:background">@color/navigation_tab_normal</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:paddingLeft">5dp</item>
+        <item name="android:paddingRight">5dp</item>
+        <item name="android:drawablePadding">@dimen/navigation_icon_padding</item>
+    </style>
 
 </resources>
