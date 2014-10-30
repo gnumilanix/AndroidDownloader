@@ -97,12 +97,13 @@ public class AddNewDownloadDialog extends DialogFragment implements
 		if (TextUtils.isEmpty(et_url.getText().toString()))
 			et_url.setError(getString(R.string.addnew_error_empty));
 		if (!Downloader.HTTP_VALIDATOR.isValid(et_url.getText().toString())
-				|| !Downloader.FTP_VALIDATOR.isValid(et_url.getText()
+				&& !Downloader.FTP_VALIDATOR.isValid(et_url.getText()
 						.toString()))
 			et_url.setError(getString(R.string.addnew_error_invalid));
 		else {
 			addNewDownload(et_url.getText().toString());
 		}
+
 	}
 
 	/**

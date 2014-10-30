@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.net.ftp.FTPClient;
+import org.apache.commons.net.io.CopyStreamEvent;
+import org.apache.commons.net.io.CopyStreamListener;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
@@ -79,7 +81,6 @@ import com.milanix.example.downloader.util.FileUtils;
 import com.milanix.example.downloader.util.FileUtils.ByteType;
 import com.milanix.example.downloader.util.IOUtils;
 import com.milanix.example.downloader.util.NetworkUtils;
-import com.milanix.example.downloader.util.NumberParser;
 import com.milanix.example.downloader.util.TextHelper;
 
 /**
@@ -91,9 +92,6 @@ import com.milanix.example.downloader.util.TextHelper;
 public class DownloadService extends Service {
 	// Schedule format
 	public static final String SCHEDULE_DATE_FORMAT = "HH:mm";
-
-	// FTP Commands
-	private static final String FTP_CMD_SIZE = "SIZE";
 
 	// Notification ids
 	private static final int NOTIFICATION_ID_WARNING = 1000;
@@ -1323,7 +1321,7 @@ public class DownloadService extends Service {
 		private static final String RANGE_HEADER = "Range";
 		private static final String RANGE_VALUE = "bytes=%d-";
 		private static final String TEMP_SUFFIX = ".tmp";
-		private static final int BUFFER_SIZE = 1024;
+		private static final int BUFFER_SIZE = 8 * 1024;
 
 		public DownloadTask(Download download) {
 			this.download = download;
@@ -1388,93 +1386,139 @@ public class DownloadService extends Service {
 			File targetLocalFile = null;
 			File targetTempFile = null;
 
-			FTPClient downloadClient = null;
-
 			try {
 				URL downloadUrl = new URL(download.getUrl());
 
-				downloadClient = NetworkUtils.getFTPClient();
-				downloadClient.connect(downloadUrl.getHost(),
-						downloadUrl.getPort());
+				int downloadPort = downloadUrl.getPort() == -1 ? downloadUrl
+						.getDefaultPort() : downloadUrl.getPort();
+
+				FTPClient downloadClient = NetworkUtils.getFTPClient();
+				downloadClient.connect(downloadUrl.getHost(), downloadPort);
 				downloadClient.enterLocalPassiveMode();
-				// downloadClient.login("login", "password");
-				downloadClient.setFileType(FTPClient.BINARY_FILE_TYPE);
-				downloadClient.sendCommand(FTP_CMD_SIZE, downloadUrl.getPath());
 
-				long fileSize = NumberParser.getLong(downloadClient
-						.getReplyString());
-				updateDownlaodSize(fileSize);
+				if (downloadClient.login("anonymous", "")) {
+					downloadClient.setFileType(FTPClient.BINARY_FILE_TYPE);
 
-				if (DownloadState.ADDED_NOTAUTHORIZED.equals(download
-						.getState())
-						&& fileSize >= FileUtils.getStorageSizeAsByte(
-								downloadLimitType, downloadLimitSize)) {
-					Log.d(getLogTag(), "not authorized and limit exceeded");
+					/**
+					 * SIZE is an optional command; i.e. even RFC 3659 compliant
+					 * servers are not required to support it
+					 */
+					final long fileSize = downloadClient.mlistFile(
+							downloadUrl.getPath()).getSize();
 
-					download.setState(DownloadState.ADDED_NOTAUTHORIZED);
+					updateDownlaodSize(fileSize);
 
-					updateDownloadState(download);
+					if (DownloadState.ADDED_NOTAUTHORIZED.equals(download
+							.getState())
+							&& fileSize >= FileUtils.getStorageSizeAsByte(
+									downloadLimitType, downloadLimitSize)) {
+						Log.d(getLogTag(), "not authorized and limit exceeded");
 
-					showWarningNotification(download);
-				} else {
-					Log.d(getLogTag(), "authorized and limit not exceeded");
-
-					download.setState(DownloadState.ADDED_AUTHORIZED);
-
-					updateDownloadState(download);
-
-					if (!FileUtils.isStorageSpaceAvailable(fileSize)) {
-						download.setState(DownloadState.FAILED);
-						download.setFailReason(FailedReason.STORAGE_NOTAVAILABLE);
+						download.setState(DownloadState.ADDED_NOTAUTHORIZED);
 
 						updateDownloadState(download);
+
+						showWarningNotification(download);
 					} else {
-						Log.d(getLogTag(), "storage available");
+						Log.d(getLogTag(), "authorized and limit not exceeded");
 
-						targetLocalFile = new File(download.getPath());
-						remoteContentStream = new FileOutputStream(
-								targetLocalFile);
+						download.setState(DownloadState.ADDED_AUTHORIZED);
 
-						// If file exist mark completed otherwise
-						// progress
-						if (targetLocalFile.exists()
-								&& fileSize == targetLocalFile.length()) {
-							Log.d(getLogTag(), "file exists");
+						updateDownloadState(download);
 
-							download.setState(DownloadState.COMPLETED);
-							download.setDateCompleted(new Date().getTime());
+						if (!FileUtils.isStorageSpaceAvailable(fileSize)) {
+							download.setState(DownloadState.FAILED);
+							download.setFailReason(FailedReason.STORAGE_NOTAVAILABLE);
 
 							updateDownloadState(download);
 						} else {
-							Log.d(getLogTag(), "file does not exist");
+							Log.d(getLogTag(), "storage available");
 
-							targetTempFile = new File(
-									FilenameUtils.getFullPath(download
-											.getPath()),
-									FilenameUtils.getName(download.getPath())
-											+ TEMP_SUFFIX);
+							targetLocalFile = new File(download.getPath());
+							remoteContentStream = new FileOutputStream(
+									targetLocalFile);
 
-							/*
-							 * If temp file exist add header to request remainin
-							 * content
-							 */
-							if (targetTempFile.exists()
-									&& targetTempFile.length() < fileSize) {
-								downloadClient.setRestartOffset(targetTempFile
-										.length());
+							// If file exist mark completed otherwise
+							// progress
+							if (targetLocalFile.exists()
+									&& fileSize == targetLocalFile.length()) {
+								Log.d(getLogTag(), "file exists");
 
-								Log.d(getLogTag(), "temp exists");
-							}
+								download.setState(DownloadState.COMPLETED);
+								download.setDateCompleted(new Date().getTime());
 
-							boolean result = downloadClient.retrieveFile(
-									downloadUrl.getPath(), remoteContentStream);
+								updateDownloadState(download);
+							} else {
+								Log.d(getLogTag(), "file does not exist");
 
-							if (result && fileSize == targetTempFile.length()) {
-								targetTempFile.renameTo(targetLocalFile);
+								targetTempFile = new File(
+										FilenameUtils.getFullPath(download
+												.getPath()),
+										FilenameUtils.getName(download
+												.getPath()) + TEMP_SUFFIX);
+
+								/*
+								 * If temp file exist add header to request
+								 * remainin content
+								 */
+								if (targetTempFile.exists()
+										&& targetTempFile.length() < fileSize) {
+									downloadClient
+											.setRestartOffset(targetTempFile
+													.length());
+
+									Log.d(getLogTag(), "temp exists");
+								}
+
+								downloadClient.setBufferSize(BUFFER_SIZE);
+								downloadClient
+										.setCopyStreamListener(new CopyStreamListener() {
+
+											@Override
+											public void bytesTransferred(
+													CopyStreamEvent event) {
+											}
+
+											@Override
+											public void bytesTransferred(
+													long totalBytesTransferred,
+													int bytesTransferred,
+													long streamSize) {
+												int chunkProgress = (int) ((double) totalBytesTransferred
+														/ (double) fileSize * 100.0);
+
+												publishProgress(chunkProgress);
+											}
+
+										});
+
+								if (downloadClient.retrieveFile(
+										downloadUrl.getPath(),
+										remoteContentStream)
+										&& fileSize == targetTempFile.length()) {
+									targetTempFile.renameTo(targetLocalFile);
+
+									download.setState(DownloadState.COMPLETED);
+									download.setDateCompleted(new Date()
+											.getTime());
+
+									updateDownloadState(download);
+								}
+
 							}
 						}
 					}
+				} else {
+					download.setState(DownloadState.FAILED);
+					download.setFailReason(FailedReason.IO_ERROR);
+
+					updateDownloadState(download);
 				}
+
+				downloadClient.noop();
+				downloadClient.logout();
+				downloadClient.disconnect();
+
 			} catch (IOException ex) {
 				Log.e(getLogTag(), "IO exception occoured", ex);
 
@@ -1483,7 +1527,6 @@ public class DownloadService extends Service {
 
 				updateDownloadState(download);
 			} finally {
-				NetworkUtils.disconnectFTPClient(downloadClient);
 				IOUtils.close(remoteContentStream);
 			}
 		}
