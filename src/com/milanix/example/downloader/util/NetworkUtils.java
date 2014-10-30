@@ -1,5 +1,8 @@
 package com.milanix.example.downloader.util;
 
+import java.io.IOException;
+
+import org.apache.commons.net.ftp.FTPClient;
 import org.apache.http.HttpVersion;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ClientConnectionManager;
@@ -56,6 +59,30 @@ public class NetworkUtils {
 				params, schReg);
 
 		return new DefaultHttpClient(conMgr, params);
+	}
+
+	/**
+	 * This method will build and return ftp client. If exist it will return the
+	 * existing instance
+	 * 
+	 * @return ftp client
+	 */
+	public static synchronized FTPClient getFTPClient() {
+		return new FTPClient();
+	}
+
+	/**
+	 * This method will disconnect the given ftp client silently.
+	 * 
+	 * @param client
+	 */
+	public static synchronized void disconnectFTPClient(FTPClient client) {
+
+		if (null != client)
+			try {
+				client.disconnect();
+			} catch (IOException ignored) {
+			}
 	}
 
 	/**

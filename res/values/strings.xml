@@ -30,6 +30,8 @@
     <string name="addnew_hint">Enter URL to download</string>
     <string name="addnew_error_empty">URL cannot be empty</string>
     <string name="addnew_error_invalid">URL is not valid</string>
+    <string name="addnew_protocol_unsupported">Protocol not yet supported for downloading</string>
+    <string name="addnew_request_invalid">Invalid url type/format</string>
 
     <!-- Pool configure dialog strings -->
     <string name="taskconfigure_title">Set parallel downloads</string>

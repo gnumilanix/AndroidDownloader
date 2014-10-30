@@ -5,6 +5,7 @@
     <!-- Application Core theme. -->
     <style name="DownloaderTheme" parent="AppBaseTheme">
         <item name="android:actionBarStyle">@style/DownloaderTheme.ActionBar</item>
+        <item name="actionBarTabTextStyle">@style/DownloaderTheme.ActionBar.Tab</item>
     </style>
 
     <!-- ActionBar theme -->
@@ -15,12 +16,18 @@
         <item name="android:backgroundStacked">@color/actiontab_dark_background</item>
     </style>
 
-    <style name="DownloaderTheme.ActionBar.OverFlow" parent="@android:style/Widget.Holo.ActionButton.Overflow">
-        <item name="android:src">@drawable/ic_action_overflow_dark</item>
+    <!-- ActionBar title text -->
+    <style name="DownloaderTheme.ActionBar.Title" parent="@android:style/TextAppearance.Holo.Widget.ActionBar.Title">
+        <item name="android:textColor">@color/actiontab_dark_background</item>
     </style>
 
-    <style name="DownloaderTheme.ActionBar.Title" parent="@android:style/TextAppearance.Holo.Widget.ActionBar.Title">
-        <item name="android:textColor">@color/actionbar_textcolor</item>
+    <!-- ActionBar tab theme -->
+    <style name="DownloaderTheme.ActionBar.Tab" parent="@style/Widget.AppCompat.ActionBar.TabText">
+        <item name="android:textColor">@color/actiontab_dark_background</item>
+    </style>
+
+    <style name="DownloaderTheme.ActionBar.OverFlow" parent="@android:style/Widget.Holo.ActionButton.Overflow">
+        <item name="android:src">@drawable/ic_action_overflow_dark</item>
     </style>
 
     <style name="navigationdrawer_item">
@@ -34,8 +41,8 @@
         <item name="android:paddingRight">5dp</item>
         <item name="android:drawablePadding">@dimen/navigation_icon_padding</item>
     </style>
-    
-        <style name="navigationspinner_item">
+
+    <style name="navigationspinner_item">
         <item name="android:textColor">@color/navigation_spinner_title_color</item>
         <item name="android:textSize">@dimen/navigation_drawer_text_size</item>
         <item name="android:background">@color/navigation_tab_normal</item>

@@ -19,19 +19,6 @@ import com.milanix.example.downloader.pref.PreferenceHelper;
  * 
  */
 public class TextHelper {
-	/**
-	 * This method will check if the string is empty or null
-	 * 
-	 * @param string
-	 *            to validate
-	 * @return ture if empty otherwise false
-	 */
-	public static boolean isStringEmpty(String string) {
-		if (null == string || "".equals(string))
-			return true;
-		else
-			return false;
-	}
 
 	/**
 	 * This method will get relative date string

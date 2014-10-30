@@ -9,8 +9,8 @@ import android.util.TypedValue;
  * @author Milan
  * 
  */
-public class DipToPixelHelper {
-	private static final String TAG = DipToPixelHelper.class.getSimpleName();
+public class DiaplayUtils {
+	private static final String TAG = DiaplayUtils.class.getSimpleName();
 
 	private static final String ERROR_CONTEXTNULL = "You cannot use a null context.";
 	private static final String ERROR_DIMENSIONPIXELNULL = "You cannot use a null dimension.";

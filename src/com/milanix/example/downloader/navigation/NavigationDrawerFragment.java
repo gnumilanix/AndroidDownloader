@@ -12,8 +12,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.milanix.example.downloader.HomeActivity;
 import com.milanix.example.downloader.R;
+import com.milanix.example.downloader.activity.HomeActivity;
 import com.milanix.example.downloader.pref.PreferenceHelper;
 
 /**

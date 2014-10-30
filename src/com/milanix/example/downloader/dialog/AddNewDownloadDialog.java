@@ -3,7 +3,6 @@ package com.milanix.example.downloader.dialog;
 import java.util.Date;
 
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.validator.routines.UrlValidator;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -12,12 +11,14 @@ import android.content.ContentValues;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import com.milanix.example.downloader.Downloader;
 import com.milanix.example.downloader.R;
 import com.milanix.example.downloader.data.dao.Download.DownloadState;
 import com.milanix.example.downloader.data.database.DownloadsDatabase;
@@ -93,9 +94,11 @@ public class AddNewDownloadDialog extends DialogFragment implements
 
 	@Override
 	public void onClick(View v) {
-		if (TextHelper.isStringEmpty(et_url.getText().toString()))
+		if (TextUtils.isEmpty(et_url.getText().toString()))
 			et_url.setError(getString(R.string.addnew_error_empty));
-		if (!UrlValidator.getInstance().isValid(et_url.getText().toString()))
+		if (!Downloader.HTTP_VALIDATOR.isValid(et_url.getText().toString())
+				|| !Downloader.FTP_VALIDATOR.isValid(et_url.getText()
+						.toString()))
 			et_url.setError(getString(R.string.addnew_error_invalid));
 		else {
 			addNewDownload(et_url.getText().toString());

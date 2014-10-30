@@ -1,11 +1,10 @@
-package com.milanix.example.downloader;
+package com.milanix.example.downloader.activity;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 
-import org.apache.commons.validator.routines.UrlValidator;
-
+import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -27,6 +26,8 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ImageButton;
 
+import com.milanix.example.downloader.Downloader;
+import com.milanix.example.downloader.R;
 import com.milanix.example.downloader.data.dao.Download;
 import com.milanix.example.downloader.dialog.AddNewDownloadDialog;
 import com.milanix.example.downloader.dialog.AddNewDownloadDialog.OnAddNewDownloadListener;
@@ -139,15 +140,19 @@ public class HomeActivity extends ActionBarActivity implements
 		if (null != intent && null != intent.getData()) {
 			String incomingUri = intent.getData().toString();
 
-			if (!TextUtils.isEmpty(incomingUri)
-					&& UrlValidator.getInstance().isValid(incomingUri)) {
-				Bundle bundle = new Bundle();
-				bundle.putString(AddNewDownloadDialog.KEY_ADDNEW_URL,
-						incomingUri);
+			if (!TextUtils.isEmpty(incomingUri)) {
+				if (Downloader.HTTP_VALIDATOR.isValid(incomingUri)
+						|| Downloader.FTP_VALIDATOR.isValid(incomingUri)) {
+					Bundle bundle = new Bundle();
+					bundle.putString(AddNewDownloadDialog.KEY_ADDNEW_URL,
+							incomingUri);
 
-				showAddNewDialog(bundle);
+					showAddNewDialog(bundle);
+				} else {
+					ToastHelper.showToast(this,
+							getString(R.string.addnew_request_invalid));
+				}
 			}
-
 		}
 
 	}
@@ -429,6 +434,58 @@ public class HomeActivity extends ActionBarActivity implements
 		}
 
 		return false;
+	}
+
+	/**
+	 * This class contains a tab listener
+	 * 
+	 * @author Milan
+	 * 
+	 * @param <T>
+	 */
+	public class TabListener<T extends Fragment> implements
+			ActionBar.TabListener {
+		private Fragment mFragment;
+		private final Activity mActivity;
+		private final String mTag;
+		private final Class<T> mClass;
+
+		/**
+		 * Constructor used each time a new tab is created.
+		 * 
+		 * @param activity
+		 *            The host Activity, used to instantiate the fragment
+		 * @param tag
+		 *            The identifier tag for the fragment
+		 * @param clazz
+		 *            The fragment's Class, used to instantiate the fragment
+		 */
+		public TabListener(Activity activity, String tag, Class<T> clazz) {
+			mActivity = activity;
+			mTag = tag;
+			mClass = clazz;
+		}
+
+		/* The following are each of the ActionBar.TabListener callbacks */
+
+		public void onTabSelected(Tab tab, FragmentTransaction ft) {
+			if (mFragment == null) {
+				mFragment = Fragment.instantiate(mActivity, mClass.getName());
+				ft.add(android.R.id.content, mFragment, mTag);
+			} else {
+				ft.attach(mFragment);
+			}
+		}
+
+		public void onTabUnselected(Tab tab, FragmentTransaction ft) {
+			if (mFragment != null) {
+				ft.detach(mFragment);
+			}
+		}
+
+		public void onTabReselected(Tab tab, FragmentTransaction ft) {
+			// User selected the already selected tab. Usually do nothing.
+		}
 	}
 
 }

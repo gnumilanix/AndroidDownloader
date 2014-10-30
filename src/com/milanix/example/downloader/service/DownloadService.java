@@ -2,9 +2,11 @@ package com.milanix.example.downloader.service;
 
 import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -24,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.net.ftp.FTPClient;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
@@ -57,10 +60,12 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.RemoteException;
 import android.support.v4.app.NotificationCompat;
+import android.text.TextUtils;
 import android.util.Log;
 
-import com.milanix.example.downloader.HomeActivity;
+import com.milanix.example.downloader.Downloader;
 import com.milanix.example.downloader.R;
+import com.milanix.example.downloader.activity.HomeActivity;
 import com.milanix.example.downloader.data.dao.Download;
 import com.milanix.example.downloader.data.dao.Download.DownloadListener;
 import com.milanix.example.downloader.data.dao.Download.DownloadState;
@@ -74,6 +79,7 @@ import com.milanix.example.downloader.util.FileUtils;
 import com.milanix.example.downloader.util.FileUtils.ByteType;
 import com.milanix.example.downloader.util.IOUtils;
 import com.milanix.example.downloader.util.NetworkUtils;
+import com.milanix.example.downloader.util.NumberParser;
 import com.milanix.example.downloader.util.TextHelper;
 
 /**
@@ -83,9 +89,11 @@ import com.milanix.example.downloader.util.TextHelper;
  * 
  */
 public class DownloadService extends Service {
-
 	// Schedule format
 	public static final String SCHEDULE_DATE_FORMAT = "HH:mm";
+
+	// FTP Commands
+	private static final String FTP_CMD_SIZE = "SIZE";
 
 	// Notification ids
 	private static final int NOTIFICATION_ID_WARNING = 1000;
@@ -137,8 +145,6 @@ public class DownloadService extends Service {
 
 	// Value constants
 	public static final int INTERVAL_DAY = 24 * 60 * 60 * 1000;
-
-	private static Context context;
 
 	private ServiceActionReceiver serviceActionReceiver;
 	private static NotificationManager notificationManager;
@@ -254,9 +260,6 @@ public class DownloadService extends Service {
 	 * optimally
 	 */
 	private void init() {
-		if (null == context)
-			context = getApplicationContext();
-
 		if (null == serviceActionReceiver)
 			serviceActionReceiver = new ServiceActionReceiver();
 
@@ -264,8 +267,7 @@ public class DownloadService extends Service {
 			notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
 		if (null == alarmManager)
-			alarmManager = (AlarmManager) context
-					.getSystemService(Context.ALARM_SERVICE);
+			alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
 
 		if (null == sharedPreferenced)
 			sharedPreferenced = PreferenceHelper
@@ -339,15 +341,6 @@ public class DownloadService extends Service {
 	}
 
 	/**
-	 * This method can be used to retrieve context from static methods
-	 * 
-	 * @return current application context. May be null
-	 */
-	private static Context getStaticContext() {
-		return context;
-	}
-
-	/**
 	 * This method registers ServiceActionReceiver
 	 */
 	private void registerServiceActionReceiver() {
@@ -417,29 +410,33 @@ public class DownloadService extends Service {
 	 * to start an schedule and one until the schedule should run.
 	 */
 	private void scheduleAlarm() {
-		if (PreferenceHelper.getIsOnSchedule(getStaticContext())) {
-			Date scheduleStartDate = TextHelper.getAsDate(context,
-					SCHEDULE_DATE_FORMAT,
-					PreferenceHelper.getBasicScheduleStart(getStaticContext()));
+		if (PreferenceHelper.getIsOnSchedule(getApplicationContext())) {
+			Date scheduleStartDate = TextHelper.getAsDate(
+					getApplicationContext(), SCHEDULE_DATE_FORMAT,
+					PreferenceHelper
+							.getBasicScheduleStart(getApplicationContext()));
 
-			Date scheduleUntilDate = TextHelper.getAsDate(context,
-					SCHEDULE_DATE_FORMAT,
-					PreferenceHelper.getBasicScheduleUntil(getStaticContext()));
+			Date scheduleUntilDate = TextHelper.getAsDate(
+					getApplicationContext(), SCHEDULE_DATE_FORMAT,
+					PreferenceHelper
+							.getBasicScheduleUntil(getApplicationContext()));
 
 			if (null != scheduleStartDate && null != scheduleUntilDate) {
-				Intent scheduleStartIntent = new Intent(getStaticContext(),
-						ServiceActionReceiver.class)
+				Intent scheduleStartIntent = new Intent(
+						getApplicationContext(), ServiceActionReceiver.class)
 						.setAction(ACTION_SCHEDULE_START);
-				Intent scheduleUntilIntent = new Intent(getStaticContext(),
-						ServiceActionReceiver.class)
+				Intent scheduleUntilIntent = new Intent(
+						getApplicationContext(), ServiceActionReceiver.class)
 						.setAction(ACTION_SCHEDULE_UNTIL);
 
 				PendingIntent scheduleStartPendingIntent = PendingIntent
-						.getBroadcast(context, ALARM_REQCODE_SCHEDULE_START,
+						.getBroadcast(getApplicationContext(),
+								ALARM_REQCODE_SCHEDULE_START,
 								scheduleStartIntent,
 								PendingIntent.FLAG_UPDATE_CURRENT);
 				PendingIntent scheduleUntilPendingIntent = PendingIntent
-						.getBroadcast(context, ALARM_REQCODE_SCHEDULE_UNTIL,
+						.getBroadcast(getApplicationContext(),
+								ALARM_REQCODE_SCHEDULE_UNTIL,
 								scheduleUntilIntent,
 								PendingIntent.FLAG_UPDATE_CURRENT);
 
@@ -483,17 +480,19 @@ public class DownloadService extends Service {
 	public static Bundle showGeneralNotification(int icon, String title,
 			String message) {
 
-		Intent notificationIntent = new Intent(getStaticContext(),
-				ServiceActionReceiver.class).putExtra(KEY_NOTIFICATION_TAG,
-				NOTIFICATION_TAG_CLEAR).putExtra(KEY_NOTIFICATION_ID,
-				generalNotificationIds.last() + 1);
+		Intent notificationIntent = new Intent(
+				Downloader.getDownloaderContext(), ServiceActionReceiver.class)
+				.putExtra(KEY_NOTIFICATION_TAG, NOTIFICATION_TAG_CLEAR)
+				.putExtra(KEY_NOTIFICATION_ID,
+						generalNotificationIds.last() + 1);
 
 		PendingIntent notificationPendingIntent = PendingIntent.getActivity(
-				getStaticContext(), 0, notificationIntent,
+				Downloader.getDownloaderContext(), 0, notificationIntent,
 				PendingIntent.FLAG_UPDATE_CURRENT);
 
 		NotificationCompat.Builder serviceStartBuilder = new NotificationCompat.Builder(
-				getStaticContext()).setSmallIcon(R.drawable.ic_launcher)
+				Downloader.getDownloaderContext())
+				.setSmallIcon(R.drawable.ic_launcher)
 				.setContentTitle("Downloader service")
 				.setContentText("Downloader service has started")
 				.setContentIntent(notificationPendingIntent);
@@ -511,37 +510,39 @@ public class DownloadService extends Service {
 	 *            to be attached to this notification
 	 */
 	private static void showProgressNotification(Download download) {
-		if (download.isValid() && null != getStaticContext()) {
+		if (download.isValid() && null != Downloader.getDownloaderContext()) {
 
-			Intent resultIntent = new Intent(getStaticContext(),
+			Intent resultIntent = new Intent(Downloader.getDownloaderContext(),
 					HomeActivity.class);
 
 			PendingIntent resultPendingIntent = PendingIntent.getActivity(
-					getStaticContext(), 0, resultIntent,
+					Downloader.getDownloaderContext(), 0, resultIntent,
 					PendingIntent.FLAG_UPDATE_CURRENT);
 
-			Intent resumeIntent = new Intent(getStaticContext(),
+			Intent resumeIntent = new Intent(Downloader.getDownloaderContext(),
 					ServiceActionReceiver.class).setAction(ACTION_RESUME)
 					.putExtra(KEY_DOWNLOADID, download.getId())
 					.putExtra(KEY_NOTIFICATION_TAG, NOTIFICATION_TAG_PROGRESS)
 					.putExtra(KEY_NOTIFICATION_ID, download.getId());
 
-			Intent pauseIntent = new Intent(getStaticContext(),
+			Intent pauseIntent = new Intent(Downloader.getDownloaderContext(),
 					ServiceActionReceiver.class).setAction(ACTION_PAUSE)
 					.putExtra(KEY_DOWNLOADID, download.getId())
 					.putExtra(KEY_NOTIFICATION_TAG, NOTIFICATION_TAG_PROGRESS)
 					.putExtra(KEY_NOTIFICATION_ID, download.getId());
 
 			PendingIntent pendingIntentResume = PendingIntent.getBroadcast(
-					getStaticContext(), NOTIFICATION_REQCODE_RESUME,
-					resumeIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+					Downloader.getDownloaderContext(),
+					NOTIFICATION_REQCODE_RESUME, resumeIntent,
+					PendingIntent.FLAG_UPDATE_CURRENT);
 
 			PendingIntent pendingIntentPause = PendingIntent.getBroadcast(
-					getStaticContext(), NOTIFICATION_REQCODE_PAUSE,
-					pauseIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+					Downloader.getDownloaderContext(),
+					NOTIFICATION_REQCODE_PAUSE, pauseIntent,
+					PendingIntent.FLAG_UPDATE_CURRENT);
 
 			NotificationCompat.Builder progressBuilder = new NotificationCompat.Builder(
-					getStaticContext());
+					Downloader.getDownloaderContext());
 			progressBuilder
 					.setContentTitle(download.getName())
 					.setContentText(download.getUrl())
@@ -552,12 +553,14 @@ public class DownloadService extends Service {
 					.setStyle(
 							new NotificationCompat.BigTextStyle()
 									.bigText(download.getUrl()))
-					.addAction(R.drawable.ic_action_resume_dark,
-							getStaticContext().getString(R.string.btn_resume),
-							pendingIntentResume)
-					.addAction(R.drawable.ic_action_pause_dark,
-							getStaticContext().getString(R.string.btn_pause),
-							pendingIntentPause);
+					.addAction(
+							R.drawable.ic_action_resume_dark,
+							Downloader.getDownloaderContext().getString(
+									R.string.btn_resume), pendingIntentResume)
+					.addAction(
+							R.drawable.ic_action_pause_dark,
+							Downloader.getDownloaderContext().getString(
+									R.string.btn_pause), pendingIntentPause);
 
 			notificationManager.notify(NOTIFICATION_TAG_PROGRESS,
 					download.getId(), progressBuilder.build());
@@ -572,51 +575,52 @@ public class DownloadService extends Service {
 	 *            to be attached to this notification
 	 */
 	private static void showWarningNotification(Download download) {
-		if (download.isValid() && null != getStaticContext()) {
-			Intent resultIntent = new Intent(getStaticContext(),
+		if (download.isValid() && null != Downloader.getDownloaderContext()) {
+			Intent resultIntent = new Intent(Downloader.getDownloaderContext(),
 					HomeActivity.class);
 
 			PendingIntent resultPendingIntent = PendingIntent.getActivity(
-					getStaticContext(), 0, resultIntent,
+					Downloader.getDownloaderContext(), 0, resultIntent,
 					PendingIntent.FLAG_CANCEL_CURRENT);
 
-			Intent continueIntent = new Intent(getStaticContext(),
+			Intent continueIntent = new Intent(
+					Downloader.getDownloaderContext(),
 					ServiceActionReceiver.class).setAction(ACTION_CONTINUE)
 					.putExtra(KEY_DOWNLOADID, download.getId())
 					.putExtra(KEY_NOTIFICATION_TAG, NOTIFICATION_TAG_WARNING)
 					.putExtra(KEY_NOTIFICATION_ID, NOTIFICATION_ID_WARNING);
 
 			PendingIntent pendingIntentContinue = PendingIntent.getBroadcast(
-					getStaticContext(), NOTIFICATION_REQCODE_CONTINUE,
-					continueIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+					Downloader.getDownloaderContext(),
+					NOTIFICATION_REQCODE_CONTINUE, continueIntent,
+					PendingIntent.FLAG_CANCEL_CURRENT);
 
 			String message = "";
 			String title = "";
 
 			// Message context based on if size is determined or not
 			if (null == download.getSize()) {
-				title = getStaticContext().getString(
+				title = Downloader.getDownloaderContext().getString(
 						R.string.download_size_unknown_title);
 
-				message = String.format(
-						getStaticContext().getString(
-								R.string.download_size_unknown_message),
+				message = String.format(Downloader.getDownloaderContext()
+						.getString(R.string.download_size_unknown_message),
 						download.getName());
 			} else {
-				title = getStaticContext().getString(
+				title = Downloader.getDownloaderContext().getString(
 						R.string.download_size_exceeded_title);
 
-				message = String.format(
-						getStaticContext().getString(
-								R.string.download_size_exceeded_message),
+				message = String.format(Downloader.getDownloaderContext()
+						.getString(R.string.download_size_exceeded_message),
 						download.getName(), PreferenceHelper
-								.getDownloadLimitSize(getStaticContext()),
-						PreferenceHelper
-								.getDownloadLimitType(getStaticContext()));
+								.getDownloadLimitSize(Downloader
+										.getDownloaderContext()),
+						PreferenceHelper.getDownloadLimitType(Downloader
+								.getDownloaderContext()));
 			}
 
 			NotificationCompat.Builder warningBuilder = new NotificationCompat.Builder(
-					getStaticContext())
+					Downloader.getDownloaderContext())
 					.setSmallIcon(R.drawable.ic_icon_limit_dark)
 					.setContentTitle(title)
 					.setContentText(message)
@@ -628,7 +632,8 @@ public class DownloadService extends Service {
 									.bigText(message))
 					.addAction(
 							R.drawable.ic_action_resume_dark,
-							getStaticContext().getString(R.string.btn_continue),
+							Downloader.getDownloaderContext().getString(
+									R.string.btn_continue),
 							pendingIntentContinue);
 
 			notificationManager.notify(NOTIFICATION_TAG_WARNING,
@@ -645,7 +650,7 @@ public class DownloadService extends Service {
 	 *            to be attached to this notification
 	 */
 	private static void showCompletedNotification(Download download) {
-		if (download.isValid() && null != getStaticContext()) {
+		if (download.isValid() && null != Downloader.getDownloaderContext()) {
 			completedDownloads.add(download);
 
 			String title = null;
@@ -662,33 +667,39 @@ public class DownloadService extends Service {
 
 			for (Download completedDownload : completedDownloads) {
 				if (DownloadState.COMPLETED.equals(download.getState())) {
-					inboxStyle.addLine(String.format(getStaticContext()
-							.getString(R.string.download_completed_message),
-							completedDownload.getName(), completedDownload
-									.getUrl()));
+					inboxStyle.addLine(String.format(
+							Downloader.getDownloaderContext().getString(
+									R.string.download_completed_message),
+							completedDownload.getName(),
+							completedDownload.getUrl()));
 
 					completedCount++;
 				} else if (DownloadState.FAILED.equals(download.getState())) {
-					inboxStyle.addLine(String.format(getStaticContext()
-							.getString(R.string.download_failed_message),
-							completedDownload.getName(), completedDownload
-									.getUrl()));
+					inboxStyle.addLine(String.format(
+							Downloader.getDownloaderContext().getString(
+									R.string.download_failed_message),
+							completedDownload.getName(),
+							completedDownload.getUrl()));
 
 					failedCount++;
 				}
 			}
 
 			if (DownloadState.COMPLETED.equals(download.getState())) {
-				title = getStaticContext().getString(
+				title = Downloader.getDownloaderContext().getString(
 						R.string.download_completed_title);
 
 				if (completedCount == 1)
-					message = getStaticContext().getResources()
+					message = Downloader
+							.getDownloaderContext()
+							.getResources()
 							.getQuantityString(
 									R.plurals.download_completed_subtitle,
 									completedCount, download.getName());
 				else
-					message = getStaticContext().getResources()
+					message = Downloader
+							.getDownloaderContext()
+							.getResources()
 							.getQuantityString(
 									R.plurals.download_completed_subtitle,
 									completedCount, completedCount);
@@ -696,16 +707,20 @@ public class DownloadService extends Service {
 				notificationTag = NOTIFICATION_TAG_COMPLETED;
 				notificationId = NOTIFICATION_ID_COMPLETED;
 			} else if (DownloadState.FAILED.equals(download.getState())) {
-				title = getStaticContext().getString(
+				title = Downloader.getDownloaderContext().getString(
 						R.string.download_failed_title);
 
 				if (failedCount == 1)
-					message = getStaticContext().getResources()
+					message = Downloader
+							.getDownloaderContext()
+							.getResources()
 							.getQuantityString(
 									R.plurals.download_failed_subtitle,
 									failedCount, download.getName());
 				else
-					message = getStaticContext().getResources()
+					message = Downloader
+							.getDownloaderContext()
+							.getResources()
 							.getQuantityString(
 									R.plurals.download_failed_subtitle,
 									failedCount, failedCount);
@@ -714,17 +729,18 @@ public class DownloadService extends Service {
 				notificationId = NOTIFICATION_ID_FAILED;
 			}
 
-			Intent clearIntent = new Intent(getStaticContext(),
+			Intent clearIntent = new Intent(Downloader.getDownloaderContext(),
 					ServiceActionReceiver.class).setAction(ACTION_CLEAR)
 					.putExtra(KEY_NOTIFICATION_TAG, NOTIFICATION_TAG_CLEAR)
 					.putExtra(KEY_NOTIFICATION_ID, notificationId);
 
 			PendingIntent pendingIntentClear = PendingIntent.getBroadcast(
-					getStaticContext(), NOTIFICATION_REQCODE_CLEAR,
-					clearIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+					Downloader.getDownloaderContext(),
+					NOTIFICATION_REQCODE_CLEAR, clearIntent,
+					PendingIntent.FLAG_CANCEL_CURRENT);
 
 			NotificationCompat.Builder completedBuilder = new NotificationCompat.Builder(
-					getStaticContext())
+					Downloader.getDownloaderContext())
 					.setSmallIcon(R.drawable.ic_icon_download_dark)
 					.setContentTitle(title).setContentText(message)
 					.setContentIntent(pendingIntentClear)
@@ -816,7 +832,8 @@ public class DownloadService extends Service {
 		if (null == downloadId)
 			return null;
 
-		Download download = new Download().retrieve(context, downloadId);
+		final Download download = new Download().retrieve(
+				Downloader.getDownloaderContext(), downloadId);
 
 		if (!download.isValid()) {
 			download.setState(DownloadState.FAILED);
@@ -831,7 +848,7 @@ public class DownloadService extends Service {
 		if (downloadTasks.containsKey(download.getId()))
 			return downloadTasks.get(download.getId());
 
-		if (TextHelper.isStringEmpty(download.getUrl())) {
+		if (TextUtils.isEmpty(download.getUrl())) {
 			download.setState(DownloadState.FAILED);
 			download.setFailReason(FailedReason.UNKNOWN_ERROR);
 
@@ -845,7 +862,7 @@ public class DownloadService extends Service {
 
 		downloadTasks.put(download.getId(), taskToStart);
 
-		return taskToStart;
+		return null;
 	}
 
 	/**
@@ -1189,12 +1206,14 @@ public class DownloadService extends Service {
 		ContentValues values = new ContentValues();
 		values.put(DownloadsDatabase.COLUMN_SIZE, size);
 
-		if (null != getStaticContext())
-			getStaticContext().getContentResolver().update(
-					DownloadContentProvider.CONTENT_URI_DOWNLOADS,
-					values,
-					QueryHelper.getWhere(DownloadsDatabase.COLUMN_ID,
-							download.getId(), true), null);
+		if (null != Downloader.getDownloaderContext())
+			Downloader
+					.getDownloaderContext()
+					.getContentResolver()
+					.update(DownloadContentProvider.CONTENT_URI_DOWNLOADS,
+							values,
+							QueryHelper.getWhere(DownloadsDatabase.COLUMN_ID,
+									download.getId(), true), null);
 	}
 
 	/**
@@ -1220,12 +1239,14 @@ public class DownloadService extends Service {
 			values.put(DownloadsDatabase.COLUMN_DATE_COMPLETED,
 					download.getDateCompleted());
 
-		if (null != getStaticContext())
-			getStaticContext().getContentResolver().update(
-					DownloadContentProvider.CONTENT_URI_DOWNLOADS,
-					values,
-					QueryHelper.getWhere(DownloadsDatabase.COLUMN_ID,
-							download.getId(), true), null);
+		if (null != Downloader.getDownloaderContext())
+			Downloader
+					.getDownloaderContext()
+					.getContentResolver()
+					.update(DownloadContentProvider.CONTENT_URI_DOWNLOADS,
+							values,
+							QueryHelper.getWhere(DownloadsDatabase.COLUMN_ID,
+									download.getId(), true), null);
 	}
 
 	/**
@@ -1253,7 +1274,8 @@ public class DownloadService extends Service {
 		}
 
 		try {
-			ContentProviderResult[] operationsResult = getStaticContext()
+			ContentProviderResult[] operationsResult = Downloader
+					.getDownloaderContext()
 					.getContentResolver()
 					.applyBatch(DownloadContentProvider.AUTHORITY,
 							updateOperations);
@@ -1310,7 +1332,7 @@ public class DownloadService extends Service {
 		@Override
 		protected Download doInBackground(Void... arg) {
 
-			if (null != getStaticContext()) {
+			if (null != Downloader.getDownloaderContext()) {
 				if (!download.isValid()) {
 					Log.d(getLogTag(), "Parameters invalid");
 
@@ -1318,7 +1340,8 @@ public class DownloadService extends Service {
 					download.setFailReason(FailedReason.UNKNOWN_ERROR);
 
 					updateDownloadState(download);
-				} else if (!NetworkUtils.isNetworkConnected(getStaticContext())) {
+				} else if (!NetworkUtils.isNetworkConnected(Downloader
+						.getDownloaderContext())) {
 					Log.d(getLogTag(), "network disconnected");
 
 					download.setState(DownloadState.FAILED);
@@ -1336,189 +1359,18 @@ public class DownloadService extends Service {
 					Log.d(getLogTag(),
 							"parms valid, network available and storage writable");
 
-					InputStream remoteContentStream = null;
-					BufferedInputStream bufferedFileStream = null;
-
-					File targetLocalFile = null;
-					File targetTempFile = null;
-					RandomAccessFile targetWriteFile = null;
-
-					try {
-						HttpClient downloadClient = NetworkUtils
-								.getHttpClient();
-
-						HttpParams params = new BasicHttpParams();
-						HttpConnectionParams.setSoTimeout(params, 60000);
-
-						HttpGet request = new HttpGet(download.getUrl());
-						request.setParams(params);
-
-						HttpResponse response = downloadClient.execute(request);
-
-						remoteContentStream = response.getEntity().getContent();
-
-						long fileSize = response.getEntity().getContentLength();
-						long tempfileSize = 0L;
-
-						updateDownlaodSize(fileSize);
-
-						if (DownloadState.ADDED_NOTAUTHORIZED.equals(download
-								.getState())
-								&& fileSize >= FileUtils.getStorageSizeAsByte(
-										downloadLimitType, downloadLimitSize)) {
-							Log.d(getLogTag(),
-									"not authorized and limit exceeded");
-
-							download.setState(DownloadState.ADDED_NOTAUTHORIZED);
-
-							updateDownloadState(download);
-
-							showWarningNotification(download);
-						} else {
-							Log.d(getLogTag(),
-									"authorized and limit not exceeded");
-
-							download.setState(DownloadState.ADDED_AUTHORIZED);
-
-							updateDownloadState(download);
-
-							if (!FileUtils.isStorageSpaceAvailable(fileSize)) {
-								download.setState(DownloadState.FAILED);
-								download.setFailReason(FailedReason.STORAGE_NOTAVAILABLE);
-
-								updateDownloadState(download);
-							} else {
-								Log.d(getLogTag(), "storage available");
-
-								targetLocalFile = new File(download.getPath());
-
-								// If file exist mark completed otherwise
-								// progress
-								if (targetLocalFile.exists()
-										&& fileSize == targetLocalFile.length()) {
-									Log.d(getLogTag(), "file exists");
-
-									download.setState(DownloadState.COMPLETED);
-									download.setDateCompleted(new Date()
-											.getTime());
-
-									updateDownloadState(download);
-								} else {
-									Log.d(getLogTag(), "file does not exist");
-
-									byte[] buffer = new byte[BUFFER_SIZE];
-									int chunkSize = 0;
-									int chunkCompleted = 0;
-									int chunkProgress = 0;
-									int chunkCopied = 0;
-
-									targetTempFile = new File(
-											FilenameUtils.getFullPath(download
-													.getPath()),
-											FilenameUtils.getName(download
-													.getPath()) + TEMP_SUFFIX);
-
-									/*
-									 * If temp file exist add header to request
-									 * remainin content
-									 */
-									if (targetTempFile.exists()
-											&& targetTempFile.length() < fileSize) {
-										request.addHeader(
-												RANGE_HEADER,
-												String.format(RANGE_VALUE,
-														targetTempFile.length()));
-
-										response = downloadClient
-												.execute(request);
-
-										remoteContentStream = response
-												.getEntity().getContent();
-
-										tempfileSize = targetTempFile.length();
-
-										chunkCompleted = (int) tempfileSize;
-
-										Log.d(getLogTag(), "temp exists");
-									}
-
-									targetWriteFile = new RandomAccessFile(
-											targetTempFile, "rw");
-
-									bufferedFileStream = new BufferedInputStream(
-											remoteContentStream, BUFFER_SIZE);
-
-									// Seek to target. If temp seeks to length
-									// otherwise
-									// 0
-									targetWriteFile.seek(targetWriteFile
-											.length());
-
-									showProgressNotification(download);
-
-									Log.d(getLogTag(), "download started");
-
-									while (-1 != (chunkSize = remoteContentStream
-											.read(buffer))) {
-										targetWriteFile.write(buffer, 0,
-												chunkSize);
-
-										chunkCompleted += chunkSize;
-										chunkCopied += chunkSize;
-
-										chunkProgress = (int) ((double) chunkCompleted
-												/ (double) fileSize * 100.0);
-
-										publishProgress(chunkProgress);
-									}
-
-									if ((tempfileSize + chunkCopied) != fileSize
-											&& fileSize != -1) {
-										Log.d(getLogTag(),
-												"Incomplete download");
-
-										download.setState(DownloadState.FAILED);
-										download.setFailReason(FailedReason.FILE_INCOMPLETE);
-
-										updateDownloadState(download);
-									} else {
-										Log.d(getLogTag(), "Complete download");
-
-										targetTempFile
-												.renameTo(targetLocalFile);
-
-										download.setState(DownloadState.COMPLETED);
-										download.setDateCompleted(new Date()
-												.getTime());
-
-										updateDownloadState(download);
-									}
-								}
-
-								cancelNotification(NOTIFICATION_TAG_PROGRESS,
-										download.getId());
-							}
-						}
-
-					} catch (ClientProtocolException ex) {
-						Log.e(getLogTag(), "IO exception occoured", ex);
-
+					if (Downloader.HTTP_VALIDATOR.isValid(download.getUrl())) {
+						performHTTPDownload();
+					} else if (Downloader.FTP_VALIDATOR.isValid(download
+							.getUrl())) {
+						performFTPDownload();
+					} else {
 						download.setState(DownloadState.FAILED);
-						download.setFailReason(FailedReason.NETWORK_ERROR);
+						download.setFailReason(FailedReason.UNKNOWN_ERROR);
 
 						updateDownloadState(download);
 
-					} catch (IOException ex) {
-						Log.e(getLogTag(), "IO exception occoured", ex);
-
-						download.setState(DownloadState.FAILED);
-						download.setFailReason(FailedReason.IO_ERROR);
-
-						updateDownloadState(download);
-					} finally {
-						IOUtils.close(targetWriteFile);
-						IOUtils.close(remoteContentStream);
-						IOUtils.close(bufferedFileStream);
+						notifyCallbacksFailed(download);
 					}
 
 				}
@@ -1528,12 +1380,300 @@ public class DownloadService extends Service {
 		}
 
 		/**
+		 * This method performs an FTP download
+		 */
+		private void performFTPDownload() {
+			FileOutputStream remoteContentStream = null;
+
+			File targetLocalFile = null;
+			File targetTempFile = null;
+
+			FTPClient downloadClient = null;
+
+			try {
+				URL downloadUrl = new URL(download.getUrl());
+
+				downloadClient = NetworkUtils.getFTPClient();
+				downloadClient.connect(downloadUrl.getHost(),
+						downloadUrl.getPort());
+				downloadClient.enterLocalPassiveMode();
+				// downloadClient.login("login", "password");
+				downloadClient.setFileType(FTPClient.BINARY_FILE_TYPE);
+				downloadClient.sendCommand(FTP_CMD_SIZE, downloadUrl.getPath());
+
+				long fileSize = NumberParser.getLong(downloadClient
+						.getReplyString());
+				updateDownlaodSize(fileSize);
+
+				if (DownloadState.ADDED_NOTAUTHORIZED.equals(download
+						.getState())
+						&& fileSize >= FileUtils.getStorageSizeAsByte(
+								downloadLimitType, downloadLimitSize)) {
+					Log.d(getLogTag(), "not authorized and limit exceeded");
+
+					download.setState(DownloadState.ADDED_NOTAUTHORIZED);
+
+					updateDownloadState(download);
+
+					showWarningNotification(download);
+				} else {
+					Log.d(getLogTag(), "authorized and limit not exceeded");
+
+					download.setState(DownloadState.ADDED_AUTHORIZED);
+
+					updateDownloadState(download);
+
+					if (!FileUtils.isStorageSpaceAvailable(fileSize)) {
+						download.setState(DownloadState.FAILED);
+						download.setFailReason(FailedReason.STORAGE_NOTAVAILABLE);
+
+						updateDownloadState(download);
+					} else {
+						Log.d(getLogTag(), "storage available");
+
+						targetLocalFile = new File(download.getPath());
+						remoteContentStream = new FileOutputStream(
+								targetLocalFile);
+
+						// If file exist mark completed otherwise
+						// progress
+						if (targetLocalFile.exists()
+								&& fileSize == targetLocalFile.length()) {
+							Log.d(getLogTag(), "file exists");
+
+							download.setState(DownloadState.COMPLETED);
+							download.setDateCompleted(new Date().getTime());
+
+							updateDownloadState(download);
+						} else {
+							Log.d(getLogTag(), "file does not exist");
+
+							targetTempFile = new File(
+									FilenameUtils.getFullPath(download
+											.getPath()),
+									FilenameUtils.getName(download.getPath())
+											+ TEMP_SUFFIX);
+
+							/*
+							 * If temp file exist add header to request remainin
+							 * content
+							 */
+							if (targetTempFile.exists()
+									&& targetTempFile.length() < fileSize) {
+								downloadClient.setRestartOffset(targetTempFile
+										.length());
+
+								Log.d(getLogTag(), "temp exists");
+							}
+
+							boolean result = downloadClient.retrieveFile(
+									downloadUrl.getPath(), remoteContentStream);
+
+							if (result && fileSize == targetTempFile.length()) {
+								targetTempFile.renameTo(targetLocalFile);
+							}
+						}
+					}
+				}
+			} catch (IOException ex) {
+				Log.e(getLogTag(), "IO exception occoured", ex);
+
+				download.setState(DownloadState.FAILED);
+				download.setFailReason(FailedReason.IO_ERROR);
+
+				updateDownloadState(download);
+			} finally {
+				NetworkUtils.disconnectFTPClient(downloadClient);
+				IOUtils.close(remoteContentStream);
+			}
+		}
+
+		/**
+		 * This method performs an HTTP download
+		 */
+		private void performHTTPDownload() {
+			InputStream remoteContentStream = null;
+			BufferedInputStream bufferedFileStream = null;
+
+			File targetLocalFile = null;
+			File targetTempFile = null;
+			RandomAccessFile targetWriteFile = null;
+
+			try {
+
+				HttpClient downloadClient = NetworkUtils.getHttpClient();
+
+				HttpParams params = new BasicHttpParams();
+				HttpConnectionParams.setSoTimeout(params, 60000);
+
+				HttpGet request = new HttpGet(download.getUrl());
+				request.setParams(params);
+
+				HttpResponse response = downloadClient.execute(request);
+
+				remoteContentStream = response.getEntity().getContent();
+
+				long fileSize = response.getEntity().getContentLength();
+				long tempfileSize = 0L;
+
+				updateDownlaodSize(fileSize);
+
+				if (DownloadState.ADDED_NOTAUTHORIZED.equals(download
+						.getState())
+						&& fileSize >= FileUtils.getStorageSizeAsByte(
+								downloadLimitType, downloadLimitSize)) {
+					Log.d(getLogTag(), "not authorized and limit exceeded");
+
+					download.setState(DownloadState.ADDED_NOTAUTHORIZED);
+
+					updateDownloadState(download);
+
+					showWarningNotification(download);
+				} else {
+					Log.d(getLogTag(), "authorized and limit not exceeded");
+
+					download.setState(DownloadState.ADDED_AUTHORIZED);
+
+					updateDownloadState(download);
+
+					if (!FileUtils.isStorageSpaceAvailable(fileSize)) {
+						download.setState(DownloadState.FAILED);
+						download.setFailReason(FailedReason.STORAGE_NOTAVAILABLE);
+
+						updateDownloadState(download);
+					} else {
+						Log.d(getLogTag(), "storage available");
+
+						targetLocalFile = new File(download.getPath());
+
+						// If file exist mark completed otherwise
+						// progress
+						if (targetLocalFile.exists()
+								&& fileSize == targetLocalFile.length()) {
+							Log.d(getLogTag(), "file exists");
+
+							download.setState(DownloadState.COMPLETED);
+							download.setDateCompleted(new Date().getTime());
+
+							updateDownloadState(download);
+						} else {
+							Log.d(getLogTag(), "file does not exist");
+
+							byte[] buffer = new byte[BUFFER_SIZE];
+							int chunkSize = 0;
+							int chunkCompleted = 0;
+							int chunkProgress = 0;
+							int chunkCopied = 0;
+
+							targetTempFile = new File(
+									FilenameUtils.getFullPath(download
+											.getPath()),
+									FilenameUtils.getName(download.getPath())
+											+ TEMP_SUFFIX);
+
+							/*
+							 * If temp file exist add header to request remainin
+							 * content
+							 */
+							if (targetTempFile.exists()
+									&& targetTempFile.length() < fileSize) {
+								request.addHeader(RANGE_HEADER, String.format(
+										RANGE_VALUE, targetTempFile.length()));
+
+								response = downloadClient.execute(request);
+
+								remoteContentStream = response.getEntity()
+										.getContent();
+
+								tempfileSize = targetTempFile.length();
+
+								chunkCompleted = (int) tempfileSize;
+
+								Log.d(getLogTag(), "temp exists");
+							}
+
+							targetWriteFile = new RandomAccessFile(
+									targetTempFile, "rw");
+
+							bufferedFileStream = new BufferedInputStream(
+									remoteContentStream, BUFFER_SIZE);
+
+							// Seek to target. If temp seeks to length
+							// otherwise
+							// 0
+							targetWriteFile.seek(targetWriteFile.length());
+
+							showProgressNotification(download);
+
+							Log.d(getLogTag(), "download started");
+
+							while (-1 != (chunkSize = remoteContentStream
+									.read(buffer))) {
+								targetWriteFile.write(buffer, 0, chunkSize);
+
+								chunkCompleted += chunkSize;
+								chunkCopied += chunkSize;
+
+								chunkProgress = (int) ((double) chunkCompleted
+										/ (double) fileSize * 100.0);
+
+								publishProgress(chunkProgress);
+							}
+
+							if ((tempfileSize + chunkCopied) != fileSize
+									&& fileSize != -1) {
+								Log.d(getLogTag(), "Incomplete download");
+
+								download.setState(DownloadState.FAILED);
+								download.setFailReason(FailedReason.FILE_INCOMPLETE);
+
+								updateDownloadState(download);
+							} else {
+								Log.d(getLogTag(), "Complete download");
+
+								targetTempFile.renameTo(targetLocalFile);
+
+								download.setState(DownloadState.COMPLETED);
+								download.setDateCompleted(new Date().getTime());
+
+								updateDownloadState(download);
+							}
+						}
+
+						cancelNotification(NOTIFICATION_TAG_PROGRESS,
+								download.getId());
+					}
+				}
+
+			} catch (ClientProtocolException ex) {
+				Log.e(getLogTag(), "IO exception occoured", ex);
+
+				download.setState(DownloadState.FAILED);
+				download.setFailReason(FailedReason.NETWORK_ERROR);
+
+				updateDownloadState(download);
+
+			} catch (IOException ex) {
+				Log.e(getLogTag(), "IO exception occoured", ex);
+
+				download.setState(DownloadState.FAILED);
+				download.setFailReason(FailedReason.IO_ERROR);
+
+				updateDownloadState(download);
+			} finally {
+				IOUtils.close(targetWriteFile);
+				IOUtils.close(remoteContentStream);
+				IOUtils.close(bufferedFileStream);
+			}
+		}
+
+		/**
 		 * This method will update download size
 		 */
 		private void updateDownlaodSize(long fileSize) {
 			if (null == download.getSize()) {
 				ByteType type = PreferenceHelper
-						.getDownloadLimitType(getStaticContext());
+						.getDownloadLimitType(Downloader.getDownloaderContext());
 
 				StringBuilder sizeBuilder = new StringBuilder("");
 
