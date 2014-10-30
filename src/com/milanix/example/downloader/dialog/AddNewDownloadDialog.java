@@ -16,7 +16,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
 
 import com.milanix.example.downloader.Downloader;
 import com.milanix.example.downloader.R;
@@ -37,7 +36,10 @@ public class AddNewDownloadDialog extends DialogFragment implements
 		View.OnClickListener {
 	public static final String KEY_ADDNEW_URL = "addnew_url";
 
-	private TextView et_url;
+	private EditText et_url;
+	private EditText et_username;
+	private EditText et_password;
+
 	private Button btn_ok;
 
 	private OnAddNewDownloadListener onNewDownloadListener;
@@ -61,6 +63,9 @@ public class AddNewDownloadDialog extends DialogFragment implements
 	 */
 	private void setUI(View rootView) {
 		et_url = (EditText) rootView.findViewById(R.id.et_url);
+		et_username = (EditText) rootView.findViewById(R.id.et_username);
+		et_password = (EditText) rootView.findViewById(R.id.et_password);
+
 		btn_ok = (Button) rootView.findViewById(R.id.btn_ok);
 	}
 

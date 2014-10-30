@@ -63,6 +63,12 @@
             android:authorities="com.milanix.example.downloader.data.provider.DownloadContentProvider"
             android:exported="false" />
 
+        <!-- Provider for credentials content. -->
+        <provider
+            android:name="com.milanix.example.downloader.data.provider.CredentialContentProvider"
+            android:authorities="com.milanix.example.downloader.data.provider.CredentialContentProvider"
+            android:exported="false" />
+
         <!-- Broadcast receiver for actions to be provided in the service -->
         <receiver
             android:name="com.milanix.example.downloader.service.DownloadService$ServiceActionReceiver"

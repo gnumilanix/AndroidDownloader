@@ -28,6 +28,8 @@
     <!-- Add New dialog strings -->
     <string name="addnew_title">Add new download</string>
     <string name="addnew_hint">Enter URL to download</string>
+    <string name="addnew_username_hint">Username (optional)</string>
+    <string name="addnew_password_hint">Password (optional)</string>
     <string name="addnew_error_empty">URL cannot be empty</string>
     <string name="addnew_error_invalid">URL is not valid</string>
     <string name="addnew_protocol_unsupported">Protocol not yet supported for downloading</string>

@@ -5,7 +5,8 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 /**
- * This class contains logic for storing/retrieving and querying the database
+ * This class contains logic for storing/retrieving and querying the
+ * downloads database
  * 
  * @author Milan
  * 
