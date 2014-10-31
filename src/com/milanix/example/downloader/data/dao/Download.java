@@ -13,7 +13,7 @@ import com.milanix.example.downloader.data.provider.DownloadContentProvider;
  * @author Milan
  * 
  */
-public class Download extends AbstractDao<Download> {
+public class Download extends AbstractDao<Download, Integer> {
 	/**
 	 * Enum for {@link Download} states
 	 * 
@@ -307,13 +307,18 @@ public class Download extends AbstractDao<Download> {
 	}
 
 	@Override
-	public Download retrieve(Context context, int id) {
+	public Download retrieve(Context context, Integer id) {
 		Cursor cursor = context.getContentResolver().query(
 				DownloadContentProvider.CONTENT_URI_DOWNLOADS, null,
 				QueryHelper.getWhere(DownloadsDatabase.COLUMN_ID, id, true),
 				null, null);
 
-		if (cursor.getCount() > 0)
+		return retrieve(cursor);
+	}
+
+	@Override
+	public Download retrieve(Cursor cursor) {
+		if (cursor.getCount() > 0) {
 			if (cursor.moveToFirst()) {
 				if (-1 != cursor.getColumnIndex(DownloadsDatabase.COLUMN_ID))
 					setId(cursor.getInt(cursor
@@ -358,6 +363,9 @@ public class Download extends AbstractDao<Download> {
 							.getColumnIndex(DownloadsDatabase.COLUMN_PATH)));
 
 			}
+		} else {
+			return null;
+		}
 
 		return this;
 	}

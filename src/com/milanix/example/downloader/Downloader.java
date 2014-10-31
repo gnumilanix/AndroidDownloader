@@ -13,8 +13,12 @@ import android.content.Context;
  */
 public class Downloader extends Application {
 
-	private static final String[] HTTP_SCHEMAS = { "http", "https" };
-	private static final String[] FTP_SCHEMAS = { "ftp" };
+	public static final String HTTP = "http";
+	public static final String HTTPS = "https";
+	public static final String FTP = "ftp";
+
+	private static final String[] HTTP_SCHEMAS = { HTTP, HTTPS };
+	private static final String[] FTP_SCHEMAS = { FTP };
 
 	public static final UrlValidator HTTP_VALIDATOR = new UrlValidator(
 			HTTP_SCHEMAS);

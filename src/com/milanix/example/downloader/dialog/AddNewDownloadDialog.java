@@ -1,5 +1,7 @@
 package com.milanix.example.downloader.dialog;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Date;
 
 import org.apache.commons.io.FilenameUtils;
@@ -11,16 +13,28 @@ import android.content.ContentValues;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
+import android.text.InputType;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.Animation.AnimationListener;
+import android.view.animation.ScaleAnimation;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.EditText;
 
 import com.milanix.example.downloader.Downloader;
 import com.milanix.example.downloader.R;
+import com.milanix.example.downloader.data.dao.Credential;
 import com.milanix.example.downloader.data.dao.Download.DownloadState;
+import com.milanix.example.downloader.data.database.CredentialsDatabase;
 import com.milanix.example.downloader.data.database.DownloadsDatabase;
+import com.milanix.example.downloader.data.database.util.QueryHelper;
+import com.milanix.example.downloader.data.provider.CredentialContentProvider;
 import com.milanix.example.downloader.data.provider.DownloadContentProvider;
 import com.milanix.example.downloader.pref.PreferenceHelper;
 import com.milanix.example.downloader.util.FileUtils;
@@ -33,12 +47,16 @@ import com.milanix.example.downloader.util.TextHelper;
  * 
  */
 public class AddNewDownloadDialog extends DialogFragment implements
-		View.OnClickListener {
+		View.OnClickListener, OnCheckedChangeListener {
 	public static final String KEY_ADDNEW_URL = "addnew_url";
 
 	private EditText et_url;
 	private EditText et_username;
 	private EditText et_password;
+
+	private CheckBox cb_showpassword;
+
+	private ViewGroup vg_credential;
 
 	private Button btn_ok;
 
@@ -46,7 +64,7 @@ public class AddNewDownloadDialog extends DialogFragment implements
 
 	@Override
 	public Dialog onCreateDialog(Bundle savedInstanceState) {
-		View rootView = LayoutInflater.from(getActivity()).inflate(
+		final View rootView = LayoutInflater.from(getActivity()).inflate(
 				R.layout.dialog_addnew, null);
 
 		setUI(rootView);
@@ -66,6 +84,12 @@ public class AddNewDownloadDialog extends DialogFragment implements
 		et_username = (EditText) rootView.findViewById(R.id.et_username);
 		et_password = (EditText) rootView.findViewById(R.id.et_password);
 
+		cb_showpassword = (CheckBox) rootView
+				.findViewById(R.id.cb_showpassword);
+
+		vg_credential = (ViewGroup) rootView.findViewById(R.id.vg_credential);
+		vg_credential.setVisibility(View.GONE);
+
 		btn_ok = (Button) rootView.findViewById(R.id.btn_ok);
 	}
 
@@ -74,6 +98,7 @@ public class AddNewDownloadDialog extends DialogFragment implements
 	 */
 	private void setListener() {
 		btn_ok.setOnClickListener(this);
+		cb_showpassword.setOnCheckedChangeListener(this);
 	}
 
 	/**
@@ -98,7 +123,7 @@ public class AddNewDownloadDialog extends DialogFragment implements
 	}
 
 	@Override
-	public void onClick(View v) {
+	public void onClick(View view) {
 		if (TextUtils.isEmpty(et_url.getText().toString()))
 			et_url.setError(getString(R.string.addnew_error_empty));
 		if (!Downloader.HTTP_VALIDATOR.isValid(et_url.getText().toString())
@@ -106,9 +131,124 @@ public class AddNewDownloadDialog extends DialogFragment implements
 						.toString()))
 			et_url.setError(getString(R.string.addnew_error_invalid));
 		else {
-			addNewDownload(et_url.getText().toString());
+			if (Downloader.FTP_VALIDATOR.isValid(et_url.getText().toString())) {
+				if (View.VISIBLE == vg_credential.getVisibility())
+					saveCredential(et_url.getText().toString(), et_username
+							.getText().toString(), et_password.getText()
+							.toString());
+				else
+					showCredentialView(et_url.getText().toString());
+			} else {
+				addNewDownload(et_url.getText().toString());
+			}
 		}
 
+	}
+
+	@Override
+	public void onCheckedChanged(CompoundButton view, boolean isChecked) {
+		if (view.getId() == R.id.cb_showpassword) {
+			if (isChecked)
+				et_password
+						.setInputType(InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+			else
+				et_password.setInputType(InputType.TYPE_CLASS_TEXT
+						| InputType.TYPE_TEXT_VARIATION_PASSWORD);
+		}
+
+	}
+
+	/**
+	 * This method will save credential for this path
+	 * 
+	 * @param path
+	 *            full url path
+	 * @param username
+	 *            username for the host
+	 * @param password
+	 *            password for the host
+	 */
+	private void saveCredential(final String path, final String username,
+			final String password) {
+
+		try {
+			final URL downloadUrl = new URL(path);
+
+			if (null != downloadUrl.getHost()) {
+				final ContentValues values = new ContentValues();
+				values.put(CredentialsDatabase.COLUMN_HOST,
+						downloadUrl.getHost());
+				values.put(CredentialsDatabase.COLUMN_PROTOCOL,
+						downloadUrl.getProtocol());
+				values.put(CredentialsDatabase.COLUMN_USERNAME, username);
+				values.put(CredentialsDatabase.COLUMN_PASSWORD, password);
+
+				final Credential credential = new Credential()
+						.retrieve(getActivity()
+								.getContentResolver()
+								.query(CredentialContentProvider.CONTENT_URI_CREDENTIALS,
+										null,
+										QueryHelper
+												.getWhere(
+														CredentialsDatabase.COLUMN_HOST,
+														downloadUrl.getHost(),
+														true), null, null));
+
+				if (null == credential
+						|| TextUtils.isEmpty(credential.getHost()))
+					getActivity().getContentResolver().insert(
+							CredentialContentProvider.CONTENT_URI_CREDENTIALS,
+							values);
+				else
+					getActivity().getContentResolver().update(
+							CredentialContentProvider.CONTENT_URI_CREDENTIALS,
+							values, CredentialsDatabase.COLUMN_ID + " = ?",
+							new String[] { downloadUrl.getHost() });
+
+			}
+		} catch (MalformedURLException ignored) {
+
+		}
+
+		addNewDownload(et_url.getText().toString());
+	}
+
+	/**
+	 * This method will get credential for this path
+	 * 
+	 * @param path
+	 *            full url path
+	 */
+	private void getCredential(final String path) {
+		try {
+			final URL downloadUrl = new URL(path);
+
+			if (null != downloadUrl.getHost()) {
+				final Credential credential = new Credential()
+						.retrieve(getActivity()
+								.getContentResolver()
+								.query(CredentialContentProvider.CONTENT_URI_CREDENTIALS,
+										null,
+										QueryHelper
+												.getWhere(
+														CredentialsDatabase.COLUMN_HOST,
+														downloadUrl.getHost(),
+														true), null, null));
+
+				if (null != credential
+						&& !TextUtils.isEmpty(credential.getHost())) {
+					if (!TextUtils.isEmpty(credential.getUsername()))
+						et_username.setText(credential.getUsername());
+
+					if (!TextUtils.isEmpty(credential.getPassword()))
+						et_password.setText(credential.getPassword());
+				} else {
+					et_username.setText(Credential.USERNAME_ANONOYMOUS);
+					et_password.setText(Credential.PASSWORD_ANONOYMOUS);
+				}
+			}
+		} catch (MalformedURLException ignored) {
+		}
 	}
 
 	/**
@@ -116,8 +256,8 @@ public class AddNewDownloadDialog extends DialogFragment implements
 	 * 
 	 * @param url
 	 */
-	private void addNewDownload(String url) {
-		ContentValues values = new ContentValues();
+	private void addNewDownload(final String url) {
+		final ContentValues values = new ContentValues();
 		values.put(DownloadsDatabase.COLUMN_URL, url);
 		values.put(DownloadsDatabase.COLUMN_NAME,
 				FilenameUtils.getBaseName(url));
@@ -131,8 +271,8 @@ public class AddNewDownloadDialog extends DialogFragment implements
 				FileUtils.getLocalDownloadPath(
 						PreferenceHelper.getDownloadPath(getActivity()), url));
 
-		Uri insertedContentURI = getActivity().getContentResolver().insert(
-				DownloadContentProvider.CONTENT_URI_DOWNLOADS, values);
+		final Uri insertedContentURI = getActivity().getContentResolver()
+				.insert(DownloadContentProvider.CONTENT_URI_DOWNLOADS, values);
 
 		if (null != insertedContentURI) {
 			int rowId = TextHelper.getValueAsInt(insertedContentURI
@@ -151,6 +291,46 @@ public class AddNewDownloadDialog extends DialogFragment implements
 			dismiss();
 		}
 
+	}
+
+	/**
+	 * Shows or hides credential view
+	 */
+	private void showCredentialView(final String path) {
+		final float scaleFrom = View.VISIBLE == vg_credential.getVisibility() ? 1f
+				: 0f;
+		final float scaleTo = View.VISIBLE == vg_credential.getVisibility() ? 0f
+				: 1f;
+
+		final Animation scale = new ScaleAnimation(1f, 1f, scaleFrom, scaleTo,
+				Animation.RELATIVE_TO_SELF, 1f, Animation.RELATIVE_TO_SELF, 0f);
+		scale.setDuration(500);
+		scale.setFillAfter(true);
+		scale.setAnimationListener(new AnimationListener() {
+
+			@Override
+			public void onAnimationStart(Animation animation) {
+				vg_credential.setVisibility(View.VISIBLE);
+			}
+
+			@Override
+			public void onAnimationEnd(Animation animation) {
+				if (scaleTo == 0f)
+					vg_credential.setVisibility(View.GONE);
+				else {
+					vg_credential.setVisibility(View.VISIBLE);
+
+					getCredential(path);
+				}
+			}
+
+			@Override
+			public void onAnimationRepeat(Animation animation) {
+
+			}
+
+		});
+		vg_credential.startAnimation(scale);
 	}
 
 	/**

@@ -18,29 +18,41 @@
         <requestFocus />
     </EditText>
 
-    <EditText
-        android:id="@+id/et_username"
+    <LinearLayout
+        android:id="@+id/vg_credential"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="@dimen/text_margin"
-        android:ems="10"
-        android:hint="@string/addnew_username_hint"
-        android:inputType="text"
-        android:singleLine="true"
-        android:visibility="gone" >
-    </EditText>
+        android:orientation="vertical" >
 
-    <EditText
-        android:id="@+id/et_password"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="@dimen/text_margin"
-        android:ems="10"
-        android:hint="@string/addnew_password_hint"
-        android:inputType="text"
-        android:singleLine="true"
-        android:visibility="gone" >
-    </EditText>
+        <EditText
+            android:id="@+id/et_username"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/text_margin"
+            android:ems="10"
+            android:hint="@string/addnew_username_hint"
+            android:inputType="text"
+            android:singleLine="true" >
+        </EditText>
+
+        <EditText
+            android:id="@+id/et_password"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/text_margin"
+            android:ems="10"
+            android:hint="@string/addnew_password_hint"
+            android:inputType="textPassword"
+            android:singleLine="true" >
+        </EditText>
+
+        <CheckBox
+            android:id="@+id/cb_showpassword"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/text_margin"
+            android:text="@string/addnew_show_password" />
+    </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"

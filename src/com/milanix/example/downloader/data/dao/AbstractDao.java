@@ -1,24 +1,29 @@
 package com.milanix.example.downloader.data.dao;
 
 import android.content.Context;
+import android.database.Cursor;
 
 /**
- * Abstract dao class
+ * Abstract DAO class
  * 
  * @author Milan
  * 
+ * @param <T>
+ *            model type of this DAO
+ * @param <ID>
+ *            id type of the DAO
  */
-public abstract class AbstractDao<T> {
+public abstract class AbstractDao<T, ID> {
 
 	/**
-	 * Gets id of this dao
+	 * Gets id of this DAO
 	 * 
-	 * @return id of this dao
+	 * @return id of this DAO
 	 */
-	public abstract Integer getId();
+	public abstract ID getId();
 
 	/**
-	 * Gets this dao from given id
+	 * Gets this DAO from given id
 	 * 
 	 * @param context
 	 *            is the applications context
@@ -26,7 +31,17 @@ public abstract class AbstractDao<T> {
 	 *            is the id of the object
 	 * @return AbstractDao<T>
 	 */
-	public abstract T retrieve(Context context, int id);
+	public abstract T retrieve(Context context, ID id);
+
+	/**
+	 * Gets this DAO from given cursor
+	 * 
+	 * 
+	 * @param cursor
+	 *            cursor to retrieve object from
+	 * @return AbstractDao<T>
+	 */
+	public abstract T retrieve(Cursor cursor);
 
 	/**
 	 * Checks if instance and it's field is valid for processing

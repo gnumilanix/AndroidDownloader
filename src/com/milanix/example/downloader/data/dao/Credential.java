@@ -13,7 +13,10 @@ import com.milanix.example.downloader.data.provider.CredentialContentProvider;
  * @author Milan
  * 
  */
-public class Credential extends AbstractDao<Credential> {
+public class Credential extends AbstractDao<Credential, Integer> {
+
+	public static final String USERNAME_ANONOYMOUS = "anonymous";
+	public static final String PASSWORD_ANONOYMOUS = "";
 
 	private Integer id;
 	private String host;
@@ -119,13 +122,18 @@ public class Credential extends AbstractDao<Credential> {
 	}
 
 	@Override
-	public Credential retrieve(Context context, int id) {
+	public Credential retrieve(Context context, Integer id) {
 		Cursor cursor = context.getContentResolver().query(
 				CredentialContentProvider.CONTENT_URI_CREDENTIALS, null,
 				QueryHelper.getWhere(CredentialsDatabase.COLUMN_ID, id, true),
 				null, null);
 
-		if (cursor.getCount() > 0)
+		return retrieve(cursor);
+	}
+
+	@Override
+	public Credential retrieve(Cursor cursor) {
+		if (cursor.getCount() > 0) {
 			if (cursor.moveToFirst()) {
 				if (-1 != cursor.getColumnIndex(CredentialsDatabase.COLUMN_ID))
 					setId(cursor.getInt(cursor
@@ -138,7 +146,7 @@ public class Credential extends AbstractDao<Credential> {
 
 				if (-1 != cursor
 						.getColumnIndex(CredentialsDatabase.COLUMN_PROTOCOL))
-					setHost(cursor
+					setProtocol(cursor
 							.getString(cursor
 									.getColumnIndex(CredentialsDatabase.COLUMN_PROTOCOL)));
 
@@ -154,6 +162,12 @@ public class Credential extends AbstractDao<Credential> {
 							.getString(cursor
 									.getColumnIndex(CredentialsDatabase.COLUMN_PASSWORD)));
 			}
+		} else {
+			setUsername(Credential.USERNAME_ANONOYMOUS);
+			setPassword(Credential.PASSWORD_ANONOYMOUS);
+
+			return null;
+		}
 
 		return this;
 	}

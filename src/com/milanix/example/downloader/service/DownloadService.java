@@ -68,12 +68,15 @@ import android.util.Log;
 import com.milanix.example.downloader.Downloader;
 import com.milanix.example.downloader.R;
 import com.milanix.example.downloader.activity.HomeActivity;
+import com.milanix.example.downloader.data.dao.Credential;
 import com.milanix.example.downloader.data.dao.Download;
 import com.milanix.example.downloader.data.dao.Download.DownloadListener;
 import com.milanix.example.downloader.data.dao.Download.DownloadState;
 import com.milanix.example.downloader.data.dao.Download.FailedReason;
+import com.milanix.example.downloader.data.database.CredentialsDatabase;
 import com.milanix.example.downloader.data.database.DownloadsDatabase;
 import com.milanix.example.downloader.data.database.util.QueryHelper;
+import com.milanix.example.downloader.data.provider.CredentialContentProvider;
 import com.milanix.example.downloader.data.provider.DownloadContentProvider;
 import com.milanix.example.downloader.dialog.NetworkConfigureDialog.NetworkType;
 import com.milanix.example.downloader.pref.PreferenceHelper;
@@ -1387,7 +1390,18 @@ public class DownloadService extends Service {
 			File targetTempFile = null;
 
 			try {
-				URL downloadUrl = new URL(download.getUrl());
+				final URL downloadUrl = new URL(download.getUrl());
+				final Credential credential = new Credential()
+						.retrieve(Downloader
+								.getDownloaderContext()
+								.getContentResolver()
+								.query(CredentialContentProvider.CONTENT_URI_CREDENTIALS,
+										null,
+										QueryHelper
+												.getWhere(
+														CredentialsDatabase.COLUMN_HOST,
+														downloadUrl.getHost(),
+														true), null, null));
 
 				int downloadPort = downloadUrl.getPort() == -1 ? downloadUrl
 						.getDefaultPort() : downloadUrl.getPort();
@@ -1396,7 +1410,8 @@ public class DownloadService extends Service {
 				downloadClient.connect(downloadUrl.getHost(), downloadPort);
 				downloadClient.enterLocalPassiveMode();
 
-				if (downloadClient.login("anonymous", "")) {
+				if (downloadClient.login(credential.getUsername(),
+						credential.getPassword())) {
 					downloadClient.setFileType(FTPClient.BINARY_FILE_TYPE);
 
 					/**
@@ -1435,8 +1450,6 @@ public class DownloadService extends Service {
 							Log.d(getLogTag(), "storage available");
 
 							targetLocalFile = new File(download.getPath());
-							remoteContentStream = new FileOutputStream(
-									targetLocalFile);
 
 							// If file exist mark completed otherwise
 							// progress
@@ -1456,6 +1469,9 @@ public class DownloadService extends Service {
 												.getPath()),
 										FilenameUtils.getName(download
 												.getPath()) + TEMP_SUFFIX);
+
+								remoteContentStream = new FileOutputStream(
+										targetTempFile);
 
 								/*
 								 * If temp file exist add header to request
@@ -1492,9 +1508,11 @@ public class DownloadService extends Service {
 
 										});
 
-								if (downloadClient.retrieveFile(
-										downloadUrl.getPath(),
-										remoteContentStream)
+								boolean isSuccess = downloadClient
+										.retrieveFile(downloadUrl.getPath(),
+												remoteContentStream);
+
+								if (isSuccess
 										&& fileSize == targetTempFile.length()) {
 									targetTempFile.renameTo(targetLocalFile);
 
