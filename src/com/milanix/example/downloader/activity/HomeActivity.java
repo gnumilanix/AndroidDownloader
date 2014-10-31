@@ -102,14 +102,14 @@ public class HomeActivity extends ActionBarActivity implements
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		startService(new Intent(this, DownloadService.class));
+
 		setContentView(R.layout.activity_home);
 
 		setVersionBasedPolicy();
 		setDownloadPath();
 
 		setDefinationBasedUI();
-
-		startService(new Intent(this, DownloadService.class));
 
 		setUI();
 		setListener();

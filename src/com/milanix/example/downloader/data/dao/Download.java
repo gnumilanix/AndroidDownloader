@@ -80,7 +80,8 @@ public class Download extends AbstractDao<Download, Integer> {
 	public static enum FailedReason {
 		STORAGE_NOTWRITABLE("External storage is not writable."), STORAGE_NOTAVAILABLE(
 				"External storage space is not available."), NETWORK_NOTAVAILABLE(
-				"Network is not available."), IO_ERROR(
+				"Network is not available."), NETWORK_UNAUTHORIZED(
+				"Not authorized for accessing network."), IO_ERROR(
 				"Error while reading/writing file."), NETWORK_ERROR(
 				"Error while downloading file."), FILE_INCOMPLETE(
 				"Incomplete file."), UNKNOWN_ERROR("Unknown error occoured.");

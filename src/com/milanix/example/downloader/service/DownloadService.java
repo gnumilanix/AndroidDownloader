@@ -2,7 +2,6 @@ package com.milanix.example.downloader.service;
 
 import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
@@ -27,8 +26,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.net.ftp.FTPClient;
-import org.apache.commons.net.io.CopyStreamEvent;
-import org.apache.commons.net.io.CopyStreamListener;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
@@ -1384,10 +1381,12 @@ public class DownloadService extends Service {
 		 * This method performs an FTP download
 		 */
 		private void performFTPDownload() {
-			FileOutputStream remoteContentStream = null;
+			InputStream remoteContentStream = null;
+			BufferedInputStream bufferedFileStream = null;
 
 			File targetLocalFile = null;
 			File targetTempFile = null;
+			RandomAccessFile targetWriteFile = null;
 
 			try {
 				final URL downloadUrl = new URL(download.getUrl());
@@ -1420,6 +1419,7 @@ public class DownloadService extends Service {
 					 */
 					final long fileSize = downloadClient.mlistFile(
 							downloadUrl.getPath()).getSize();
+					long tempfileSize = 0L;
 
 					updateDownlaodSize(fileSize);
 
@@ -1464,14 +1464,17 @@ public class DownloadService extends Service {
 							} else {
 								Log.d(getLogTag(), "file does not exist");
 
+								byte[] buffer = new byte[BUFFER_SIZE];
+								int chunkSize = 0;
+								int chunkCompleted = 0;
+								int chunkProgress = 0;
+								int chunkCopied = 0;
+
 								targetTempFile = new File(
 										FilenameUtils.getFullPath(download
 												.getPath()),
 										FilenameUtils.getName(download
 												.getPath()) + TEMP_SUFFIX);
-
-								remoteContentStream = new FileOutputStream(
-										targetTempFile);
 
 								/*
 								 * If temp file exist add header to request
@@ -1483,35 +1486,56 @@ public class DownloadService extends Service {
 											.setRestartOffset(targetTempFile
 													.length());
 
+									remoteContentStream = downloadClient
+											.retrieveFileStream(downloadUrl
+													.getPath());
+
+									tempfileSize = targetTempFile.length();
+
+									chunkCompleted = (int) tempfileSize;
+
 									Log.d(getLogTag(), "temp exists");
 								}
 
-								downloadClient.setBufferSize(BUFFER_SIZE);
-								downloadClient
-										.setCopyStreamListener(new CopyStreamListener() {
+								targetWriteFile = new RandomAccessFile(
+										targetTempFile, "rw");
 
-											@Override
-											public void bytesTransferred(
-													CopyStreamEvent event) {
-											}
+								bufferedFileStream = new BufferedInputStream(
+										remoteContentStream, BUFFER_SIZE);
 
-											@Override
-											public void bytesTransferred(
-													long totalBytesTransferred,
-													int bytesTransferred,
-													long streamSize) {
-												int chunkProgress = (int) ((double) totalBytesTransferred
-														/ (double) fileSize * 100.0);
+								// Seek to target. If temp seeks to length
+								// otherwise
+								// 0
+								targetWriteFile.seek(targetWriteFile.length());
 
-												publishProgress(chunkProgress);
-											}
+								showProgressNotification(download);
 
-										});
+								Log.d(getLogTag(), "download started");
 
-								if (downloadClient.retrieveFile(
-										downloadUrl.getPath(),
-										remoteContentStream)
-										&& fileSize == targetTempFile.length()) {
+								while (-1 != (chunkSize = remoteContentStream
+										.read(buffer))) {
+									targetWriteFile.write(buffer, 0, chunkSize);
+
+									chunkCompleted += chunkSize;
+									chunkCopied += chunkSize;
+
+									chunkProgress = (int) ((double) chunkCompleted
+											/ (double) fileSize * 100.0);
+
+									publishProgress(chunkProgress);
+								}
+
+								if ((tempfileSize + chunkCopied) != fileSize
+										&& fileSize != -1) {
+									Log.d(getLogTag(), "Incomplete download");
+
+									download.setState(DownloadState.FAILED);
+									download.setFailReason(FailedReason.FILE_INCOMPLETE);
+
+									updateDownloadState(download);
+								} else {
+									Log.d(getLogTag(), "Complete download");
+
 									targetTempFile.renameTo(targetLocalFile);
 
 									download.setState(DownloadState.COMPLETED);
@@ -1520,13 +1544,15 @@ public class DownloadService extends Service {
 
 									updateDownloadState(download);
 								}
-
 							}
+
+							cancelNotification(NOTIFICATION_TAG_PROGRESS,
+									download.getId());
 						}
 					}
 				} else {
 					download.setState(DownloadState.FAILED);
-					download.setFailReason(FailedReason.IO_ERROR);
+					download.setFailReason(FailedReason.NETWORK_UNAUTHORIZED);
 
 					updateDownloadState(download);
 				}
@@ -1543,7 +1569,9 @@ public class DownloadService extends Service {
 
 				updateDownloadState(download);
 			} finally {
+				IOUtils.close(targetWriteFile);
 				IOUtils.close(remoteContentStream);
+				IOUtils.close(bufferedFileStream);
 			}
 		}
 
