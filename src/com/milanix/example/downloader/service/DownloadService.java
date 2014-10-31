@@ -1508,11 +1508,9 @@ public class DownloadService extends Service {
 
 										});
 
-								boolean isSuccess = downloadClient
-										.retrieveFile(downloadUrl.getPath(),
-												remoteContentStream);
-
-								if (isSuccess
+								if (downloadClient.retrieveFile(
+										downloadUrl.getPath(),
+										remoteContentStream)
 										&& fileSize == targetTempFile.length()) {
 									targetTempFile.renameTo(targetLocalFile);
 
