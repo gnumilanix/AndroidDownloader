@@ -412,6 +412,7 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 	@Override
 	public void onLoadFinished(Loader<Cursor> loader, Cursor newCursor) {
 		downloadListAdapter.swapCursor(newCursor);
+
 	}
 
 	@Override

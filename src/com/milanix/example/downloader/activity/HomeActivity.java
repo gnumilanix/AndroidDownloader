@@ -51,6 +51,8 @@ import com.milanix.example.downloader.util.ToastHelper;
 public class HomeActivity extends ActionBarActivity implements
 		OnNavigationListener, OnAddNewDownloadListener, OnClickListener {
 
+	private static final String KEY_INTENT_PROCESSED = "INTENT_PROCESSED";
+
 	private HashMap<RootFragment, Fragment> fragmentCache = new HashMap<RootFragment, Fragment>();
 
 	private ImageButton download_add;
@@ -102,6 +104,7 @@ public class HomeActivity extends ActionBarActivity implements
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+
 		startService(new Intent(this, DownloadService.class));
 
 		setContentView(R.layout.activity_home);
@@ -114,7 +117,17 @@ public class HomeActivity extends ActionBarActivity implements
 		setUI();
 		setListener();
 
-		handleIncoming(getIntent());
+		// Process only if intent is not already handled.
+		if (savedInstanceState == null ? true : savedInstanceState
+				.getBoolean(KEY_INTENT_PROCESSED))
+			handleIncoming(getIntent());
+	}
+
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+
+		outState.putSerializable(KEY_INTENT_PROCESSED, true);
 	}
 
 	/**
@@ -154,7 +167,6 @@ public class HomeActivity extends ActionBarActivity implements
 				}
 			}
 		}
-
 	}
 
 	/**

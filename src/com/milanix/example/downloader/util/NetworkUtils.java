@@ -1,5 +1,7 @@
 package com.milanix.example.downloader.util;
 
+import java.io.IOException;
+
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.http.HttpVersion;
 import org.apache.http.client.HttpClient;
@@ -67,6 +69,24 @@ public class NetworkUtils {
 	 */
 	public static synchronized FTPClient getFTPClient() {
 		return new FTPClient();
+	}
+
+	/**
+	 * Disconnect and closes given FTP client
+	 * 
+	 * @param ftpClient
+	 *            to close
+	 */
+	public static synchronized void killFTPClient(FTPClient ftpClient) {
+		try {
+			if (ftpClient.isConnected()) {
+				ftpClient.noop();
+				ftpClient.logout();
+				ftpClient.disconnect();
+			}
+		} catch (IOException ignored) {
+
+		}
 	}
 
 	/**

@@ -123,7 +123,7 @@ public class Credential extends AbstractDao<Credential, Integer> {
 
 	@Override
 	public Credential retrieve(Context context, Integer id) {
-		Cursor cursor = context.getContentResolver().query(
+		final Cursor cursor = context.getContentResolver().query(
 				CredentialContentProvider.CONTENT_URI_CREDENTIALS, null,
 				QueryHelper.getWhere(CredentialsDatabase.COLUMN_ID, id, true),
 				null, null);

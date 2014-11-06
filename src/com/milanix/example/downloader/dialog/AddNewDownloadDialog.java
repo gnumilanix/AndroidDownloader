@@ -311,17 +311,18 @@ public class AddNewDownloadDialog extends DialogFragment implements
 			@Override
 			public void onAnimationStart(Animation animation) {
 				vg_credential.setVisibility(View.VISIBLE);
+
+				if (scaleTo == 1f)
+					getCredential(path);
 			}
 
 			@Override
 			public void onAnimationEnd(Animation animation) {
 				if (scaleTo == 0f)
 					vg_credential.setVisibility(View.GONE);
-				else {
+				else
 					vg_credential.setVisibility(View.VISIBLE);
 
-					getCredential(path);
-				}
 			}
 
 			@Override

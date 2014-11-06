@@ -2,9 +2,11 @@ package com.milanix.example.downloader.service;
 
 import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -16,6 +18,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -26,10 +30,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.net.ftp.FTPClient;
+import org.apache.commons.net.ftp.FTPFile;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
@@ -49,6 +55,7 @@ import android.content.IntentFilter;
 import android.content.OperationApplicationException;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
+import android.database.Cursor;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -59,6 +66,7 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.RemoteException;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationCompat.Builder;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -92,6 +100,10 @@ import com.milanix.example.downloader.util.TextHelper;
 public class DownloadService extends Service {
 	// Schedule format
 	public static final String SCHEDULE_DATE_FORMAT = "HH:mm";
+
+	// Max progress for the notification
+	private static final int NOTIFICATION_MAX_PROGRESS = 100;
+	private static final int NOTIFICATION_PROGRESS_TIMER = 2 * 1000;
 
 	// Notification ids
 	private static final int NOTIFICATION_ID_WARNING = 1000;
@@ -244,6 +256,7 @@ public class DownloadService extends Service {
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		init();
+		autoAddToQueue();
 
 		// Don't move to init as init might be called after the service has
 		// started
@@ -325,6 +338,54 @@ public class DownloadService extends Service {
 			for (Integer generalNotificationId : generalNotificationIds) {
 				notificationManager.cancel(NOTIFICATION_TAG_GENERAL,
 						generalNotificationId);
+			}
+		}
+
+		if (null != downloadTasks) {
+			Iterator<Entry<Integer, DownloadTask>> currentTaskItreator = downloadTasks
+					.entrySet().iterator();
+
+			while (currentTaskItreator.hasNext()) {
+				Map.Entry<Integer, DownloadTask> taskPair = currentTaskItreator
+						.next();
+
+				DownloadTask task = taskPair.getValue();
+
+				if (null != task)
+					task.cancel(true);
+			}
+		}
+	}
+
+	/**
+	 * Adds downloads to the queue automatically
+	 * 
+	 */
+	private void autoAddToQueue() {
+		final Cursor cursor = Downloader
+				.getDownloaderContext()
+				.getContentResolver()
+				.query(DownloadContentProvider.CONTENT_URI_DOWNLOADS,
+						null,
+						QueryHelper.getWhere(DownloadsDatabase.COLUMN_STATE,
+								DownloadState.COMPLETED.toString(), false),
+						null,
+						QueryHelper.getOrdering(
+								DownloadsDatabase.COLUMN_DATE_ADDED,
+								QueryHelper.ORDERING_DESC));
+
+		if (null != cursor) {
+			HashSet<Integer> downloadIds = new HashSet<Integer>();
+
+			while (cursor.moveToNext()) {
+				if (-1 != cursor.getColumnIndex(DownloadsDatabase.COLUMN_ID))
+					downloadIds.add(cursor.getInt(cursor
+							.getColumnIndex(DownloadsDatabase.COLUMN_ID)));
+			}
+
+			if (!downloadIds.isEmpty()) {
+				for (Integer downloadId : downloadIds)
+					DownloadService.downloadFile(downloadId);
 			}
 		}
 	}
@@ -495,19 +556,21 @@ public class DownloadService extends Service {
 				.setContentText("Downloader service has started")
 				.setContentIntent(notificationPendingIntent);
 
-		notificationManager.notify(NOTIFICATION_TAG_GENERAL,
-				generalNotificationIds.last() + 1, serviceStartBuilder.build());
+		notify(NOTIFICATION_TAG_GENERAL, generalNotificationIds.last() + 1,
+				serviceStartBuilder.build());
 
 		return notificationIntent.getExtras();
 	}
 
 	/**
-	 * This method will show progress notification for given download
+	 * This method will get progress notification for given download
 	 * 
 	 * @param download
 	 *            to be attached to this notification
+	 * 
+	 * @return progress notification builder
 	 */
-	private static void showProgressNotification(Download download) {
+	private static Builder getProgressNotification(Download download) {
 		if (download.isValid() && null != Downloader.getDownloaderContext()) {
 
 			Intent resultIntent = new Intent(Downloader.getDownloaderContext(),
@@ -545,7 +608,6 @@ public class DownloadService extends Service {
 					.setContentTitle(download.getName())
 					.setContentText(download.getUrl())
 					.setSmallIcon(R.drawable.ic_icon_download_dark)
-					.setProgress(0, 0, true)
 					.setOngoing(true)
 					.setContentIntent(resultPendingIntent)
 					.setStyle(
@@ -560,9 +622,10 @@ public class DownloadService extends Service {
 							Downloader.getDownloaderContext().getString(
 									R.string.btn_pause), pendingIntentPause);
 
-			notificationManager.notify(NOTIFICATION_TAG_PROGRESS,
-					download.getId(), progressBuilder.build());
+			return progressBuilder;
 		}
+
+		return null;
 
 	}
 
@@ -634,8 +697,8 @@ public class DownloadService extends Service {
 									R.string.btn_continue),
 							pendingIntentContinue);
 
-			notificationManager.notify(NOTIFICATION_TAG_WARNING,
-					NOTIFICATION_ID_WARNING, warningBuilder.build());
+			notify(NOTIFICATION_TAG_WARNING, NOTIFICATION_ID_WARNING,
+					warningBuilder.build());
 		}
 	}
 
@@ -744,9 +807,25 @@ public class DownloadService extends Service {
 					.setContentIntent(pendingIntentClear)
 					.setDefaults(Notification.DEFAULT_ALL).setStyle(inboxStyle);
 
-			notificationManager.notify(notificationTag, notificationId,
-					completedBuilder.build());
+			notify(notificationTag, notificationId, completedBuilder.build());
 		}
+	}
+
+	/**
+	 * Displays notification
+	 * 
+	 * @param tag
+	 *            A string identifier for this notification. May be null.
+	 * @param id
+	 *            An identifier for this notification. The pair (tag, id) must
+	 *            be unique within your application.
+	 * @param notification
+	 *            A Notification object describing what to show the user. Must
+	 *            not be null.
+	 */
+	private static void notify(String tag, int id, Notification notification) {
+		if (null != notificationManager && null != notification)
+			notificationManager.notify(tag, id, notification);
 	}
 
 	/**
@@ -1316,6 +1395,12 @@ public class DownloadService extends Service {
 
 		private Download download;
 
+		private Builder progressBuilder;
+
+		private TimerTask notificationUpdateTask;
+		private Timer notificationUpdateTimer;
+		private int progress = 0;
+
 		private boolean preserveStateOnCancel = false;
 
 		private static final String RANGE_HEADER = "Range";
@@ -1325,6 +1410,16 @@ public class DownloadService extends Service {
 
 		public DownloadTask(Download download) {
 			this.download = download;
+
+			notificationUpdateTask = new TimerTask() {
+
+				@Override
+				public void run() {
+					publishProgress(progress);
+				}
+			};
+
+			notificationUpdateTimer = new Timer();
 		}
 
 		@Override
@@ -1374,6 +1469,9 @@ public class DownloadService extends Service {
 				}
 			}
 
+			if (null != notificationUpdateTask)
+				notificationUpdateTask.cancel();
+
 			return download;
 		}
 
@@ -1381,6 +1479,8 @@ public class DownloadService extends Service {
 		 * This method performs an FTP download
 		 */
 		private void performFTPDownload() {
+			final FTPClient downloadClient = NetworkUtils.getFTPClient();
+
 			InputStream remoteContentStream = null;
 			BufferedInputStream bufferedFileStream = null;
 
@@ -1402,10 +1502,9 @@ public class DownloadService extends Service {
 														downloadUrl.getHost(),
 														true), null, null));
 
-				int downloadPort = downloadUrl.getPort() == -1 ? downloadUrl
+				final int downloadPort = downloadUrl.getPort() == -1 ? downloadUrl
 						.getDefaultPort() : downloadUrl.getPort();
 
-				FTPClient downloadClient = NetworkUtils.getFTPClient();
 				downloadClient.connect(downloadUrl.getHost(), downloadPort);
 				downloadClient.enterLocalPassiveMode();
 
@@ -1417,8 +1516,13 @@ public class DownloadService extends Service {
 					 * SIZE is an optional command; i.e. even RFC 3659 compliant
 					 * servers are not required to support it
 					 */
-					final long fileSize = downloadClient.mlistFile(
-							downloadUrl.getPath()).getSize();
+					final FTPFile remoteFile = downloadClient
+							.mlistFile(downloadUrl.getPath());
+
+					if (null == remoteFile)
+						throw new IOException("remoteFile is null");
+
+					final long fileSize = remoteFile.getSize();
 					long tempfileSize = 0L;
 
 					updateDownlaodSize(fileSize);
@@ -1467,7 +1571,6 @@ public class DownloadService extends Service {
 								byte[] buffer = new byte[BUFFER_SIZE];
 								int chunkSize = 0;
 								int chunkCompleted = 0;
-								int chunkProgress = 0;
 								int chunkCopied = 0;
 
 								targetTempFile = new File(
@@ -1495,7 +1598,14 @@ public class DownloadService extends Service {
 									chunkCompleted = (int) tempfileSize;
 
 									Log.d(getLogTag(), "temp exists");
-								}
+								} else
+									remoteContentStream = downloadClient
+											.retrieveFileStream(downloadUrl
+													.getPath());
+
+								if (null == remoteContentStream)
+									throw new IOException(
+											"remoteContentStream is null");
 
 								targetWriteFile = new RandomAccessFile(
 										targetTempFile, "rw");
@@ -1508,7 +1618,10 @@ public class DownloadService extends Service {
 								// 0
 								targetWriteFile.seek(targetWriteFile.length());
 
-								showProgressNotification(download);
+								notificationUpdateTimer.schedule(
+										notificationUpdateTask, 0,
+										NOTIFICATION_PROGRESS_TIMER);
+								showOrUpdateProgress(null);
 
 								Log.d(getLogTag(), "download started");
 
@@ -1519,10 +1632,8 @@ public class DownloadService extends Service {
 									chunkCompleted += chunkSize;
 									chunkCopied += chunkSize;
 
-									chunkProgress = (int) ((double) chunkCompleted
+									progress = (int) ((double) chunkCompleted
 											/ (double) fileSize * 100.0);
-
-									publishProgress(chunkProgress);
 								}
 
 								if ((tempfileSize + chunkCopied) != fileSize
@@ -1557,10 +1668,20 @@ public class DownloadService extends Service {
 					updateDownloadState(download);
 				}
 
-				downloadClient.noop();
-				downloadClient.logout();
-				downloadClient.disconnect();
+			} catch (MalformedURLException ex) {
+				Log.e(getLogTag(), "Malformed url exception occoured", ex);
 
+				download.setState(DownloadState.FAILED);
+				download.setFailReason(FailedReason.NETWORK_ERROR);
+
+				updateDownloadState(download);
+			} catch (ConnectTimeoutException ex) {
+				Log.e(getLogTag(), "Connection timeout exception occoured", ex);
+
+				download.setState(DownloadState.FAILED);
+				download.setFailReason(FailedReason.NETWORK_ERROR);
+
+				updateDownloadState(download);
 			} catch (IOException ex) {
 				Log.e(getLogTag(), "IO exception occoured", ex);
 
@@ -1569,6 +1690,8 @@ public class DownloadService extends Service {
 
 				updateDownloadState(download);
 			} finally {
+				NetworkUtils.killFTPClient(downloadClient);
+
 				IOUtils.close(targetWriteFile);
 				IOUtils.close(remoteContentStream);
 				IOUtils.close(bufferedFileStream);
@@ -1587,7 +1710,6 @@ public class DownloadService extends Service {
 			RandomAccessFile targetWriteFile = null;
 
 			try {
-
 				HttpClient downloadClient = NetworkUtils.getHttpClient();
 
 				HttpParams params = new BasicHttpParams();
@@ -1599,6 +1721,9 @@ public class DownloadService extends Service {
 				HttpResponse response = downloadClient.execute(request);
 
 				remoteContentStream = response.getEntity().getContent();
+
+				if (null == remoteContentStream)
+					throw new IOException("remoteContentStream is null");
 
 				long fileSize = response.getEntity().getContentLength();
 				long tempfileSize = 0L;
@@ -1649,7 +1774,6 @@ public class DownloadService extends Service {
 							byte[] buffer = new byte[BUFFER_SIZE];
 							int chunkSize = 0;
 							int chunkCompleted = 0;
-							int chunkProgress = 0;
 							int chunkCopied = 0;
 
 							targetTempFile = new File(
@@ -1672,6 +1796,10 @@ public class DownloadService extends Service {
 								remoteContentStream = response.getEntity()
 										.getContent();
 
+								if (null == remoteContentStream)
+									throw new IOException(
+											"remoteContentStream is null");
+
 								tempfileSize = targetTempFile.length();
 
 								chunkCompleted = (int) tempfileSize;
@@ -1690,7 +1818,10 @@ public class DownloadService extends Service {
 							// 0
 							targetWriteFile.seek(targetWriteFile.length());
 
-							showProgressNotification(download);
+							notificationUpdateTimer.schedule(
+									notificationUpdateTask, 0,
+									NOTIFICATION_PROGRESS_TIMER);
+							showOrUpdateProgress(null);
 
 							Log.d(getLogTag(), "download started");
 
@@ -1701,10 +1832,9 @@ public class DownloadService extends Service {
 								chunkCompleted += chunkSize;
 								chunkCopied += chunkSize;
 
-								chunkProgress = (int) ((double) chunkCompleted
+								progress = (int) ((double) chunkCompleted
 										/ (double) fileSize * 100.0);
 
-								publishProgress(chunkProgress);
 							}
 
 							if ((tempfileSize + chunkCopied) != fileSize
@@ -1733,10 +1863,26 @@ public class DownloadService extends Service {
 				}
 
 			} catch (ClientProtocolException ex) {
-				Log.e(getLogTag(), "IO exception occoured", ex);
+				Log.e(getLogTag(), "Client protocol exception occoured", ex);
 
 				download.setState(DownloadState.FAILED);
 				download.setFailReason(FailedReason.NETWORK_ERROR);
+
+				updateDownloadState(download);
+
+			} catch (ConnectTimeoutException ex) {
+				Log.e(getLogTag(), "Connection timeout exception occoured", ex);
+
+				download.setState(DownloadState.FAILED);
+				download.setFailReason(FailedReason.NETWORK_ERROR);
+
+				updateDownloadState(download);
+
+			} catch (FileNotFoundException ex) {
+				Log.e(getLogTag(), "File not found exception occoured", ex);
+
+				download.setState(DownloadState.FAILED);
+				download.setFailReason(FailedReason.IO_ERROR);
 
 				updateDownloadState(download);
 
@@ -1751,6 +1897,28 @@ public class DownloadService extends Service {
 				IOUtils.close(targetWriteFile);
 				IOUtils.close(remoteContentStream);
 				IOUtils.close(bufferedFileStream);
+			}
+		}
+
+		/**
+		 * This method will show or update notification progress
+		 * 
+		 * @param progress
+		 *            null if intermediate otherwise number
+		 */
+		private void showOrUpdateProgress(final Integer progress) {
+			if (null == progressBuilder)
+				progressBuilder = getProgressNotification(download);
+
+			if (null != progressBuilder) {
+				if (null == progress)
+					progressBuilder.setProgress(0, 0, true);
+				else
+					progressBuilder.setProgress(NOTIFICATION_MAX_PROGRESS,
+							progress, false);
+
+				DownloadService.notify(NOTIFICATION_TAG_PROGRESS,
+						download.getId(), progressBuilder.build());
 			}
 		}
 
@@ -1804,6 +1972,9 @@ public class DownloadService extends Service {
 
 		@Override
 		protected void onCancelled(Download result) {
+			if (null != notificationUpdateTask)
+				notificationUpdateTask.cancel();
+
 			if (preserveStateOnCancel) {
 				if (null != download && null != download.getState())
 					updateDownloadState(download);
@@ -1844,6 +2015,8 @@ public class DownloadService extends Service {
 
 		@Override
 		protected void onProgressUpdate(Integer... values) {
+			showOrUpdateProgress(values[0]);
+
 			// For now all
 			notifyCallbacksProgress(download, values[0]);
 

@@ -309,7 +309,7 @@ public class Download extends AbstractDao<Download, Integer> {
 
 	@Override
 	public Download retrieve(Context context, Integer id) {
-		Cursor cursor = context.getContentResolver().query(
+		final Cursor cursor = context.getContentResolver().query(
 				DownloadContentProvider.CONTENT_URI_DOWNLOADS, null,
 				QueryHelper.getWhere(DownloadsDatabase.COLUMN_ID, id, true),
 				null, null);
