@@ -719,7 +719,6 @@ public class DownloadService extends Service {
 	 */
 	private static void showCompletedNotification(Download download) {
 		if (download.isValid() && null != Downloader.getDownloaderContext()) {
-			completedDownloads.add(download);
 
 			String title = null;
 			String message = null;
@@ -790,6 +789,8 @@ public class DownloadService extends Service {
 
 					warningBuilder.setContentIntent(pendingIntentClear);
 				} else if (DownloadState.FAILED.equals(download.getState())) {
+					completedDownloads.add(download);
+
 					Intent clearIntent = new Intent(
 							Downloader.getDownloaderContext(),
 							ServiceActionReceiver.class)
@@ -936,6 +937,9 @@ public class DownloadService extends Service {
 
 			if (null != Downloader.getDownloaderContext()
 					&& bundle.containsKey(KEY_OPEN_DOWNLOADED)) {
+				if (null != completedDownloads)
+					completedDownloads.clear();
+
 				final Intent intent = new Intent(
 						Downloader.getDownloaderContext(), HomeActivity.class);
 				intent.putExtra(KEY_OPEN_DOWNLOADED,
