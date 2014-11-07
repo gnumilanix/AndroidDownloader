@@ -58,6 +58,7 @@ import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.database.Cursor;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Bundle;
@@ -69,6 +70,7 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationCompat.Builder;
 import android.text.TextUtils;
 import android.util.Log;
+import android.webkit.MimeTypeMap;
 
 import com.milanix.example.downloader.Downloader;
 import com.milanix.example.downloader.R;
@@ -141,7 +143,8 @@ public class DownloadService extends Service {
 	private static final String ACTION_CONTINUE = "action_continue";
 	private static final String ACTION_RESUME = "action_resume";
 	private static final String ACTION_PAUSE = "action_pause";
-	private static final String ACTION_CLEAR = "action_clear";
+	private static final String ACTION_COMPLETE = "action_complete";
+	private static final String ACTION_OPEN = "action_open";
 
 	private static final String ACTION_SCHEDULE_START = "action_schedule_start";
 	private static final String ACTION_SCHEDULE_UNTIL = "action_schedule_until";
@@ -152,6 +155,10 @@ public class DownloadService extends Service {
 
 	private static final String KEY_NOTIFICATION_TAG = "key_notification_tag";
 	private static final String KEY_NOTIFICATION_ID = "key_notification_id";
+
+	public static final String KEY_OPEN_DOWNLOADED = "key_open_downloaded";
+
+	public static final String KEY_FILE_PATH = "key_file_path";
 
 	// Value constants
 	public static final int INTERVAL_DAY = 24 * 60 * 60 * 1000;
@@ -723,91 +730,175 @@ public class DownloadService extends Service {
 			int completedCount = 0;
 			int failedCount = 0;
 
-			NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
-			inboxStyle.setBigContentTitle(message);
+			if (PreferenceHelper.getIsAggregateDownload(Downloader
+					.getDownloaderContext())) {
 
-			for (Download completedDownload : completedDownloads) {
+				completedCount++;
+				failedCount++;
+
+				notificationId = download.getId();
+
 				if (DownloadState.COMPLETED.equals(download.getState())) {
-					inboxStyle.addLine(String.format(
-							Downloader.getDownloaderContext().getString(
-									R.string.download_completed_message),
-							completedDownload.getName(),
-							completedDownload.getUrl()));
-
-					completedCount++;
-				} else if (DownloadState.FAILED.equals(download.getState())) {
-					inboxStyle.addLine(String.format(
-							Downloader.getDownloaderContext().getString(
-									R.string.download_failed_message),
-							completedDownload.getName(),
-							completedDownload.getUrl()));
-
-					failedCount++;
-				}
-			}
-
-			if (DownloadState.COMPLETED.equals(download.getState())) {
-				title = Downloader.getDownloaderContext().getString(
-						R.string.download_completed_title);
-
-				if (completedCount == 1)
+					title = Downloader.getDownloaderContext().getString(
+							R.string.download_completed_title);
 					message = Downloader
 							.getDownloaderContext()
 							.getResources()
 							.getQuantityString(
 									R.plurals.download_completed_subtitle,
 									completedCount, download.getName());
-				else
-					message = Downloader
-							.getDownloaderContext()
-							.getResources()
-							.getQuantityString(
-									R.plurals.download_completed_subtitle,
-									completedCount, completedCount);
 
-				notificationTag = NOTIFICATION_TAG_COMPLETED;
-				notificationId = NOTIFICATION_ID_COMPLETED;
-			} else if (DownloadState.FAILED.equals(download.getState())) {
-				title = Downloader.getDownloaderContext().getString(
-						R.string.download_failed_title);
-
-				if (failedCount == 1)
+					notificationTag = NOTIFICATION_TAG_COMPLETED;
+				} else if (DownloadState.FAILED.equals(download.getState())) {
+					title = Downloader.getDownloaderContext().getString(
+							R.string.download_failed_title);
 					message = Downloader
 							.getDownloaderContext()
 							.getResources()
 							.getQuantityString(
 									R.plurals.download_failed_subtitle,
 									failedCount, download.getName());
-				else
-					message = Downloader
-							.getDownloaderContext()
-							.getResources()
-							.getQuantityString(
-									R.plurals.download_failed_subtitle,
-									failedCount, failedCount);
 
-				notificationTag = NOTIFICATION_TAG_FAILED;
-				notificationId = NOTIFICATION_ID_FAILED;
+					notificationTag = NOTIFICATION_TAG_FAILED;
+				}
+
+				NotificationCompat.Builder warningBuilder = new NotificationCompat.Builder(
+						Downloader.getDownloaderContext())
+						.setSmallIcon(R.drawable.ic_icon_download_dark)
+						.setContentTitle(title)
+						.setContentText(message)
+						.setDefaults(Notification.DEFAULT_ALL)
+						.setOngoing(false)
+						.setStyle(
+								new NotificationCompat.BigTextStyle()
+										.bigText(message));
+
+				if (DownloadState.COMPLETED.equals(download.getState())) {
+					Intent clearIntent = new Intent(
+							Downloader.getDownloaderContext(),
+							ServiceActionReceiver.class)
+							.setAction(ACTION_OPEN)
+							.putExtra(KEY_NOTIFICATION_TAG, notificationTag)
+							.putExtra(KEY_NOTIFICATION_ID, notificationId)
+							.putExtra(DownloadService.KEY_FILE_PATH,
+									download.getPath());
+
+					PendingIntent pendingIntentClear = PendingIntent
+							.getBroadcast(Downloader.getDownloaderContext(),
+									NOTIFICATION_REQCODE_CLEAR, clearIntent,
+									PendingIntent.FLAG_CANCEL_CURRENT);
+
+					warningBuilder.setContentIntent(pendingIntentClear);
+				} else if (DownloadState.FAILED.equals(download.getState())) {
+					Intent clearIntent = new Intent(
+							Downloader.getDownloaderContext(),
+							ServiceActionReceiver.class)
+							.setAction(ACTION_COMPLETE)
+							.putExtra(KEY_OPEN_DOWNLOADED, true)
+							.putExtra(KEY_NOTIFICATION_TAG, notificationTag)
+							.putExtra(KEY_NOTIFICATION_ID, notificationId);
+
+					PendingIntent pendingIntentClear = PendingIntent
+							.getBroadcast(Downloader.getDownloaderContext(),
+									NOTIFICATION_REQCODE_CLEAR, clearIntent,
+									PendingIntent.FLAG_CANCEL_CURRENT);
+
+					warningBuilder.setContentIntent(pendingIntentClear);
+				}
+
+				notify(notificationTag, notificationId, warningBuilder.build());
+			} else {
+
+				NotificationCompat.InboxStyle inboxStyle = new NotificationCompat.InboxStyle();
+				inboxStyle.setBigContentTitle(message);
+
+				for (Download completedDownload : completedDownloads) {
+					if (DownloadState.COMPLETED.equals(download.getState())) {
+						inboxStyle.addLine(String.format(
+								Downloader.getDownloaderContext().getString(
+										R.string.download_completed_message),
+								completedDownload.getName(),
+								completedDownload.getUrl()));
+
+						completedCount++;
+					} else if (DownloadState.FAILED.equals(download.getState())) {
+						inboxStyle.addLine(String.format(
+								Downloader.getDownloaderContext().getString(
+										R.string.download_failed_message),
+								completedDownload.getName(),
+								completedDownload.getUrl()));
+
+						failedCount++;
+					}
+				}
+
+				if (DownloadState.COMPLETED.equals(download.getState())) {
+					title = Downloader.getDownloaderContext().getString(
+							R.string.download_completed_title);
+
+					if (completedCount == 1)
+						message = Downloader
+								.getDownloaderContext()
+								.getResources()
+								.getQuantityString(
+										R.plurals.download_completed_subtitle,
+										completedCount, download.getName());
+					else
+						message = Downloader
+								.getDownloaderContext()
+								.getResources()
+								.getQuantityString(
+										R.plurals.download_completed_subtitle,
+										completedCount, completedCount);
+
+					notificationTag = NOTIFICATION_TAG_COMPLETED;
+					notificationId = NOTIFICATION_ID_COMPLETED;
+				} else if (DownloadState.FAILED.equals(download.getState())) {
+					title = Downloader.getDownloaderContext().getString(
+							R.string.download_failed_title);
+
+					if (failedCount == 1)
+						message = Downloader
+								.getDownloaderContext()
+								.getResources()
+								.getQuantityString(
+										R.plurals.download_failed_subtitle,
+										failedCount, download.getName());
+					else
+						message = Downloader
+								.getDownloaderContext()
+								.getResources()
+								.getQuantityString(
+										R.plurals.download_failed_subtitle,
+										failedCount, failedCount);
+
+					notificationTag = NOTIFICATION_TAG_FAILED;
+					notificationId = NOTIFICATION_ID_FAILED;
+				}
+
+				Intent clearIntent = new Intent(
+						Downloader.getDownloaderContext(),
+						ServiceActionReceiver.class).setAction(ACTION_COMPLETE)
+						.putExtra(KEY_OPEN_DOWNLOADED, true)
+						.putExtra(KEY_NOTIFICATION_TAG, notificationTag)
+						.putExtra(KEY_NOTIFICATION_ID, notificationId);
+
+				PendingIntent pendingIntentClear = PendingIntent.getBroadcast(
+						Downloader.getDownloaderContext(),
+						NOTIFICATION_REQCODE_CLEAR, clearIntent,
+						PendingIntent.FLAG_CANCEL_CURRENT);
+
+				NotificationCompat.Builder completedBuilder = new NotificationCompat.Builder(
+						Downloader.getDownloaderContext())
+						.setSmallIcon(R.drawable.ic_icon_download_dark)
+						.setContentTitle(title).setContentText(message)
+						.setContentIntent(pendingIntentClear)
+						.setDefaults(Notification.DEFAULT_ALL)
+						.setStyle(inboxStyle);
+
+				notify(notificationTag, notificationId,
+						completedBuilder.build());
 			}
-
-			Intent clearIntent = new Intent(Downloader.getDownloaderContext(),
-					ServiceActionReceiver.class).setAction(ACTION_CLEAR)
-					.putExtra(KEY_NOTIFICATION_TAG, NOTIFICATION_TAG_CLEAR)
-					.putExtra(KEY_NOTIFICATION_ID, notificationId);
-
-			PendingIntent pendingIntentClear = PendingIntent.getBroadcast(
-					Downloader.getDownloaderContext(),
-					NOTIFICATION_REQCODE_CLEAR, clearIntent,
-					PendingIntent.FLAG_CANCEL_CURRENT);
-
-			NotificationCompat.Builder completedBuilder = new NotificationCompat.Builder(
-					Downloader.getDownloaderContext())
-					.setSmallIcon(R.drawable.ic_icon_download_dark)
-					.setContentTitle(title).setContentText(message)
-					.setContentIntent(pendingIntentClear)
-					.setDefaults(Notification.DEFAULT_ALL).setStyle(inboxStyle);
-
-			notify(notificationTag, notificationId, completedBuilder.build());
 		}
 	}
 
@@ -837,10 +928,22 @@ public class DownloadService extends Service {
 	 */
 	public static void cancelNotification(Bundle bundle) {
 		if (null != notificationManager && null != bundle) {
-			Integer notificationId = bundle.getInt(KEY_NOTIFICATION_ID);
-			String notificationTag = bundle.getString(KEY_NOTIFICATION_TAG);
 
-			cancelNotification(notificationTag, notificationId);
+			if (bundle.containsKey(KEY_NOTIFICATION_ID)
+					&& bundle.containsKey(KEY_NOTIFICATION_TAG))
+				cancelNotification(bundle.getString(KEY_NOTIFICATION_TAG),
+						bundle.getInt(KEY_NOTIFICATION_ID));
+
+			if (null != Downloader.getDownloaderContext()
+					&& bundle.containsKey(KEY_OPEN_DOWNLOADED)) {
+				final Intent intent = new Intent(
+						Downloader.getDownloaderContext(), HomeActivity.class);
+				intent.putExtra(KEY_OPEN_DOWNLOADED,
+						bundle.containsKey(KEY_OPEN_DOWNLOADED));
+				intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+				Downloader.getDownloaderContext().startActivity(intent);
+			}
 		}
 
 	}
@@ -858,6 +961,32 @@ public class DownloadService extends Service {
 			Integer notificationId) {
 		if (null != notificationId && null != notificationTag)
 			notificationManager.cancel(notificationTag, notificationId);
+	}
+
+	/**
+	 * This method will start activity with action_view intent
+	 */
+	public static void viewFile(Bundle bundle) {
+		if (null != Downloader.getDownloaderContext() && null != bundle
+				&& bundle.containsKey(KEY_FILE_PATH)) {
+			final File file = new File(bundle.getString(KEY_FILE_PATH));
+
+			final String ext = MimeTypeMap.getFileExtensionFromUrl(file
+					.getName());
+			String type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(
+					ext);
+
+			if (type == null)
+				type = "*/*";
+
+			final Intent intent = new Intent(Intent.ACTION_VIEW);
+			intent.setDataAndType(Uri.fromFile(file), type);
+			intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+			Downloader.getDownloaderContext().startActivity(intent);
+		}
+
+		cancelNotification(bundle);
 	}
 
 	/**
@@ -1636,6 +1765,8 @@ public class DownloadService extends Service {
 											/ (double) fileSize * 100.0);
 								}
 
+								showOrUpdateProgress(NOTIFICATION_MAX_PROGRESS);
+
 								if ((tempfileSize + chunkCopied) != fileSize
 										&& fileSize != -1) {
 									Log.d(getLogTag(), "Incomplete download");
@@ -1656,9 +1787,6 @@ public class DownloadService extends Service {
 									updateDownloadState(download);
 								}
 							}
-
-							cancelNotification(NOTIFICATION_TAG_PROGRESS,
-									download.getId());
 						}
 					}
 				} else {
@@ -1696,6 +1824,8 @@ public class DownloadService extends Service {
 				IOUtils.close(remoteContentStream);
 				IOUtils.close(bufferedFileStream);
 			}
+
+			cancelNotification(NOTIFICATION_TAG_PROGRESS, download.getId());
 		}
 
 		/**
@@ -1834,8 +1964,9 @@ public class DownloadService extends Service {
 
 								progress = (int) ((double) chunkCompleted
 										/ (double) fileSize * 100.0);
-
 							}
+
+							showOrUpdateProgress(NOTIFICATION_MAX_PROGRESS);
 
 							if ((tempfileSize + chunkCopied) != fileSize
 									&& fileSize != -1) {
@@ -1857,8 +1988,6 @@ public class DownloadService extends Service {
 							}
 						}
 
-						cancelNotification(NOTIFICATION_TAG_PROGRESS,
-								download.getId());
 					}
 				}
 
@@ -1898,6 +2027,8 @@ public class DownloadService extends Service {
 				IOUtils.close(remoteContentStream);
 				IOUtils.close(bufferedFileStream);
 			}
+
+			cancelNotification(NOTIFICATION_TAG_PROGRESS, download.getId());
 		}
 
 		/**
@@ -2106,11 +2237,11 @@ public class DownloadService extends Service {
 				} else if (intent.getAction().equals(ACTION_RESUME)) {
 					if (intent.getIntExtra(KEY_DOWNLOADID, -1) > -1)
 						postAction(intent.getExtras(), HANDLE_RESUME_DOWNLOAD);
-				} else if (intent.getAction().equals(ACTION_CLEAR)) {
+				} else if (intent.getAction().equals(ACTION_COMPLETE)) {
 					cancelNotification(intent.getExtras());
-
+				} else if (intent.getAction().equals(ACTION_OPEN)) {
+					viewFile(intent.getExtras());
 				}
-
 		}
 
 		/**

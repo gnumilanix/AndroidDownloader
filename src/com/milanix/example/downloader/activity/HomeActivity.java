@@ -117,10 +117,15 @@ public class HomeActivity extends ActionBarActivity implements
 		setUI();
 		setListener();
 
-		// Process only if intent is not already handled.
-		if (savedInstanceState == null ? true : savedInstanceState
-				.getBoolean(KEY_INTENT_PROCESSED))
-			handleIncoming(getIntent());
+		// TODO Process only if intent is not already handled.
+		if (savedInstanceState != null) {
+			if (!savedInstanceState.getBoolean(KEY_INTENT_PROCESSED))
+				handleIncoming(getIntent());
+
+			if (savedInstanceState
+					.containsKey(DownloadService.KEY_OPEN_DOWNLOADED))
+				switchToFragment(RootFragment.DOWNLOADED);
+		}
 	}
 
 	@Override

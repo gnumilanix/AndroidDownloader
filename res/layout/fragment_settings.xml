@@ -35,6 +35,19 @@
         android:textAppearance="?android:attr/textAppearanceSmall"
         android:textStyle="bold" />
 
+    <CheckBox
+        android:id="@+id/aggregate_notification"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/text_padding"
+        android:button="@null"
+        android:drawableLeft="@drawable/ic_icon_notification_light"
+        android:drawablePadding="@dimen/text_padding"
+        android:drawableRight="?android:attr/listChoiceIndicatorMultiple"
+        android:text="@string/title_sub_aggregatenotification"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textStyle="bold" />
+
     <TextView
         android:id="@+id/storage_title"
         android:layout_width="match_parent"

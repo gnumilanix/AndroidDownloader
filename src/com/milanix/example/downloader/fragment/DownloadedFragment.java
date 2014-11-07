@@ -1,10 +1,6 @@
 package com.milanix.example.downloader.fragment;
 
-import java.io.File;
-
-import android.content.Intent;
 import android.database.Cursor;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
@@ -12,7 +8,6 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.webkit.MimeTypeMap;
 import android.widget.AbsListView.MultiChoiceModeListener;
 import android.widget.AdapterView;
 
@@ -23,6 +18,7 @@ import com.milanix.example.downloader.data.database.util.QueryHelper;
 import com.milanix.example.downloader.data.provider.DownloadContentProvider;
 import com.milanix.example.downloader.fragment.abs.AbstractDownloadFragment;
 import com.milanix.example.downloader.pref.PreferenceHelper;
+import com.milanix.example.downloader.service.DownloadService;
 
 /**
  * This fragment contains downloaded list and its related logic.
@@ -80,32 +76,18 @@ public class DownloadedFragment extends AbstractDownloadFragment {
 		};
 	}
 
-	/**
-	 * This method will start activity with action_view intent
-	 */
-	private void viewFile(String filePath) {
-		File file = new File(filePath);
-
-		String ext = MimeTypeMap.getFileExtensionFromUrl(file.getName());
-		String type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
-
-		if (type == null)
-			type = "*/*";
-
-		Intent intent = new Intent(Intent.ACTION_VIEW);
-		intent.setDataAndType(Uri.fromFile(file), type);
-
-		startActivity(intent);
-	}
-
 	@Override
 	public void onItemClick(AdapterView<?> parent, View view, int position,
 			long id) {
 		Cursor cursor = downloadListAdapter.getCursor();
 
 		if (cursor.moveToPosition(position)) {
-			viewFile(cursor.getString(cursor
-					.getColumnIndex(DownloadsDatabase.COLUMN_PATH)));
+			final Bundle bundle = new Bundle();
+			bundle.putString(DownloadService.KEY_FILE_PATH, cursor
+					.getString(cursor
+							.getColumnIndex(DownloadsDatabase.COLUMN_PATH)));
+
+			DownloadService.viewFile(bundle);
 		}
 	}
 

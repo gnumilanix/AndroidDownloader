@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.Switch;
@@ -34,6 +35,8 @@ public class SettingsFragment extends AbstractFragment implements
 	private View rootView;
 
 	private Switch autostart_switch;
+	
+	private CheckBox aggregate_notification;
 
 	private ViewGroup location_base;
 	private ViewGroup tasks_base;
@@ -70,6 +73,9 @@ public class SettingsFragment extends AbstractFragment implements
 	protected void setUI() {
 		autostart_switch = (Switch) rootView
 				.findViewById(R.id.autostart_switch);
+		
+		aggregate_notification= (CheckBox) rootView
+				.findViewById(R.id.aggregate_notification);
 
 		location_base = (ViewGroup) rootView.findViewById(R.id.location_base);
 		tasks_base = (ViewGroup) rootView.findViewById(R.id.tasks_base);
@@ -86,6 +92,7 @@ public class SettingsFragment extends AbstractFragment implements
 	@Override
 	protected void setListener() {
 		autostart_switch.setOnCheckedChangeListener(this);
+		aggregate_notification.setOnCheckedChangeListener(this);
 
 		location_base.setOnClickListener(this);
 		tasks_base.setOnClickListener(this);
@@ -99,6 +106,8 @@ public class SettingsFragment extends AbstractFragment implements
 	private void setData() {
 		autostart_switch.setChecked(PreferenceHelper
 				.getIsAutoStart(getActivity()));
+		aggregate_notification.setChecked(PreferenceHelper
+				.getIsAggregateDownload(getActivity()));
 
 		location_config
 				.setText(PreferenceHelper.getDownloadPath(getActivity()));
@@ -123,6 +132,8 @@ public class SettingsFragment extends AbstractFragment implements
 	public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 		if (buttonView.getId() == R.id.autostart_switch) {
 			PreferenceHelper.setIsAutoStart(getActivity(), isChecked);
+		}else if(buttonView.getId()==R.id.aggregate_notification){
+			PreferenceHelper.setIsAggregateDownload(getActivity(), isChecked);
 		}
 	}
 

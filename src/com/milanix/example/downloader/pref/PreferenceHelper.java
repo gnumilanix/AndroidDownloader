@@ -26,6 +26,7 @@ public class PreferenceHelper {
 	public static final String KEY_ORDERING_FIELD = "key_ordering_field";
 	public static final String KEY_ORDERING_TYPE = "key_ordering_type";
 	public static final String KEY_IS_AUTOSTART = "key_autostart";
+	public static final String KEY_IS_AGGREGATEDOWNLOAD = "key_aggregatedownload";
 	public static final String KEY_SCHEDULE = "key_schedule";
 	public static final String KEY_SCHEDULE_START = "key_schedule_start";
 	public static final String KEY_SCHEDULE_UNTIL = "key_schedule_until";
@@ -91,6 +92,34 @@ public class PreferenceHelper {
 	public static void setIsAutoStart(Context context, boolean isAutoStart) {
 		getPreferenceInstance(context).edit()
 				.putBoolean(KEY_IS_AUTOSTART, isAutoStart).apply();
+	}
+
+	/**
+	 * This method will get if aggregate download notification is
+	 * enabled/disable by user
+	 * 
+	 * @param is
+	 *            the base application context
+	 */
+	public static boolean getIsAggregateDownload(Context context) {
+		return getPreferenceInstance(context).getBoolean(
+				KEY_IS_AGGREGATEDOWNLOAD, true);
+	}
+
+	/**
+	 * This method will set aggregate download notification if enabled/disable
+	 * by user
+	 * 
+	 * @param is
+	 *            the base application context
+	 * @param isAutoStart
+	 *            set true if service should aggregate download notification,
+	 *            otherwise false
+	 */
+	public static void setIsAggregateDownload(Context context,
+			boolean isAutoStart) {
+		getPreferenceInstance(context).edit()
+				.putBoolean(KEY_IS_AGGREGATEDOWNLOAD, isAutoStart).apply();
 	}
 
 	/**
