@@ -5,8 +5,17 @@
     <color name="app_background">#FFFFFF</color>
     <color name="app_background_dark">#000000</color>
 
+    <!-- Material Colors -->
+    <color name="color_primary_dark">#4D73FF</color>
+    <color name="color_primary">#6889FF</color>
+    <color name="text_color_primary">#FFFFFF</color>
+    <color name="window_background">#FFFFFF</color>
+    <color name="navigation_bar_color">#AFBFFF</color>
+    <color name="ascent_color">#4D73FF</color>
+
     <!-- Action Bar Colors -->
-    <color name="actionbar_dark_background">#4D73FF</color>
+    <color name="statusbarbar_dark_background">#4D73FF</color>
+    <color name="actionbar_dark_background"> #6889FF</color>
     <color name="actiontab_dark_background">#AFBFFF</color>
     <color name="actionbar_textcolor">#FFFFFF</color>
 

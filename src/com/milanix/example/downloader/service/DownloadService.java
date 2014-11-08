@@ -362,7 +362,7 @@ public class DownloadService extends Service {
 				DownloadTask task = taskPair.getValue();
 
 				if (null != task)
-					task.cancel(true);
+					task.cancel(true, true);
 			}
 		}
 	}
@@ -1188,7 +1188,7 @@ public class DownloadService extends Service {
 				 */
 				if (downloadTasks.containsKey(id)) {
 					DownloadTask task = downloadTasks.get(id);
-					task.cancel(true);
+					task.cancel(true, true);
 
 					downloadTasks.remove(id);
 
@@ -1228,7 +1228,7 @@ public class DownloadService extends Service {
 				 */
 				if (downloadTasks.containsKey(id)) {
 					DownloadTask task = downloadTasks.get(id);
-					task.cancel(true);
+					task.cancel(false, true);
 				}
 
 				downloadFile(id);
@@ -1304,7 +1304,7 @@ public class DownloadService extends Service {
 
 		for (DownloadTask task : ongoingTasks) {
 			if (null != task) {
-				if (task.cancel(true))
+				if (task.cancel(true, true))
 					cancelledTasks.add(task);
 			}
 		}
@@ -1589,7 +1589,8 @@ public class DownloadService extends Service {
 		private Timer notificationUpdateTimer;
 		private int progress = 0;
 
-		private boolean deleteRequested = false;
+		private boolean deleteDownload = false;
+		private boolean cancelDownload = false;
 		private boolean preserveStateOnCancel = false;
 
 		// Download constancts
@@ -1818,6 +1819,9 @@ public class DownloadService extends Service {
 
 								while (-1 != (chunkSize = remoteContentStream
 										.read(buffer))) {
+									if (cancelDownload)
+										break;
+
 									targetWriteFile.write(buffer, 0, chunkSize);
 
 									chunkCompleted += chunkSize;
@@ -1827,26 +1831,30 @@ public class DownloadService extends Service {
 											/ (double) fileSize * 100.0);
 								}
 
-								showOrUpdateProgress(NOTIFICATION_MAX_PROGRESS);
+								if (!cancelDownload || !preserveStateOnCancel) {
+									showOrUpdateProgress(NOTIFICATION_MAX_PROGRESS);
 
-								if ((tempfileSize + chunkCopied) != fileSize
-										&& fileSize != -1) {
-									Log.d(getLogTag(), "Incomplete download");
+									if ((tempfileSize + chunkCopied) != fileSize
+											&& fileSize != -1) {
+										Log.d(getLogTag(),
+												"Incomplete download");
 
-									download.setState(DownloadState.FAILED);
-									download.setFailReason(FailedReason.FILE_INCOMPLETE);
+										download.setState(DownloadState.FAILED);
+										download.setFailReason(FailedReason.FILE_INCOMPLETE);
 
-									updateDownloadState(download);
-								} else {
-									Log.d(getLogTag(), "Complete download");
+										updateDownloadState(download);
+									} else {
+										Log.d(getLogTag(), "Complete download");
 
-									targetTempFile.renameTo(targetLocalFile);
+										targetTempFile
+												.renameTo(targetLocalFile);
 
-									download.setState(DownloadState.COMPLETED);
-									download.setDateCompleted(new Date()
-											.getTime());
+										download.setState(DownloadState.COMPLETED);
+										download.setDateCompleted(new Date()
+												.getTime());
 
-									updateDownloadState(download);
+										updateDownloadState(download);
+									}
 								}
 							}
 						}
@@ -1880,27 +1888,29 @@ public class DownloadService extends Service {
 
 				updateDownloadState(download);
 			} finally {
-				NetworkUtils.killFTPClient(downloadClient);
-
 				IOUtils.close(targetWriteFile);
 				IOUtils.close(remoteContentStream);
 				IOUtils.close(bufferedFileStream);
 			}
 
-			cancelNotification(NOTIFICATION_TAG_PROGRESS, download.getId());
+			NetworkUtils.shutdownFTPClient(downloadClient);
+
+			if (!cancelDownload || !preserveStateOnCancel)
+				cancelNotification(NOTIFICATION_TAG_PROGRESS, download.getId());
 		}
 
 		/**
 		 * This method performs an HTTP download
 		 */
 		private void performHTTPDownload() {
-			try {
-				HttpClient downloadClient = NetworkUtils.getHttpClient();
+			final HttpClient downloadClient = NetworkUtils.getHttpClient();
 
-				HttpParams params = new BasicHttpParams();
+			try {
+
+				final HttpParams params = new BasicHttpParams();
 				HttpConnectionParams.setSoTimeout(params, 60000);
 
-				HttpGet request = new HttpGet(download.getUrl());
+				final HttpGet request = new HttpGet(download.getUrl());
 				request.setParams(params);
 
 				HttpResponse response = downloadClient.execute(request);
@@ -2012,6 +2022,9 @@ public class DownloadService extends Service {
 
 							while (-1 != (chunkSize = remoteContentStream
 									.read(buffer))) {
+								if (cancelDownload)
+									break;
+
 								targetWriteFile.write(buffer, 0, chunkSize);
 
 								chunkCompleted += chunkSize;
@@ -2021,25 +2034,28 @@ public class DownloadService extends Service {
 										/ (double) fileSize * 100.0);
 							}
 
-							showOrUpdateProgress(NOTIFICATION_MAX_PROGRESS);
+							if (!cancelDownload || !preserveStateOnCancel) {
+								showOrUpdateProgress(NOTIFICATION_MAX_PROGRESS);
 
-							if ((tempfileSize + chunkCopied) != fileSize
-									&& fileSize != -1) {
-								Log.d(getLogTag(), "Incomplete download");
+								if ((tempfileSize + chunkCopied) != fileSize
+										&& fileSize != -1) {
+									Log.d(getLogTag(), "Incomplete download");
 
-								download.setState(DownloadState.FAILED);
-								download.setFailReason(FailedReason.FILE_INCOMPLETE);
+									download.setState(DownloadState.FAILED);
+									download.setFailReason(FailedReason.FILE_INCOMPLETE);
 
-								updateDownloadState(download);
-							} else {
-								Log.d(getLogTag(), "Complete download");
+									updateDownloadState(download);
+								} else {
+									Log.d(getLogTag(), "Complete download");
 
-								targetTempFile.renameTo(targetLocalFile);
+									targetTempFile.renameTo(targetLocalFile);
 
-								download.setState(DownloadState.COMPLETED);
-								download.setDateCompleted(new Date().getTime());
+									download.setState(DownloadState.COMPLETED);
+									download.setDateCompleted(new Date()
+											.getTime());
 
-								updateDownloadState(download);
+									updateDownloadState(download);
+								}
 							}
 						}
 
@@ -2083,7 +2099,10 @@ public class DownloadService extends Service {
 				IOUtils.close(bufferedFileStream);
 			}
 
-			cancelNotification(NOTIFICATION_TAG_PROGRESS, download.getId());
+			NetworkUtils.shutdownHTTPClient(downloadClient);
+
+			if (!cancelDownload || !preserveStateOnCancel)
+				cancelNotification(NOTIFICATION_TAG_PROGRESS, download.getId());
 		}
 
 		/**
@@ -2132,9 +2151,9 @@ public class DownloadService extends Service {
 		 * Deletes temp file if exist and is a file
 		 */
 		public void delete() {
-			deleteRequested = true;
+			deleteDownload = true;
 
-			cancel(true);
+			cancel(false, true);
 
 			cancelNotification(NOTIFICATION_TAG_PROGRESS, download.getId());
 
@@ -2164,11 +2183,13 @@ public class DownloadService extends Service {
 		 *            if true will persist the current state on cancel
 		 * @param mayInterruptIfRunning
 		 */
-		public void cancel(boolean preserveStateOnCancel,
+		public boolean cancel(boolean preserveStateOnCancel,
 				boolean mayInterruptIfRunning) {
 			this.preserveStateOnCancel = preserveStateOnCancel;
 
-			cancel(mayInterruptIfRunning);
+			this.cancelDownload = true;
+
+			return cancel(mayInterruptIfRunning);
 		}
 
 		@Override
@@ -2176,7 +2197,7 @@ public class DownloadService extends Service {
 			if (null != notificationUpdateTask)
 				notificationUpdateTask.cancel();
 
-			if (!deleteRequested) {
+			if (!deleteDownload) {
 				if (preserveStateOnCancel) {
 					if (null != download && null != download.getState())
 						updateDownloadState(download);

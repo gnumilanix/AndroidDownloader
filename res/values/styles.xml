@@ -1,6 +1,6 @@
 <resources>
 
-    <style name="AppBaseTheme" parent="@style/Theme.AppCompat"></style>
+    <style name="AppBaseTheme" parent="Theme.AppCompat.Light"></style>
 
     <!-- Application Core theme. -->
     <style name="DownloaderTheme" parent="AppBaseTheme">

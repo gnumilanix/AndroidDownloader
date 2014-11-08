@@ -62,6 +62,16 @@ public class NetworkUtils {
 	}
 
 	/**
+	 * Shuts down given HTTP client
+	 * 
+	 * @param httpClient
+	 *            to close
+	 */
+	public static void shutdownHTTPClient(HttpClient httpClient) {
+		httpClient.getConnectionManager().shutdown();
+	}
+
+	/**
 	 * This method will build and return ftp client. If exist it will return the
 	 * existing instance
 	 * 
@@ -77,7 +87,7 @@ public class NetworkUtils {
 	 * @param ftpClient
 	 *            to close
 	 */
-	public static synchronized void killFTPClient(FTPClient ftpClient) {
+	public static synchronized void shutdownFTPClient(FTPClient ftpClient) {
 		try {
 			if (ftpClient.isConnected()) {
 				ftpClient.noop();
@@ -107,4 +117,5 @@ public class NetworkUtils {
 
 		return true;
 	}
+
 }
