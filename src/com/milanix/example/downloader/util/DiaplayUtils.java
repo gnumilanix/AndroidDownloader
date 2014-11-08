@@ -4,7 +4,7 @@ import android.content.Context;
 import android.util.TypedValue;
 
 /**
- * This class will help to convert dimensionPixel to pixel
+ * This class will contains method related to display
  * 
  * @author Milan
  * 

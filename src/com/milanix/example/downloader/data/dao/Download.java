@@ -119,7 +119,7 @@ public class Download extends AbstractDao<Download, Integer> {
 	private String url;
 	private String path;
 	private String name;
-	private Integer type;
+	private String type;
 	private String size;
 	private Long dateAdded;
 	private Long dateCompleted;
@@ -143,7 +143,7 @@ public class Download extends AbstractDao<Download, Integer> {
 	 * @param date
 	 * @param state
 	 */
-	public Download(Integer id, String url, String name, Integer type,
+	public Download(Integer id, String url, String name, String type,
 			String size, Long dateAdded, DownloadState state,
 			FailedReason failReason) {
 		this.id = id;
@@ -220,7 +220,7 @@ public class Download extends AbstractDao<Download, Integer> {
 	/**
 	 * @return the type
 	 */
-	public Integer getType() {
+	public String getType() {
 		return type;
 	}
 
@@ -228,7 +228,7 @@ public class Download extends AbstractDao<Download, Integer> {
 	 * @param type
 	 *            the type to set
 	 */
-	public void setType(Integer type) {
+	public void setType(String type) {
 		this.type = type;
 	}
 
@@ -334,7 +334,7 @@ public class Download extends AbstractDao<Download, Integer> {
 							.getColumnIndex(DownloadsDatabase.COLUMN_NAME)));
 
 				if (-1 != cursor.getColumnIndex(DownloadsDatabase.COLUMN_TYPE))
-					setType(cursor.getInt(cursor
+					setType(cursor.getString(cursor
 							.getColumnIndex(DownloadsDatabase.COLUMN_TYPE)));
 
 				if (-1 != cursor.getColumnIndex(DownloadsDatabase.COLUMN_SIZE))

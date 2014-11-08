@@ -5,8 +5,8 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 /**
- * This class contains logic for storing/retrieving and querying the
- * downloads database
+ * This class contains logic for storing/retrieving and querying the downloads
+ * database
  * 
  * @author Milan
  * 
@@ -55,10 +55,11 @@ public class DownloadsDatabase {
 				+ TABLE_DOWNLOADS + "(" + COLUMN_ID
 				+ " integer primary key autoincrement," + COLUMN_URL
 				+ " varchar(1024)," + COLUMN_PATH + " varchar(2048),"
-				+ COLUMN_NAME + " varchar(512)," + COLUMN_TYPE + " integer,"
-				+ COLUMN_SIZE + " varchar(32)," + COLUMN_DATE_ADDED + " long,"
-				+ COLUMN_DATE_COMPLETED + " long," + COLUMN_STATE
-				+ " varchar(16)," + COLUMN_FAIL_REASON + " varchar(128));";
+				+ COLUMN_NAME + " varchar(512)," + COLUMN_TYPE
+				+ " varchar(32)," + COLUMN_SIZE + " varchar(32),"
+				+ COLUMN_DATE_ADDED + " long," + COLUMN_DATE_COMPLETED
+				+ " long," + COLUMN_STATE + " varchar(16),"
+				+ COLUMN_FAIL_REASON + " varchar(128));";
 
 		public DownloadsDBHelper(Context context) {
 			super(context, DATABASE_NAME, null, databaseVersion);
