@@ -261,8 +261,8 @@ public class AddNewDownloadDialog extends DialogFragment implements
 		values.put(DownloadsDatabase.COLUMN_URL, url);
 		values.put(DownloadsDatabase.COLUMN_NAME,
 				FilenameUtils.getBaseName(url));
-		values.put(DownloadsDatabase.COLUMN_TYPE,
-				FilenameUtils.getExtension(url));
+		values.put(DownloadsDatabase.COLUMN_TYPE, FileUtils.getFileType(url)
+				.toString());
 		values.put(DownloadsDatabase.COLUMN_DATE_ADDED, new Date().getTime());
 		values.put(DownloadsDatabase.COLUMN_STATE,
 				DownloadState.ADDED_NOTAUTHORIZED.toString());

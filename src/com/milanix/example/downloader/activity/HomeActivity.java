@@ -503,6 +503,7 @@ public class HomeActivity extends ActionBarActivity implements
 		public void onTabReselected(Tab tab, FragmentTransaction ft) {
 			// User selected the already selected tab. Usually do nothing.
 		}
+
 	}
 
 }

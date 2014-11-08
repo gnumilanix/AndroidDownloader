@@ -5,7 +5,8 @@
     <!-- Application Core theme. -->
     <style name="DownloaderTheme" parent="AppBaseTheme">
         <item name="android:actionBarStyle">@style/DownloaderTheme.ActionBar</item>
-        <item name="actionBarTabTextStyle">@style/DownloaderTheme.ActionBar.Tab</item>
+        <item name="android:actionBarTabTextStyle">@style/DownloaderTheme.ActionBar.Tab</item>
+        <item name="android:actionOverflowButtonStyle">@style/DownloaderTheme.ActionBar.OverFlow</item>
     </style>
 
     <!-- ActionBar theme -->
@@ -18,12 +19,12 @@
 
     <!-- ActionBar title text -->
     <style name="DownloaderTheme.ActionBar.Title" parent="@android:style/TextAppearance.Holo.Widget.ActionBar.Title">
-        <item name="android:textColor">@color/actiontab_dark_background</item>
+        <item name="android:textColor">@color/actionbar_textcolor</item>
     </style>
 
     <!-- ActionBar tab theme -->
     <style name="DownloaderTheme.ActionBar.Tab" parent="@style/Widget.AppCompat.ActionBar.TabText">
-        <item name="android:textColor">@color/actiontab_dark_background</item>
+        <item name="android:textColor">@color/actionbar_textcolor</item>
     </style>
 
     <style name="DownloaderTheme.ActionBar.OverFlow" parent="@android:style/Widget.Holo.ActionButton.Overflow">

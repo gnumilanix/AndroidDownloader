@@ -1076,6 +1076,33 @@ public class DownloadService extends Service {
 	}
 
 	/**
+	 * This method will delete task with given id if exist otherwise null
+	 * 
+	 * @param ids
+	 *            with attached tasks to be deleted
+	 */
+	public synchronized static void deleteDownload(long[] ids) {
+		if (null != ids) {
+			List<Integer> listIds = getAsIntegerList(ids);
+
+			for (Integer id : listIds) {
+				if (null != id) {
+					/**
+					 * If contains task, delete, cancel then remove it
+					 */
+					if (downloadTasks.containsKey(id)) {
+						DownloadTask task = downloadTasks.get(id);
+
+						task.delete();
+
+						downloadTasks.remove(id);
+					}
+				}
+			}
+		}
+	}
+
+	/**
 	 * This method will pause task with given id if exist otherwise null
 	 * 
 	 * @param ids
@@ -1534,12 +1561,22 @@ public class DownloadService extends Service {
 		private Timer notificationUpdateTimer;
 		private int progress = 0;
 
+		private boolean deleteRequested = false;
 		private boolean preserveStateOnCancel = false;
 
+		// Download constancts
 		private static final String RANGE_HEADER = "Range";
 		private static final String RANGE_VALUE = "bytes=%d-";
 		private static final String TEMP_SUFFIX = ".tmp";
 		private static final int BUFFER_SIZE = 8 * 1024;
+
+		// IO objects
+		private static InputStream remoteContentStream = null;
+		private static BufferedInputStream bufferedFileStream = null;
+
+		private static File targetLocalFile = null;
+		private static File targetTempFile = null;
+		private static RandomAccessFile targetWriteFile = null;
 
 		public DownloadTask(Download download) {
 			this.download = download;
@@ -1613,13 +1650,6 @@ public class DownloadService extends Service {
 		 */
 		private void performFTPDownload() {
 			final FTPClient downloadClient = NetworkUtils.getFTPClient();
-
-			InputStream remoteContentStream = null;
-			BufferedInputStream bufferedFileStream = null;
-
-			File targetLocalFile = null;
-			File targetTempFile = null;
-			RandomAccessFile targetWriteFile = null;
 
 			try {
 				final URL downloadUrl = new URL(download.getUrl());
@@ -1836,13 +1866,6 @@ public class DownloadService extends Service {
 		 * This method performs an HTTP download
 		 */
 		private void performHTTPDownload() {
-			InputStream remoteContentStream = null;
-			BufferedInputStream bufferedFileStream = null;
-
-			File targetLocalFile = null;
-			File targetTempFile = null;
-			RandomAccessFile targetWriteFile = null;
-
 			try {
 				HttpClient downloadClient = NetworkUtils.getHttpClient();
 
@@ -2078,6 +2101,21 @@ public class DownloadService extends Service {
 		}
 
 		/**
+		 * Deletes temp file if exist and is a file
+		 */
+		public void delete() {
+			deleteRequested = true;
+
+			cancel(true);
+
+			cancelNotification(NOTIFICATION_TAG_PROGRESS, download.getId());
+
+			if (null != targetTempFile && targetTempFile.isFile()
+					&& targetTempFile.exists())
+				targetTempFile.delete();
+		}
+
+		/**
 		 * This method return the download state. if it does not exist it will
 		 * return state unknown
 		 * 
@@ -2110,15 +2148,17 @@ public class DownloadService extends Service {
 			if (null != notificationUpdateTask)
 				notificationUpdateTask.cancel();
 
-			if (preserveStateOnCancel) {
-				if (null != download && null != download.getState())
+			if (!deleteRequested) {
+				if (preserveStateOnCancel) {
+					if (null != download && null != download.getState())
+						updateDownloadState(download);
+				} else {
+					download.setState(DownloadState.CANCELLED);
 					updateDownloadState(download);
-			} else {
-				download.setState(DownloadState.CANCELLED);
-				updateDownloadState(download);
-			}
+				}
 
-			notifyCallbacksCancelled(result);
+				notifyCallbacksCancelled(result);
+			}
 
 			super.onCancelled(result);
 		}

@@ -30,6 +30,7 @@ import com.milanix.example.downloader.R;
 import com.milanix.example.downloader.data.provider.DownloadContentProvider;
 import com.milanix.example.downloader.dialog.DeleteDownloadDialog;
 import com.milanix.example.downloader.dialog.DeleteDownloadDialog.OnDeleteDownloadListener;
+import com.milanix.example.downloader.dialog.FilterConfigureDialog;
 import com.milanix.example.downloader.dialog.NetworkConfigureDialog;
 import com.milanix.example.downloader.dialog.SortConfigureDialog;
 import com.milanix.example.downloader.fragment.DownloadedFragment;
@@ -195,6 +196,8 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 						refreshCursorLoader(true);
 					} else if (PreferenceHelper.KEY_ORDERING_TYPE.equals(key)) {
 						refreshCursorLoader(true);
+					} else if (PreferenceHelper.KEY_FILTERING_FIELD.equals(key)) {
+						refreshCursorLoader(true);
 					}
 				}
 			};
@@ -313,12 +316,16 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 	}
 
 	@Override
-	public void onDownloadDeleted(boolean isSuccess) {
+	public void onDownloadDeleted(boolean isSuccess, long[] downloadIds) {
 		if (isSuccess) {
 			refreshCursorLoader(true);
 
 			ToastHelper.showToast(getActivity(),
 					getString(R.string.download_delete_success));
+
+			if (isBound())
+				DownloadService.deleteDownload(downloadIds);
+
 		} else
 			ToastHelper.showToast(getActivity(),
 					getString(R.string.download_delete_fail));
@@ -349,6 +356,17 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 		sortConfigureDialog.setTargetFragment(this, -1);
 		sortConfigureDialog.setCancelable(true);
 		sortConfigureDialog.show(getFragmentManager(),
+				NetworkConfigureDialog.class.getSimpleName());
+	}
+
+	/**
+	 * This method will show filter configure dialog
+	 */
+	private void showFilterConfigureDialog() {
+		FilterConfigureDialog filterConfigureDialog = new FilterConfigureDialog();
+		filterConfigureDialog.setTargetFragment(this, -1);
+		filterConfigureDialog.setCancelable(true);
+		filterConfigureDialog.show(getFragmentManager(),
 				NetworkConfigureDialog.class.getSimpleName());
 	}
 
@@ -400,7 +418,10 @@ public abstract class AbstractDownloadFragment extends AbstractFragment
 			showSortConfigureDialog();
 
 			return true;
+		case R.id.action_filter:
+			showFilterConfigureDialog();
 
+			return true;
 		default:
 			return super.onOptionsItemSelected(item);
 		}

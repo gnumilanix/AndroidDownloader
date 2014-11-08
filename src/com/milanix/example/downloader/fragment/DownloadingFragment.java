@@ -4,6 +4,7 @@ import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
+import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -130,13 +131,22 @@ public class DownloadingFragment extends AbstractDownloadFragment {
 
 	@Override
 	public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+		final String selection = TextUtils.isEmpty(PreferenceHelper
+				.getFilterType(getActivity())) ? DownloadsDatabase.COLUMN_STATE
+				+ " !=?" : DownloadsDatabase.COLUMN_STATE + " !=? AND "
+				+ DownloadsDatabase.COLUMN_TYPE + " =?";
+		final String[] selectionArgs = TextUtils.isEmpty(PreferenceHelper
+				.getFilterType(getActivity())) ? new String[] { DownloadState.COMPLETED
+				.toString() } : new String[] {
+				DownloadState.COMPLETED.toString(),
+				PreferenceHelper.getFilterType(getActivity()) };
+
 		return new CursorLoader(getActivity(),
-				DownloadContentProvider.CONTENT_URI_DOWNLOADS, null,
-				QueryHelper.getWhere(DownloadsDatabase.COLUMN_STATE,
-						DownloadState.COMPLETED.toString(), false), null,
-				QueryHelper.getOrdering(
+				DownloadContentProvider.CONTENT_URI_DOWNLOADS, null, selection,
+				selectionArgs, QueryHelper.getOrdering(
 						PreferenceHelper.getSortOrderingField(getActivity()),
 						PreferenceHelper.getSortOrderingType(getActivity())));
+
 	}
 
 }

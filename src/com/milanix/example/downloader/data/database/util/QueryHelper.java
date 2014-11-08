@@ -84,6 +84,32 @@ public class QueryHelper {
 	}
 
 	/**
+	 * This method will get where selection type statement with given array or
+	 * selection
+	 * 
+	 * @param selection
+	 *            fields to select
+	 * @return where selection
+	 */
+	public static String getWhereSelection(String[] selection) {
+		if (null == selection || selection.length == 0)
+			return null;
+
+		final StringBuilder whereSelectionBuilder = new StringBuilder("");
+
+		for (int i = 0; i < selection.length; i++) {
+			whereSelectionBuilder.append(selection[i]);
+			whereSelectionBuilder.append("=?");
+
+			if (i != (selection.length - 1)) {
+				whereSelectionBuilder.append(" AND ");
+			}
+		}
+
+		return whereSelectionBuilder.toString();
+	}
+
+	/**
 	 * This method will get query in operator string with given param
 	 * 
 	 * @param fieldName

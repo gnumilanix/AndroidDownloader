@@ -290,8 +290,18 @@ public class FileUtils {
 	 * @return res id
 	 */
 	public static int getFileTypeBasedRes(String path) {
-		FileType fileType = FileUtils.getFileType(path);
+		return getFileTypeBasedRes(FileUtils.getFileType(path));
+	}
 
+	/**
+	 * This method will get res id based on the file type. This will internally
+	 * call getFileType(path) to get type
+	 * 
+	 * @param type
+	 *            of the file
+	 * @return res id
+	 */
+	public static int getFileTypeBasedRes(FileType fileType) {
 		switch (fileType) {
 		case DOCUMENT:
 			return R.drawable.ic_icon_document_light;

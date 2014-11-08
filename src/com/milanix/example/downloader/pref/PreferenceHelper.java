@@ -25,6 +25,7 @@ public class PreferenceHelper {
 	public static final String KEY_DOWNLOADLIMIT_TYPE = "key_downloadwarning_type";
 	public static final String KEY_ORDERING_FIELD = "key_ordering_field";
 	public static final String KEY_ORDERING_TYPE = "key_ordering_type";
+	public static final String KEY_FILTERING_FIELD = "key_filter_field";
 	public static final String KEY_IS_AUTOSTART = "key_autostart";
 	public static final String KEY_IS_AGGREGATEDOWNLOAD = "key_aggregatedownload";
 	public static final String KEY_SCHEDULE = "key_schedule";
@@ -331,6 +332,31 @@ public class PreferenceHelper {
 	public static String getSortOrderingType(Context context) {
 		return getPreferenceInstance(context).getString(KEY_ORDERING_TYPE,
 				DEFAULT_ORDERING_TYPE);
+	}
+
+	/**
+	 * This method will set the filter type
+	 * 
+	 * @param is
+	 *            the base application context
+	 * @param filterBy
+	 *            is the filter type
+	 */
+	public static void setFilterType(Context context, String filterBy) {
+		getPreferenceInstance(context).edit()
+				.putString(KEY_FILTERING_FIELD, filterBy).apply();
+	}
+
+	/**
+	 * This method will get the filter type. This method will return empty to
+	 * define all
+	 * 
+	 * @param is
+	 *            the base application context
+	 */
+	public static String getFilterType(Context context) {
+		return getPreferenceInstance(context)
+				.getString(KEY_FILTERING_FIELD, "");
 	}
 
 	/**

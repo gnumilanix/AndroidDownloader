@@ -142,13 +142,13 @@ public class DeleteDownloadDialog extends DialogFragment {
 							deleteOperations);
 
 			if (operationsResult.length > 0)
-				onDeleteListener.onDownloadDeleted(true);
+				onDeleteListener.onDownloadDeleted(true, downloadIds);
 			else
-				onDeleteListener.onDownloadDeleted(false);
+				onDeleteListener.onDownloadDeleted(false, null);
 		} catch (RemoteException e) {
-			onDeleteListener.onDownloadDeleted(false);
+			onDeleteListener.onDownloadDeleted(false, null);
 		} catch (OperationApplicationException e) {
-			onDeleteListener.onDownloadDeleted(false);
+			onDeleteListener.onDownloadDeleted(false, null);
 		} finally {
 			dismiss();
 		}
@@ -181,6 +181,6 @@ public class DeleteDownloadDialog extends DialogFragment {
 		 *        affected
 		 * 
 		 */
-		public void onDownloadDeleted(boolean isSuccess);
+		public void onDownloadDeleted(boolean isSuccess, long[] downloadIds);
 	}
 }

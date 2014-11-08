@@ -21,6 +21,7 @@ import com.milanix.example.downloader.data.dao.Download.DownloadState;
 import com.milanix.example.downloader.data.database.DownloadsDatabase;
 import com.milanix.example.downloader.service.DownloadService;
 import com.milanix.example.downloader.util.FileUtils;
+import com.milanix.example.downloader.util.FileUtils.FileType;
 import com.milanix.example.downloader.util.TextHelper;
 
 /**
@@ -211,10 +212,12 @@ public class DownloadListAdapter extends CursorAdapter {
 			holder.download_url.setText(cursor.getString(cursor
 					.getColumnIndex(DownloadsDatabase.COLUMN_URL)));
 			holder.download_url.setSelected(true);
+		}
 
-			holder.download_icon.setImageResource(FileUtils
-					.getFileTypeBasedRes(cursor.getString(cursor
-							.getColumnIndex(DownloadsDatabase.COLUMN_URL))));
+		if (-1 != cursor.getColumnIndex(DownloadsDatabase.COLUMN_TYPE)) {
+			holder.download_icon
+					.setImageResource(FileUtils.getFileTypeBasedRes(FileType.valueOf(cursor.getString(cursor
+							.getColumnIndex(DownloadsDatabase.COLUMN_TYPE)))));
 		}
 
 		// Show progress only if it's authorized
