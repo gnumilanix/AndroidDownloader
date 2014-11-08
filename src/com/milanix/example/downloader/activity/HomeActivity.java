@@ -16,7 +16,9 @@ import android.os.IBinder;
 import android.os.StrictMode;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBar.OnNavigationListener;
 import android.support.v7.app.ActionBar.Tab;
@@ -35,6 +37,7 @@ import com.milanix.example.downloader.fragment.BrowseFragment;
 import com.milanix.example.downloader.fragment.DownloadedFragment;
 import com.milanix.example.downloader.fragment.DownloadingFragment;
 import com.milanix.example.downloader.fragment.SettingsFragment;
+import com.milanix.example.downloader.navigation.NavigationDrawerFragment;
 import com.milanix.example.downloader.navigation.NavigationDrawerFragment.RootFragment;
 import com.milanix.example.downloader.navigation.NavigationSpinnerAdapter;
 import com.milanix.example.downloader.pref.PreferenceHelper;
@@ -49,6 +52,7 @@ import com.milanix.example.downloader.util.ToastHelper;
  * 
  */
 public class HomeActivity extends ActionBarActivity implements
+		NavigationDrawerFragment.NavigationDrawerCallbacks,
 		OnNavigationListener, OnAddNewDownloadListener, OnClickListener {
 
 	private static final String KEY_INTENT_PROCESSED = "INTENT_PROCESSED";
@@ -119,6 +123,7 @@ public class HomeActivity extends ActionBarActivity implements
 
 		// TODO Process only if intent is not already handled.
 		if (savedInstanceState != null) {
+
 			if (!savedInstanceState.getBoolean(KEY_INTENT_PROCESSED))
 				handleIncoming(getIntent());
 
@@ -179,7 +184,8 @@ public class HomeActivity extends ActionBarActivity implements
 	 */
 	private void setDefinationBasedUI() {
 		if (DeviceDefinition.TABLET.equals(getDeviceDefinition())) {
-			addActionBarTabs();
+			setupNativationDrawer();
+			// addActionBarTabs();
 		} else {
 			addActionBarSpinner();
 		}
@@ -207,6 +213,16 @@ public class HomeActivity extends ActionBarActivity implements
 		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
 		actionBar.setListNavigationCallbacks(
 				new NavigationSpinnerAdapter(this), this);
+	}
+
+	/**
+	 * This method will setup navigation drawer
+	 */
+	private void setupNativationDrawer() {
+		final NavigationDrawerFragment navigationDrawerFragment = (NavigationDrawerFragment) getSupportFragmentManager()
+				.findFragmentById(R.id.navigation_drawer);
+		navigationDrawerFragment.setUp(R.id.navigation_drawer,
+				(DrawerLayout) findViewById(R.id.drawer_layout));
 	}
 
 	/**
@@ -350,31 +366,29 @@ public class HomeActivity extends ActionBarActivity implements
 
 				invalidateOptionsMenu();
 
-				/**
-				 * Hide existing except the requested one.
-				 */
-				FragmentTransaction transaction = getSupportFragmentManager()
+				final FragmentManager manager = getSupportFragmentManager();
+				final FragmentTransaction transaction = manager
 						.beginTransaction();
+				final Fragment existingFragment = manager
+						.findFragmentByTag(tag);
 
-				if (!fragmentCache.containsKey(selectedFragment)) {
-					transaction.add(R.id.container, fragment,
-							DownloadingFragment.class.getSimpleName()).show(
-							fragment);
+				if (null == existingFragment) {
+					transaction.add(R.id.container, fragment, tag)
+							.show(fragment).show(fragment);
 
 					fragmentCache.put(selectedFragment, fragment);
+				} else {
+					transaction.show(existingFragment);
 				}
 
-				List<Fragment> existingFragments = getSupportFragmentManager()
-						.getFragments();
+				List<Fragment> existingFragments = manager.getFragments();
 
 				if (null != existingFragments && !existingFragments.isEmpty())
-					for (Fragment existingFragment : existingFragments) {
-						if (null != existingFragment) {
-							if (existingFragment.getClass().equals(
+					for (Fragment stackFragment : existingFragments) {
+						if (null != stackFragment) {
+							if (!stackFragment.getClass().equals(
 									fragment.getClass()))
-								transaction.show(existingFragment);
-							else
-								transaction.hide(existingFragment);
+								transaction.hide(stackFragment);
 						}
 					}
 
@@ -431,6 +445,11 @@ public class HomeActivity extends ActionBarActivity implements
 		if (bound) {
 			DownloadService.downloadFile(download.getId());
 		}
+	}
+
+	@Override
+	public void onNavigationDrawerItemSelected(RootFragment selectedFragment) {
+		switchToFragment(selectedFragment);
 	}
 
 	@Override

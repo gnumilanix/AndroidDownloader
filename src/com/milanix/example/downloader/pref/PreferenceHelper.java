@@ -104,7 +104,7 @@ public class PreferenceHelper {
 	 */
 	public static boolean getIsAggregateDownload(Context context) {
 		return getPreferenceInstance(context).getBoolean(
-				KEY_IS_AGGREGATEDOWNLOAD, true);
+				KEY_IS_AGGREGATEDOWNLOAD, false);
 	}
 
 	/**
