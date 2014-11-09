@@ -4,7 +4,9 @@
 	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="gen"/>
-	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
-	<classpathentry exported="true" kind="src" path="/appcompat_v7"/>
+	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
+	<classpathentry exported="true" kind="lib" path="C:/Users/Milan/Downloads/adt-bundle-windows-x86_64-20140702/adt-bundle-windows-x86_64-20140702/sdk/extras/android/support/v4/android-support-v4.jar"/>
+	<classpathentry exported="true" kind="lib" path="C:/Users/Milan/Downloads/adt-bundle-windows-x86_64-20140702/adt-bundle-windows-x86_64-20140702/sdk/extras/android/support/v7/appcompat/libs/android-support-v7-appcompat.jar"/>
+	<classpathentry exported="true" kind="lib" path="C:/Users/Milan/Downloads/adt-bundle-windows-x86_64-20140702/adt-bundle-windows-x86_64-20140702/sdk/extras/android/support/v7/recyclerview/libs/android-support-v7-recyclerview.jar"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>

@@ -1,19 +1,23 @@
 package com.milanix.example.downloader.navigation;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import android.app.Activity;
 import android.content.res.Configuration;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.app.Fragment;
-import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 import com.milanix.example.downloader.R;
-import com.milanix.example.downloader.activity.HomeActivity;
 import com.milanix.example.downloader.pref.PreferenceHelper;
 
 /**
@@ -23,7 +27,7 @@ import com.milanix.example.downloader.pref.PreferenceHelper;
  * 
  */
 public class NavigationDrawerFragment extends Fragment implements
-		View.OnClickListener {
+		NavigationDrawerCallbacks {
 
 	private static final String KEY_SELECTED_FRAGMENT = "key_selected_fragment";
 
@@ -35,14 +39,11 @@ public class NavigationDrawerFragment extends Fragment implements
 
 	private View fragmentContainerView;
 
-	private RootFragment currentSelectedFragment = RootFragment.DOWNLOADING;
+	private RootFragment currentSelectedFragment = null;
 	private boolean fromSavedInstanceState;
 	private boolean hasUserLearnedDrawer;
 
-	private TextView tab_downloading;
-	private TextView tab_downloaded;
-	private TextView tab_settings;
-	private TextView tab_browse;
+	private RecyclerView drawerList;
 
 	/**
 	 * Root fragments for this navigation drawer
@@ -72,7 +73,7 @@ public class NavigationDrawerFragment extends Fragment implements
 	@Override
 	public void onActivityCreated(Bundle savedInstanceState) {
 		super.onActivityCreated(savedInstanceState);
-		setHasOptionsMenu(true);
+		setHasOptionsMenu(false);
 	}
 
 	@Override
@@ -82,6 +83,8 @@ public class NavigationDrawerFragment extends Fragment implements
 
 		setView(view);
 		setListener();
+		setAdapter();
+		navigateToSelected(currentSelectedFragment);
 
 		return view;
 	}
@@ -92,30 +95,53 @@ public class NavigationDrawerFragment extends Fragment implements
 	 * @param view
 	 */
 	private void setView(View root) {
-		tab_downloading = (TextView) root.findViewById(R.id.tab_downloading);
-		tab_downloaded = (TextView) root.findViewById(R.id.tab_downloaded);
-		tab_settings = (TextView) root.findViewById(R.id.tab_settings);
-		tab_browse = (TextView) root.findViewById(R.id.tab_browse);
+		LinearLayoutManager layoutManager = new LinearLayoutManager(
+				getActivity());
+		layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
+
+		drawerList = (RecyclerView) root.findViewById(R.id.drawerList);
+		drawerList.setLayoutManager(layoutManager);
+		drawerList.setHasFixedSize(true);
 	}
 
 	/**
 	 * This method is set listener
 	 */
 	private void setListener() {
-		tab_downloading.setOnClickListener(this);
-		tab_downloaded.setOnClickListener(this);
-		tab_settings.setOnClickListener(this);
-		tab_browse.setOnClickListener(this);
 	}
 
 	/**
-	 * This method checks if drawer is open
+	 * Sets navigation adapter
+	 */
+	private void setAdapter() {
+		final NavigationDrawerAdapter adapter = new NavigationDrawerAdapter(
+				getMenu());
+		adapter.setNavigationDrawerCallbacks(this);
+
+		drawerList.setAdapter(adapter);
+	}
+
+	/**
+	 * get navigation menu list
 	 * 
 	 * @return
 	 */
-	public boolean isDrawerOpen() {
-		return drawerLayout != null
-				&& drawerLayout.isDrawerOpen(fragmentContainerView);
+	public List<NavigationItem> getMenu() {
+		final List<NavigationItem> items = new ArrayList<NavigationItem>();
+		items.clear();
+
+		items.add(new NavigationItem(getString(R.string.tab_downloading),
+				getResources().getDrawable(R.drawable.ic_icon_task_light),
+				RootFragment.DOWNLOADING));
+		items.add(new NavigationItem(getString(R.string.tab_downloaded),
+				getResources().getDrawable(R.drawable.ic_icon_path_light),
+				RootFragment.DOWNLOADED));
+		items.add(new NavigationItem(
+				getString(R.string.tab_settings),
+				getResources().getDrawable(R.drawable.ic_action_settings_light),
+				RootFragment.SETTINGS));
+
+		return items;
 	}
 
 	/**
@@ -127,40 +153,30 @@ public class NavigationDrawerFragment extends Fragment implements
 	 * @param drawerLayout
 	 *            The DrawerLayout containing this fragment's UI.
 	 */
-	public void setUp(int navFragmentId, DrawerLayout navDrawerLayout) {
-		navigateToSelected(currentSelectedFragment);
 
+	public void setUp(int navFragmentId, DrawerLayout drawerLayout,
+			Toolbar toolbar) {
 		fragmentContainerView = getActivity().findViewById(navFragmentId);
-		drawerLayout = navDrawerLayout;
-
-		drawerLayout.setDrawerShadow(R.drawable.ic_navdrawer_shadow,
-				GravityCompat.START);
-
-		((HomeActivity) getActivity()).getSupportActionBar()
-				.setDisplayHomeAsUpEnabled(true);
-		((HomeActivity) getActivity()).getSupportActionBar()
-				.setHomeButtonEnabled(true);
+		this.drawerLayout = drawerLayout;
 
 		drawerToggle = new ActionBarDrawerToggle(getActivity(), drawerLayout,
-				R.drawable.ic_navdrawer, R.string.navigation_drawer_open,
+				toolbar, R.string.navigation_drawer_open,
 				R.string.navigation_drawer_close) {
 			@Override
 			public void onDrawerClosed(View drawerView) {
 				super.onDrawerClosed(drawerView);
-				if (!isAdded()) {
+
+				if (!isAdded())
 					return;
-				}
 
 				getActivity().invalidateOptionsMenu();
-
 			}
 
 			@Override
 			public void onDrawerOpened(View drawerView) {
 				super.onDrawerOpened(drawerView);
-				if (!isAdded()) {
+				if (!isAdded())
 					return;
-				}
 
 				if (!hasUserLearnedDrawer) {
 					hasUserLearnedDrawer = true;
@@ -171,33 +187,19 @@ public class NavigationDrawerFragment extends Fragment implements
 
 				getActivity().invalidateOptionsMenu();
 			}
-
 		};
 
-		if (!hasUserLearnedDrawer && !fromSavedInstanceState) {
+		if (!hasUserLearnedDrawer && !fromSavedInstanceState)
 			drawerLayout.openDrawer(fragmentContainerView);
-		}
 
-		drawerToggle.syncState();
+		drawerLayout.post(new Runnable() {
+			@Override
+			public void run() {
+				drawerToggle.syncState();
+			}
+		});
 
 		drawerLayout.setDrawerListener(drawerToggle);
-	}
-
-	/**
-	 * This method will navigate to selected item
-	 * 
-	 * @param position
-	 */
-	private void navigateToSelected(RootFragment selectedFragment) {
-		currentSelectedFragment = selectedFragment;
-
-		if (drawerLayout != null)
-			drawerLayout.closeDrawer(fragmentContainerView);
-
-		if (navigationDrawerCallbacks != null)
-			navigationDrawerCallbacks
-					.onNavigationDrawerItemSelected(currentSelectedFragment);
-
 	}
 
 	@Override
@@ -220,6 +222,7 @@ public class NavigationDrawerFragment extends Fragment implements
 	@Override
 	public void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
+
 		outState.putString(KEY_SELECTED_FRAGMENT,
 				currentSelectedFragment.toString());
 	}
@@ -231,63 +234,102 @@ public class NavigationDrawerFragment extends Fragment implements
 		drawerToggle.onConfigurationChanged(newConfig);
 	}
 
-	@Override
-	public void onClick(View view) {
-
-		if (view.getId() == R.id.tab_downloading) {
-			unselectTabs(tab_downloading);
-
-			navigateToSelected(RootFragment.DOWNLOADING);
-		} else if (view.getId() == R.id.tab_downloaded) {
-			unselectTabs(tab_downloaded);
-
-			navigateToSelected(RootFragment.DOWNLOADED);
-		} else if (view.getId() == R.id.tab_settings) {
-			unselectTabs(tab_settings);
-
-			navigateToSelected(RootFragment.SETTINGS);
-		} else if (view.getId() == R.id.tab_browse) {
-			unselectTabs(tab_browse);
-
-			navigateToSelected(RootFragment.BROWSE);
-		}
-	}
-
 	/**
-	 * This method will unselect tabs except one that is to be selected
+	 * Returns if drawer is open
 	 * 
-	 * @param toBeSelected
-	 *            is the tab to be selected
+	 * @return
 	 */
-	private void unselectTabs(View toBeSelected) {
-		tab_downloading.setBackgroundColor(getResources().getColor(
-				R.color.navigation_tab_normal));
-		tab_downloaded.setBackgroundColor(getResources().getColor(
-				R.color.navigation_tab_normal));
-		tab_settings.setBackgroundColor(getResources().getColor(
-				R.color.navigation_tab_normal));
-		tab_browse.setBackgroundColor(getResources().getColor(
-				R.color.navigation_tab_normal));
-
-		if (null != toBeSelected)
-			toBeSelected.setBackgroundColor(getResources().getColor(
-					R.color.navigation_tab_selected));
+	public boolean isDrawerOpen() {
+		return drawerLayout != null
+				&& drawerLayout.isDrawerOpen(fragmentContainerView);
 	}
 
 	/**
-	 * Callbacks interface for callers to listen to changes
+	 * Navigation item
 	 */
-	public static interface NavigationDrawerCallbacks {
+	public class NavigationItem {
+		private String text;
+		private Drawable drawable;
+		private RootFragment rootFragment;
+
+		public NavigationItem(String text, Drawable drawable,
+				RootFragment rootFragment) {
+			this.text = text;
+			this.drawable = drawable;
+			this.rootFragment = rootFragment;
+		}
 
 		/**
-		 * Called when an item in the navigation drawer is selected.
-		 * 
-		 * @param selectedFragment
-		 *            fragment that was selected
-		 * 
+		 * @return the text
 		 */
-		void onNavigationDrawerItemSelected(RootFragment selectedFragment);
+		public String getText() {
+			return text;
+		}
+
+		/**
+		 * @param text
+		 *            the text to set
+		 */
+		public void setText(String text) {
+			this.text = text;
+		}
+
+		/**
+		 * @return the drawable
+		 */
+		public Drawable getDrawable() {
+			return drawable;
+		}
+
+		/**
+		 * @param drawable
+		 *            the drawable to set
+		 */
+		public void setDrawable(Drawable drawable) {
+			this.drawable = drawable;
+		}
+
+		/**
+		 * @return the rootFragment
+		 */
+		public RootFragment getRootFragment() {
+			return rootFragment;
+		}
+
+		/**
+		 * @param rootFragment
+		 *            the rootFragment to set
+		 */
+		public void setRootFragment(RootFragment rootFragment) {
+			this.rootFragment = rootFragment;
+		}
 
 	}
 
+	@Override
+	public void onNavigationDrawerItemSelected(RootFragment selectedFragment) {
+		navigationDrawerCallbacks
+				.onNavigationDrawerItemSelected(selectedFragment);
+
+		navigateToSelected(selectedFragment);
+	}
+
+	/**
+	 * This method will navigate to selected item
+	 * 
+	 * @param position
+	 */
+	private void navigateToSelected(RootFragment selectedFragment) {
+		currentSelectedFragment = selectedFragment;
+
+		if (drawerLayout != null)
+			drawerLayout.closeDrawer(fragmentContainerView);
+
+		if (navigationDrawerCallbacks != null)
+			navigationDrawerCallbacks
+					.onNavigationDrawerItemSelected(selectedFragment);
+
+		// ((NavigationDrawerAdapter) drawerList.getAdapter())
+		// .selectPosition(position);
+	}
 }

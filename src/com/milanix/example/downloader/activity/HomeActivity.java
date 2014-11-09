@@ -1,10 +1,8 @@
 package com.milanix.example.downloader.activity;
 
 import java.io.File;
-import java.util.HashMap;
 import java.util.List;
 
-import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -19,10 +17,8 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.ActionBar.OnNavigationListener;
-import android.support.v7.app.ActionBar.Tab;
 import android.support.v7.app.ActionBarActivity;
+import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -37,9 +33,9 @@ import com.milanix.example.downloader.fragment.BrowseFragment;
 import com.milanix.example.downloader.fragment.DownloadedFragment;
 import com.milanix.example.downloader.fragment.DownloadingFragment;
 import com.milanix.example.downloader.fragment.SettingsFragment;
+import com.milanix.example.downloader.navigation.NavigationDrawerCallbacks;
 import com.milanix.example.downloader.navigation.NavigationDrawerFragment;
 import com.milanix.example.downloader.navigation.NavigationDrawerFragment.RootFragment;
-import com.milanix.example.downloader.navigation.NavigationSpinnerAdapter;
 import com.milanix.example.downloader.pref.PreferenceHelper;
 import com.milanix.example.downloader.service.DownloadService;
 import com.milanix.example.downloader.util.NetworkUtils;
@@ -52,13 +48,11 @@ import com.milanix.example.downloader.util.ToastHelper;
  * 
  */
 public class HomeActivity extends ActionBarActivity implements
-		NavigationDrawerFragment.NavigationDrawerCallbacks,
-		OnNavigationListener, OnAddNewDownloadListener, OnClickListener {
+		NavigationDrawerCallbacks, OnAddNewDownloadListener, OnClickListener {
 
 	private static final String KEY_INTENT_PROCESSED = "INTENT_PROCESSED";
 
-	private HashMap<RootFragment, Fragment> fragmentCache = new HashMap<RootFragment, Fragment>();
-
+	private Toolbar toolbar_actionbar;
 	private ImageButton download_add;
 
 	private boolean bound = false;
@@ -116,10 +110,12 @@ public class HomeActivity extends ActionBarActivity implements
 		setVersionBasedPolicy();
 		setDownloadPath();
 
-		setDefinationBasedUI();
-
 		setUI();
 		setListener();
+
+		setToolBar();
+		setDefinationBasedUI();
+		setupNativationDrawer();
 
 		// TODO Process only if intent is not already handled.
 		if (savedInstanceState != null) {
@@ -133,6 +129,14 @@ public class HomeActivity extends ActionBarActivity implements
 		}
 	}
 
+	/**
+	 * Sets toolbar_actionbar
+	 */
+	private void setToolBar() {
+		setSupportActionBar(toolbar_actionbar);
+		getSupportActionBar().setDisplayShowHomeEnabled(true);
+	}
+
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
@@ -144,6 +148,7 @@ public class HomeActivity extends ActionBarActivity implements
 	 * This method will set UI components
 	 */
 	private void setUI() {
+		toolbar_actionbar = (Toolbar) findViewById(R.id.toolbar_actionbar);
 		download_add = (ImageButton) findViewById(R.id.download_add);
 	}
 
@@ -184,10 +189,9 @@ public class HomeActivity extends ActionBarActivity implements
 	 */
 	private void setDefinationBasedUI() {
 		if (DeviceDefinition.TABLET.equals(getDeviceDefinition())) {
-			setupNativationDrawer();
-			// addActionBarTabs();
+
 		} else {
-			addActionBarSpinner();
+
 		}
 	}
 
@@ -207,58 +211,12 @@ public class HomeActivity extends ActionBarActivity implements
 	/**
 	 * This method will setup navigation drawer
 	 */
-	private void addActionBarSpinner() {
-		ActionBar actionBar = getSupportActionBar();
-		actionBar.setDisplayShowTitleEnabled(false);
-		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
-		actionBar.setListNavigationCallbacks(
-				new NavigationSpinnerAdapter(this), this);
-	}
-
-	/**
-	 * This method will setup navigation drawer
-	 */
 	private void setupNativationDrawer() {
 		final NavigationDrawerFragment navigationDrawerFragment = (NavigationDrawerFragment) getSupportFragmentManager()
 				.findFragmentById(R.id.navigation_drawer);
 		navigationDrawerFragment.setUp(R.id.navigation_drawer,
-				(DrawerLayout) findViewById(R.id.drawer_layout));
-	}
-
-	/**
-	 * This method will set actionbar tabs
-	 */
-	private void addActionBarTabs() {
-		ActionBar actionBar = getSupportActionBar();
-		actionBar.setDisplayShowTitleEnabled(true);
-		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
-
-		Tab tab = actionBar
-				.newTab()
-				.setText(R.string.tab_downloading)
-				.setTabListener(
-						new TabListener<DownloadingFragment>(this,
-								DownloadingFragment.class.getSimpleName(),
-								DownloadingFragment.class));
-		actionBar.addTab(tab);
-
-		tab = actionBar
-				.newTab()
-				.setText(R.string.tab_downloaded)
-				.setTabListener(
-						new TabListener<DownloadedFragment>(this,
-								DownloadedFragment.class.getSimpleName(),
-								DownloadedFragment.class));
-		actionBar.addTab(tab);
-
-		tab = actionBar
-				.newTab()
-				.setIcon(R.drawable.ic_action_settings_dark)
-				.setTabListener(
-						new TabListener<SettingsFragment>(this,
-								SettingsFragment.class.getSimpleName(),
-								SettingsFragment.class));
-		actionBar.addTab(tab);
+				(DrawerLayout) findViewById(R.id.drawer_layout),
+				toolbar_actionbar);
 	}
 
 	/**
@@ -312,9 +270,12 @@ public class HomeActivity extends ActionBarActivity implements
 			String title = null;
 			String tag = null;
 
-			Fragment fragment = null;
-
 			getSupportActionBar().show();
+
+			final FragmentManager manager = getSupportFragmentManager();
+			final FragmentTransaction transaction = manager.beginTransaction();
+
+			Fragment fragment = manager.findFragmentByTag(tag);
 
 			// Either get cached fragments of create a new one
 			switch (selectedFragment) {
@@ -322,9 +283,7 @@ public class HomeActivity extends ActionBarActivity implements
 				title = getString(R.string.tab_downloading);
 				tag = DownloadingFragment.class.getSimpleName();
 
-				if (fragmentCache.containsKey(selectedFragment))
-					fragment = fragmentCache.get(selectedFragment);
-				else
+				if (null == fragment)
 					fragment = new DownloadingFragment();
 
 				break;
@@ -332,9 +291,7 @@ public class HomeActivity extends ActionBarActivity implements
 				title = getString(R.string.tab_downloaded);
 				tag = DownloadedFragment.class.getSimpleName();
 
-				if (fragmentCache.containsKey(selectedFragment))
-					fragment = fragmentCache.get(selectedFragment);
-				else
+				if (null == fragment)
 					fragment = new DownloadedFragment();
 
 				break;
@@ -342,9 +299,7 @@ public class HomeActivity extends ActionBarActivity implements
 				title = getString(R.string.tab_settings);
 				tag = SettingsFragment.class.getSimpleName();
 
-				if (fragmentCache.containsKey(selectedFragment))
-					fragment = fragmentCache.get(selectedFragment);
-				else
+				if (null == fragment)
 					fragment = new SettingsFragment();
 
 				break;
@@ -352,9 +307,7 @@ public class HomeActivity extends ActionBarActivity implements
 				title = getString(R.string.tab_browse);
 				tag = BrowseFragment.class.getSimpleName();
 
-				if (fragmentCache.containsKey(selectedFragment))
-					fragment = fragmentCache.get(selectedFragment);
-				else
+				if (null == fragment)
 					fragment = new BrowseFragment();
 
 				break;
@@ -366,19 +319,11 @@ public class HomeActivity extends ActionBarActivity implements
 
 				invalidateOptionsMenu();
 
-				final FragmentManager manager = getSupportFragmentManager();
-				final FragmentTransaction transaction = manager
-						.beginTransaction();
-				final Fragment existingFragment = manager
-						.findFragmentByTag(tag);
-
-				if (null == existingFragment) {
+				if (!fragment.isHidden() && !fragment.isAdded()) {
 					transaction.add(R.id.container, fragment, tag)
 							.show(fragment).show(fragment);
-
-					fragmentCache.put(selectedFragment, fragment);
 				} else {
-					transaction.show(existingFragment);
+					transaction.show(fragment);
 				}
 
 				List<Fragment> existingFragments = manager.getFragments();
@@ -450,79 +395,6 @@ public class HomeActivity extends ActionBarActivity implements
 	@Override
 	public void onNavigationDrawerItemSelected(RootFragment selectedFragment) {
 		switchToFragment(selectedFragment);
-	}
-
-	@Override
-	public boolean onNavigationItemSelected(int position, long id) {
-		switch (position) {
-		case 0:
-			switchToFragment(RootFragment.DOWNLOADING);
-			return true;
-		case 1:
-			switchToFragment(RootFragment.DOWNLOADED);
-			return true;
-		case 2:
-			switchToFragment(RootFragment.SETTINGS);
-			return true;
-		case 3:
-			switchToFragment(RootFragment.BROWSE);
-			return true;
-		}
-
-		return false;
-	}
-
-	/**
-	 * This class contains a tab listener
-	 * 
-	 * @author Milan
-	 * 
-	 * @param <T>
-	 */
-	public class TabListener<T extends Fragment> implements
-			ActionBar.TabListener {
-		private Fragment mFragment;
-		private final Activity mActivity;
-		private final String mTag;
-		private final Class<T> mClass;
-
-		/**
-		 * Constructor used each time a new tab is created.
-		 * 
-		 * @param activity
-		 *            The host Activity, used to instantiate the fragment
-		 * @param tag
-		 *            The identifier tag for the fragment
-		 * @param clazz
-		 *            The fragment's Class, used to instantiate the fragment
-		 */
-		public TabListener(Activity activity, String tag, Class<T> clazz) {
-			mActivity = activity;
-			mTag = tag;
-			mClass = clazz;
-		}
-
-		/* The following are each of the ActionBar.TabListener callbacks */
-
-		public void onTabSelected(Tab tab, FragmentTransaction ft) {
-			if (mFragment == null) {
-				mFragment = Fragment.instantiate(mActivity, mClass.getName());
-				ft.add(android.R.id.content, mFragment, mTag);
-			} else {
-				ft.attach(mFragment);
-			}
-		}
-
-		public void onTabUnselected(Tab tab, FragmentTransaction ft) {
-			if (mFragment != null) {
-				ft.detach(mFragment);
-			}
-		}
-
-		public void onTabReselected(Tab tab, FragmentTransaction ft) {
-			// User selected the already selected tab. Usually do nothing.
-		}
-
 	}
 
 }

@@ -1,38 +1,25 @@
 <resources>
 
-    <style name="AppBaseTheme" parent="Theme.AppCompat.Light"></style>
+    <!-- Base application theme. -->
+    <style name="AppBaseTheme" parent="Theme.AppCompat.NoActionBar"></style>
 
     <!-- Application Core theme. -->
     <style name="DownloaderTheme" parent="AppBaseTheme">
-        <item name="android:actionBarStyle">@style/DownloaderTheme.ActionBar</item>
-        <item name="android:actionBarTabTextStyle">@style/DownloaderTheme.ActionBar.Tab</item>
-        <item name="android:actionOverflowButtonStyle">@style/DownloaderTheme.ActionBar.OverFlow</item>
+        <item name="windowActionBar">false</item>
+        <item name="colorPrimary">@color/color_primary</item>
+        <item name="colorPrimaryDark">@color/color_primary_dark</item>
+        <item name="colorAccent">@color/ascent_color</item>
+        <item name="android:textColorPrimary">@color/text_color_primary</item>
+        <item name="drawerArrowStyle">@style/DrawerArrowStyle</item>
+        <item name="android:windowBackground">@color/window_background</item>
     </style>
 
-    <!-- ActionBar theme -->
-    <style name="DownloaderTheme.ActionBar" parent="@style/Widget.AppCompat.ActionBar">
-        <item name="android:background">@color/actionbar_dark_background</item>
-        <item name="android:titleTextStyle">@style/DownloaderTheme.ActionBar.Title</item>
-        <item name="android:displayOptions">useLogo|showHome|showTitle</item>
-        <item name="android:backgroundStacked">@color/actiontab_dark_background</item>
-    </style>
-
-    <!-- ActionBar title text -->
-    <style name="DownloaderTheme.ActionBar.Title" parent="@android:style/TextAppearance.Holo.Widget.ActionBar.Title">
-        <item name="android:textColor">@color/actionbar_textcolor</item>
-    </style>
-
-    <!-- ActionBar tab theme -->
-    <style name="DownloaderTheme.ActionBar.Tab" parent="@style/Widget.AppCompat.ActionBar.TabText">
-        <item name="android:textColor">@color/actionbar_textcolor</item>
-    </style>
-
-    <style name="DownloaderTheme.ActionBar.OverFlow" parent="@android:style/Widget.Holo.ActionButton.Overflow">
-        <item name="android:src">@drawable/ic_action_overflow_dark</item>
+    <style name="DrawerArrowStyle" parent="Widget.AppCompat.DrawerArrowToggle">
+        <item name="spinBars">true</item>
+        <item name="color">@android:color/white</item>
     </style>
 
     <style name="navigationdrawer_item">
-        <item name="android:textColor">@color/nav_title_color</item>
         <item name="android:textSize">@dimen/navigation_drawer_text_size</item>
         <item name="android:background">@color/navigation_tab_normal</item>
         <item name="android:singleLine">true</item>
@@ -53,6 +40,12 @@
         <item name="android:paddingLeft">5dp</item>
         <item name="android:paddingRight">5dp</item>
         <item name="android:drawablePadding">@dimen/navigation_icon_padding</item>
+    </style>
+
+    <style name="ToolBarStyle" parent="">
+        <item name="android:background">@color/color_primary</item>
+        <item name="popupTheme">@style/ThemeOverlay.AppCompat.Light</item>
+        <item name="theme">@style/ThemeOverlay.AppCompat.Dark.ActionBar</item>
     </style>
 
 </resources>
