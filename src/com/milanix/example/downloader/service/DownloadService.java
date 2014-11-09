@@ -266,7 +266,9 @@ public class DownloadService extends Service {
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		init();
-		autoAddToQueue();
+
+		if (PreferenceHelper.getIsAutoStart(getApplicationContext()))
+			autoAddToQueue();
 
 		// Don't move to init as init might be called after the service has
 		// started

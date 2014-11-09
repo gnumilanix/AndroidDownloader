@@ -14,6 +14,8 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -39,6 +41,8 @@ public class NavigationDrawerFragment extends Fragment implements
 
 	private View fragmentContainerView;
 
+	private NavigationDrawerAdapter adapter;
+
 	private RootFragment currentSelectedFragment = RootFragment.DOWNLOADING;
 	private boolean fromSavedInstanceState;
 	private boolean hasUserLearnedDrawer;
@@ -58,6 +62,8 @@ public class NavigationDrawerFragment extends Fragment implements
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+
+		setHasOptionsMenu(true);
 
 		if (savedInstanceState != null) {
 			currentSelectedFragment = RootFragment.valueOf(savedInstanceState
@@ -115,8 +121,7 @@ public class NavigationDrawerFragment extends Fragment implements
 	 * Sets navigation adapter
 	 */
 	private void setAdapter() {
-		final NavigationDrawerAdapter adapter = new NavigationDrawerAdapter(
-				getMenu());
+		adapter = new NavigationDrawerAdapter(getMenu());
 		adapter.setNavigationDrawerCallbacks(this);
 
 		drawerList.setAdapter(adapter);
@@ -171,11 +176,16 @@ public class NavigationDrawerFragment extends Fragment implements
 					return;
 
 				getActivity().invalidateOptionsMenu();
+
+				if (navigationDrawerCallbacks instanceof ExtendedNavigationDrawerCallbacks)
+					((ExtendedNavigationDrawerCallbacks) navigationDrawerCallbacks)
+							.onDrawerClosed();
 			}
 
 			@Override
 			public void onDrawerOpened(View drawerView) {
 				super.onDrawerOpened(drawerView);
+
 				if (!isAdded())
 					return;
 
@@ -187,6 +197,10 @@ public class NavigationDrawerFragment extends Fragment implements
 				}
 
 				getActivity().invalidateOptionsMenu();
+
+				if (navigationDrawerCallbacks instanceof ExtendedNavigationDrawerCallbacks)
+					((ExtendedNavigationDrawerCallbacks) navigationDrawerCallbacks)
+							.onDrawerOpened();
 			}
 		};
 
@@ -235,6 +249,11 @@ public class NavigationDrawerFragment extends Fragment implements
 		drawerToggle.onConfigurationChanged(newConfig);
 	}
 
+	@Override
+	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+		super.onCreateOptionsMenu(menu, inflater);
+	}
+
 	/**
 	 * Returns if drawer is open
 	 * 
@@ -243,6 +262,34 @@ public class NavigationDrawerFragment extends Fragment implements
 	public boolean isDrawerOpen() {
 		return drawerLayout != null
 				&& drawerLayout.isDrawerOpen(fragmentContainerView);
+	}
+
+	@Override
+	public void onNavigationDrawerItemSelected(RootFragment selectedFragment) {
+		navigationDrawerCallbacks
+				.onNavigationDrawerItemSelected(selectedFragment);
+
+		navigateToSelected(selectedFragment);
+	}
+
+	/**
+	 * This method will navigate to selected item
+	 * 
+	 * @param position
+	 */
+	private void navigateToSelected(RootFragment selectedFragment) {
+		currentSelectedFragment = selectedFragment;
+
+		if (drawerLayout != null)
+			drawerLayout.closeDrawer(fragmentContainerView);
+
+		if (navigationDrawerCallbacks != null)
+			navigationDrawerCallbacks
+					.onNavigationDrawerItemSelected(selectedFragment);
+
+		getActivity().invalidateOptionsMenu();
+		// ((NavigationDrawerAdapter) drawerList.getAdapter())
+		// .selectPosition(position);
 	}
 
 	/**
@@ -307,30 +354,4 @@ public class NavigationDrawerFragment extends Fragment implements
 
 	}
 
-	@Override
-	public void onNavigationDrawerItemSelected(RootFragment selectedFragment) {
-		navigationDrawerCallbacks
-				.onNavigationDrawerItemSelected(selectedFragment);
-
-		navigateToSelected(selectedFragment);
-	}
-
-	/**
-	 * This method will navigate to selected item
-	 * 
-	 * @param position
-	 */
-	private void navigateToSelected(RootFragment selectedFragment) {
-		currentSelectedFragment = selectedFragment;
-
-		if (drawerLayout != null)
-			drawerLayout.closeDrawer(fragmentContainerView);
-
-		if (navigationDrawerCallbacks != null)
-			navigationDrawerCallbacks
-					.onNavigationDrawerItemSelected(selectedFragment);
-
-		// ((NavigationDrawerAdapter) drawerList.getAdapter())
-		// .selectPosition(position);
-	}
 }

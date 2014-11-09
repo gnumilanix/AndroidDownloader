@@ -1,57 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RadioGroup xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/sort_group"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/app_background"
-    android:padding="@dimen/layout_padding" >
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/scrollView1"
+    android:layout_width="wrap_content"
+    android:layout_height="match_parent" >
 
-    <RadioButton
-        android:id="@+id/asc_added"
+    <RadioGroup
+        android:id="@+id/sort_group"
         android:layout_width="match_parent"
-        android:layout_height="@dimen/list_radio_size"
-        android:drawableLeft="@drawable/ic_icon_ascorder_light"
-        android:padding="@dimen/text_padding"
-        android:text="@string/asc_added" />
+        android:layout_height="match_parent"
+        android:background="@color/app_background"
+        android:padding="@dimen/layout_padding" >
 
-    <RadioButton
-        android:id="@+id/dsc_added"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/list_radio_size"
-        android:drawableLeft="@drawable/ic_icon_dscorder_light"
-        android:padding="@dimen/text_padding"
-        android:text="@string/dsc_added" />
+        <RadioButton
+            android:id="@+id/asc_added"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/list_radio_size"
+            android:drawableLeft="@drawable/ic_icon_ascorder_light"
+            android:padding="@dimen/text_padding"
+            android:text="@string/asc_added" />
 
-    <RadioButton
-        android:id="@+id/asc_completed"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/list_radio_size"
-        android:drawableLeft="@drawable/ic_icon_ascorder_light"
-        android:padding="@dimen/text_padding"
-        android:text="@string/asc_completed" />
+        <RadioButton
+            android:id="@+id/dsc_added"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/list_radio_size"
+            android:drawableLeft="@drawable/ic_icon_dscorder_light"
+            android:padding="@dimen/text_padding"
+            android:text="@string/dsc_added" />
 
-    <RadioButton
-        android:id="@+id/dsc_completed"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/list_radio_size"
-        android:drawableLeft="@drawable/ic_icon_dscorder_light"
-        android:padding="@dimen/text_padding"
-        android:text="@string/dsc_completed" />
+        <RadioButton
+            android:id="@+id/asc_completed"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/list_radio_size"
+            android:drawableLeft="@drawable/ic_icon_ascorder_light"
+            android:padding="@dimen/text_padding"
+            android:text="@string/asc_completed" />
 
-    <RadioButton
-        android:id="@+id/asc_size"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/list_radio_size"
-        android:drawableLeft="@drawable/ic_icon_ascorder_light"
-        android:padding="@dimen/text_padding"
-        android:text="@string/asc_size" />
+        <RadioButton
+            android:id="@+id/dsc_completed"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/list_radio_size"
+            android:drawableLeft="@drawable/ic_icon_dscorder_light"
+            android:padding="@dimen/text_padding"
+            android:text="@string/dsc_completed" />
 
-    <RadioButton
-        android:id="@+id/dsc_size"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/list_radio_size"
-        android:drawableLeft="@drawable/ic_icon_dscorder_light"
-        android:padding="@dimen/text_padding"
-        android:text="@string/dsc_size" />
+        <RadioButton
+            android:id="@+id/asc_size"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/list_radio_size"
+            android:drawableLeft="@drawable/ic_icon_ascorder_light"
+            android:padding="@dimen/text_padding"
+            android:text="@string/asc_size" />
 
-</RadioGroup>
+        <RadioButton
+            android:id="@+id/dsc_size"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/list_radio_size"
+            android:drawableLeft="@drawable/ic_icon_dscorder_light"
+            android:padding="@dimen/text_padding"
+            android:text="@string/dsc_size" />
+    </RadioGroup>
+
+</ScrollView>

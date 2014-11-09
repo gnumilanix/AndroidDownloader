@@ -98,14 +98,18 @@ public class DownloadingFragment extends AbstractDownloadFragment {
 			@Override
 			public boolean onCreateActionMode(android.view.ActionMode mode,
 					Menu menu) {
+				getActivity().onWindowStartingActionMode(this);
+				getActivity().onActionModeStarted(mode);
+
 				MenuInflater inflater = mode.getMenuInflater();
 				inflater.inflate(R.menu.menu_context_downloading, menu);
+
 				return true;
 			}
 
 			@Override
 			public void onDestroyActionMode(android.view.ActionMode mode) {
-
+				getActivity().onActionModeFinished(mode);
 			}
 
 			@Override

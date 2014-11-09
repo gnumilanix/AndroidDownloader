@@ -1,73 +1,79 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RadioGroup xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/sort_group"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/app_background"
-    android:padding="@dimen/layout_padding" >
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/scrollView1"
+    android:layout_width="wrap_content"
+    android:layout_height="match_parent" >
 
-    <RadioButton
-        android:id="@+id/filter_document"
+    <RadioGroup
+        android:id="@+id/sort_group"
         android:layout_width="match_parent"
-        android:layout_height="@dimen/list_radio_size"
-        android:drawableLeft="@drawable/ic_icon_document_light"
-        android:padding="@dimen/text_padding"
-        android:text="@string/document" />
+        android:layout_height="match_parent"
+        android:background="@color/app_background"
+        android:padding="@dimen/layout_padding" >
 
-    <RadioButton
-        android:id="@+id/filter_code"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/list_radio_size"
-        android:drawableLeft="@drawable/ic_icon_code_light"
-        android:padding="@dimen/text_padding"
-        android:text="@string/code" />
+        <RadioButton
+            android:id="@+id/filter_document"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/list_radio_size"
+            android:drawableLeft="@drawable/ic_icon_document_light"
+            android:padding="@dimen/text_padding"
+            android:text="@string/document" />
 
-    <RadioButton
-        android:id="@+id/filter_audio"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/list_radio_size"
-        android:drawableLeft="@drawable/ic_icon_audio_light"
-        android:padding="@dimen/text_padding"
-        android:text="@string/audio" />
+        <RadioButton
+            android:id="@+id/filter_code"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/list_radio_size"
+            android:drawableLeft="@drawable/ic_icon_code_light"
+            android:padding="@dimen/text_padding"
+            android:text="@string/code" />
 
-    <RadioButton
-        android:id="@+id/filter_image"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/list_radio_size"
-        android:drawableLeft="@drawable/ic_icon_image_light"
-        android:padding="@dimen/text_padding"
-        android:text="@string/image" />
+        <RadioButton
+            android:id="@+id/filter_audio"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/list_radio_size"
+            android:drawableLeft="@drawable/ic_icon_audio_light"
+            android:padding="@dimen/text_padding"
+            android:text="@string/audio" />
 
-    <RadioButton
-        android:id="@+id/filter_video"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/list_radio_size"
-        android:drawableLeft="@drawable/ic_icon_video_light"
-        android:padding="@dimen/text_padding"
-        android:text="@string/video" />
+        <RadioButton
+            android:id="@+id/filter_image"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/list_radio_size"
+            android:drawableLeft="@drawable/ic_icon_image_light"
+            android:padding="@dimen/text_padding"
+            android:text="@string/image" />
 
-    <RadioButton
-        android:id="@+id/filter_archive"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/list_radio_size"
-        android:drawableLeft="@drawable/ic_icon_archive_light"
-        android:padding="@dimen/text_padding"
-        android:text="@string/archive" />
+        <RadioButton
+            android:id="@+id/filter_video"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/list_radio_size"
+            android:drawableLeft="@drawable/ic_icon_video_light"
+            android:padding="@dimen/text_padding"
+            android:text="@string/video" />
 
-    <RadioButton
-        android:id="@+id/filter_pdf"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/list_radio_size"
-        android:drawableLeft="@drawable/ic_icon_pdf_light"
-        android:padding="@dimen/text_padding"
-        android:text="@string/pdf" />
+        <RadioButton
+            android:id="@+id/filter_archive"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/list_radio_size"
+            android:drawableLeft="@drawable/ic_icon_archive_light"
+            android:padding="@dimen/text_padding"
+            android:text="@string/archive" />
 
-    <RadioButton
-        android:id="@+id/filter_all"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/list_radio_size"
-        android:drawableLeft="@drawable/ic_icon_file_light"
-        android:padding="@dimen/text_padding"
-        android:text="@string/all" />
+        <RadioButton
+            android:id="@+id/filter_pdf"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/list_radio_size"
+            android:drawableLeft="@drawable/ic_icon_pdf_light"
+            android:padding="@dimen/text_padding"
+            android:text="@string/pdf" />
 
-</RadioGroup>
+        <RadioButton
+            android:id="@+id/filter_all"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/list_radio_size"
+            android:drawableLeft="@drawable/ic_icon_file_light"
+            android:padding="@dimen/text_padding"
+            android:text="@string/all" />
+    </RadioGroup>
+
+</ScrollView>

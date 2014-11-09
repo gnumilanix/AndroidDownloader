@@ -53,19 +53,24 @@ public class DownloadedFragment extends AbstractDownloadFragment {
 			@Override
 			public boolean onCreateActionMode(android.view.ActionMode mode,
 					Menu menu) {
+				getActivity().onWindowStartingActionMode(this);
+				getActivity().onActionModeStarted(mode);
+
 				MenuInflater inflater = mode.getMenuInflater();
 				inflater.inflate(R.menu.menu_context_downloaded, menu);
+
 				return true;
 			}
 
 			@Override
 			public void onDestroyActionMode(android.view.ActionMode mode) {
-
+				getActivity().onActionModeFinished(mode);
 			}
 
 			@Override
 			public boolean onPrepareActionMode(android.view.ActionMode mode,
 					Menu menu) {
+
 				return false;
 			}
 
@@ -108,8 +113,7 @@ public class DownloadedFragment extends AbstractDownloadFragment {
 
 		return new CursorLoader(getActivity(),
 				DownloadContentProvider.CONTENT_URI_DOWNLOADS, null, selection,
-				selectionArgs,
-				QueryHelper.getOrdering(
+				selectionArgs, QueryHelper.getOrdering(
 						PreferenceHelper.getSortOrderingField(getActivity()),
 						PreferenceHelper.getSortOrderingType(getActivity())));
 	}

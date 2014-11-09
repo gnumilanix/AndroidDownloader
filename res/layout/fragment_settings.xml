@@ -33,6 +33,7 @@
         android:drawablePadding="@dimen/text_padding"
         android:text="@string/title_sub_autostart"
         android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textColor="@color/text_color_primary"
         android:textStyle="bold" />
 
     <CheckBox

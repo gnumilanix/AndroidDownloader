@@ -8,7 +8,7 @@
     <!-- Material Colors -->
     <color name="color_primary_dark">#4D73FF</color>
     <color name="color_primary">#6889FF</color>
-    <color name="text_color_primary">#8D8D8D</color>
+    <color name="text_color_primary">#505050</color>
     <color name="text_color_primary_dark">#000000</color>
     <color name="text_color_primary_light">#AFAFAF</color>
     <color name="window_background">#FFFFFF</color>
@@ -36,8 +36,8 @@
     <color name="list_cab_active">#A6BAFF</color>
     <color name="list_cab_normal">#00000000</color>
     <color name="list_cab_normal_expanded">#D0D9FF</color>
-    <color name="list_pressed">#F0F0F0</color>
-    <color name="list_selected">#F7F7F7</color>
+    <color name="list_pressed">#E6E6E6</color>
+    <color name="list_selected">#DCDCDC</color>
     <color name="list_normal">#00000000</color>
 
     <!-- Download hint color -->

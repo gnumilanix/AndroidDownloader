@@ -20,6 +20,7 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
+import android.view.ActionMode;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ImageButton;
@@ -33,7 +34,7 @@ import com.milanix.example.downloader.fragment.BrowseFragment;
 import com.milanix.example.downloader.fragment.DownloadedFragment;
 import com.milanix.example.downloader.fragment.DownloadingFragment;
 import com.milanix.example.downloader.fragment.SettingsFragment;
-import com.milanix.example.downloader.navigation.NavigationDrawerCallbacks;
+import com.milanix.example.downloader.navigation.ExtendedNavigationDrawerCallbacks;
 import com.milanix.example.downloader.navigation.NavigationDrawerFragment;
 import com.milanix.example.downloader.navigation.NavigationDrawerFragment.RootFragment;
 import com.milanix.example.downloader.pref.PreferenceHelper;
@@ -48,12 +49,17 @@ import com.milanix.example.downloader.util.ToastHelper;
  * 
  */
 public class HomeActivity extends ActionBarActivity implements
-		NavigationDrawerCallbacks, OnAddNewDownloadListener, OnClickListener {
+		ExtendedNavigationDrawerCallbacks, OnAddNewDownloadListener,
+		OnClickListener {
 
 	private static final String KEY_INTENT_PROCESSED = "INTENT_PROCESSED";
 
 	private Toolbar toolbar_actionbar;
 	private ImageButton download_add;
+	private View view_rateme;
+
+	private ActionMode actionMode;
+	private ActionMode.Callback actionCallback;
 
 	private boolean bound = false;
 
@@ -150,6 +156,9 @@ public class HomeActivity extends ActionBarActivity implements
 	private void setUI() {
 		toolbar_actionbar = (Toolbar) findViewById(R.id.toolbar_actionbar);
 		download_add = (ImageButton) findViewById(R.id.download_add);
+		view_rateme = (View) findViewById(R.id.view_rateme);
+
+		view_rateme.setVisibility(View.GONE);
 	}
 
 	/**
@@ -317,14 +326,11 @@ public class HomeActivity extends ActionBarActivity implements
 					getSupportActionBar().setTitle(title);
 				}
 
-				invalidateOptionsMenu();
-
-				if (!fragment.isHidden() && !fragment.isAdded()) {
+				if (!fragment.isHidden() && !fragment.isAdded())
 					transaction.add(R.id.container, fragment, tag)
 							.show(fragment).show(fragment);
-				} else {
+				else
 					transaction.show(fragment);
-				}
 
 				List<Fragment> existingFragments = manager.getFragments();
 
@@ -395,6 +401,43 @@ public class HomeActivity extends ActionBarActivity implements
 	@Override
 	public void onNavigationDrawerItemSelected(RootFragment selectedFragment) {
 		switchToFragment(selectedFragment);
+	}
+
+	@Override
+	public void onDrawerOpened() {
+		if (null != actionMode) {
+			actionMode.finish();
+		}
+	}
+
+	@Override
+	public void onDrawerClosed() {
+		if (null != actionCallback && null != actionMode) {
+			startActionMode(actionCallback);
+
+		}
+	}
+
+	@Override
+	public void onActionModeStarted(ActionMode actionMode) {
+		super.onActionModeStarted(actionMode);
+
+		this.actionMode = actionMode;
+	}
+
+	@Override
+	public void onActionModeFinished(ActionMode actionMode) {
+		super.onActionModeFinished(actionMode);
+
+		this.actionMode = null;
+	}
+
+	@Override
+	public ActionMode onWindowStartingActionMode(
+			ActionMode.Callback actionCallback) {
+		this.actionCallback = actionCallback;
+
+		return super.onWindowStartingActionMode(actionCallback);
 	}
 
 }
