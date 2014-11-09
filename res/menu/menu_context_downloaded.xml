@@ -4,13 +4,13 @@
 
     <item
         android:id="@+id/action_selectall"
-        android:icon="@drawable/ic_action_selectall_light"
+        android:icon="@drawable/ic_action_selectall_dark"
         android:orderInCategory="100"
         android:showAsAction="always"
         android:title="@string/action_selectall"/>
     <item
         android:id="@+id/action_delete"
-        android:icon="@drawable/ic_action_delete_light"
+        android:icon="@drawable/ic_action_delete_dark"
         android:orderInCategory="100"
         android:showAsAction="always"
         android:title="@string/action_delete"/>

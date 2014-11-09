@@ -5,6 +5,8 @@
 
     <!-- Application Core theme. -->
     <style name="DownloaderTheme" parent="AppBaseTheme">
+        <item name="windowActionModeOverlay">true</item>
+        <item name="android:windowContentTransitions">true</item>
         <item name="windowActionBar">false</item>
         <item name="colorPrimary">@color/color_primary</item>
         <item name="colorPrimaryDark">@color/color_primary_dark</item>
@@ -15,20 +17,35 @@
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowBackground">@color/window_background</item>
-        <item name="android:windowContentTransitions">true</item>
+        <item name="android:editTextStyle">@style/DownloaderTheme.EditText</item>
     </style>
 
+    <!-- Dialog -->
+    <style name="DownloaderDialog" parent="Theme.AppCompat.Light.Dialog">
+        <item name="colorPrimary">@color/color_primary</item>
+        <item name="colorPrimaryDark">@color/color_primary_dark</item>
+        <item name="colorAccent">@color/ascent_color</item>
+    </style>
+
+    <!-- Nav drawer arrow -->
     <style name="DrawerArrowStyle" parent="Widget.AppCompat.DrawerArrowToggle">
         <item name="spinBars">true</item>
         <item name="color">@android:color/white</item>
     </style>
 
-    <style name="ToolBarStyle" parent="">
+    <!-- Toolbar -->
+    <style name="ToolBarStyle">
         <item name="android:background">@color/color_primary</item>
         <item name="android:elevation">@dimen/toolbar_elevation</item>
         <item name="android:transitionName">actionBar</item>
         <item name="popupTheme">@style/ThemeOverlay.AppCompat.Light</item>
         <item name="theme">@style/ThemeOverlay.AppCompat.Dark.ActionBar</item>
+    </style>
+
+    <!-- UI components -->
+    <style name="DownloaderTheme.EditText" parent="android:Widget.EditText">
+        <item name="android:textColorHint">@color/text_color_primary_light</item>
+        <item name="android:textColor">@color/text_color_primary_dark</item>
     </style>
 
 </resources>

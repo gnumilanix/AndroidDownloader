@@ -39,7 +39,7 @@ public class NavigationDrawerFragment extends Fragment implements
 
 	private View fragmentContainerView;
 
-	private RootFragment currentSelectedFragment = null;
+	private RootFragment currentSelectedFragment = RootFragment.DOWNLOADING;
 	private boolean fromSavedInstanceState;
 	private boolean hasUserLearnedDrawer;
 
@@ -84,6 +84,7 @@ public class NavigationDrawerFragment extends Fragment implements
 		setView(view);
 		setListener();
 		setAdapter();
+
 		navigateToSelected(currentSelectedFragment);
 
 		return view;

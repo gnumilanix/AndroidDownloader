@@ -270,8 +270,6 @@ public class HomeActivity extends ActionBarActivity implements
 			String title = null;
 			String tag = null;
 
-			getSupportActionBar().show();
-
 			final FragmentManager manager = getSupportFragmentManager();
 			final FragmentTransaction transaction = manager.beginTransaction();
 
@@ -314,8 +312,10 @@ public class HomeActivity extends ActionBarActivity implements
 			}
 
 			if (null != title && null != tag && null != fragment) {
-				getSupportActionBar().show();
-				getSupportActionBar().setTitle(title);
+				if (null != getSupportActionBar()) {
+					getSupportActionBar().show();
+					getSupportActionBar().setTitle(title);
+				}
 
 				invalidateOptionsMenu();
 

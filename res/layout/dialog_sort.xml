@@ -10,7 +10,7 @@
         android:id="@+id/asc_added"
         android:layout_width="match_parent"
         android:layout_height="@dimen/list_radio_size"
-        android:drawableLeft="@drawable/ic_icon_ascorder"
+        android:drawableLeft="@drawable/ic_icon_ascorder_light"
         android:padding="@dimen/text_padding"
         android:text="@string/asc_added" />
 
@@ -18,15 +18,15 @@
         android:id="@+id/dsc_added"
         android:layout_width="match_parent"
         android:layout_height="@dimen/list_radio_size"
-        android:drawableLeft="@drawable/ic_icon_dscorder"
+        android:drawableLeft="@drawable/ic_icon_dscorder_light"
         android:padding="@dimen/text_padding"
         android:text="@string/dsc_added" />
-    
-        <RadioButton
+
+    <RadioButton
         android:id="@+id/asc_completed"
         android:layout_width="match_parent"
         android:layout_height="@dimen/list_radio_size"
-        android:drawableLeft="@drawable/ic_icon_ascorder"
+        android:drawableLeft="@drawable/ic_icon_ascorder_light"
         android:padding="@dimen/text_padding"
         android:text="@string/asc_completed" />
 
@@ -34,7 +34,7 @@
         android:id="@+id/dsc_completed"
         android:layout_width="match_parent"
         android:layout_height="@dimen/list_radio_size"
-        android:drawableLeft="@drawable/ic_icon_dscorder"
+        android:drawableLeft="@drawable/ic_icon_dscorder_light"
         android:padding="@dimen/text_padding"
         android:text="@string/dsc_completed" />
 
@@ -42,7 +42,7 @@
         android:id="@+id/asc_size"
         android:layout_width="match_parent"
         android:layout_height="@dimen/list_radio_size"
-        android:drawableLeft="@drawable/ic_icon_ascorder"
+        android:drawableLeft="@drawable/ic_icon_ascorder_light"
         android:padding="@dimen/text_padding"
         android:text="@string/asc_size" />
 
@@ -50,7 +50,7 @@
         android:id="@+id/dsc_size"
         android:layout_width="match_parent"
         android:layout_height="@dimen/list_radio_size"
-        android:drawableLeft="@drawable/ic_icon_dscorder"
+        android:drawableLeft="@drawable/ic_icon_dscorder_light"
         android:padding="@dimen/text_padding"
         android:text="@string/dsc_size" />
 
