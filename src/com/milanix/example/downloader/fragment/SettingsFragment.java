@@ -1,13 +1,13 @@
 package com.milanix.example.downloader.fragment;
 
 import android.os.Bundle;
+import android.support.v7.widget.SwitchCompat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
-import android.widget.Switch;
 import android.widget.TextView;
 
 import com.milanix.example.downloader.R;
@@ -34,8 +34,8 @@ public class SettingsFragment extends AbstractFragment implements
 
 	private View rootView;
 
-	private Switch autostart_switch;
-	
+	private SwitchCompat autostart_switch;
+
 	private CheckBox aggregate_notification;
 
 	private ViewGroup location_base;
@@ -71,10 +71,10 @@ public class SettingsFragment extends AbstractFragment implements
 
 	@Override
 	protected void setUI() {
-		autostart_switch = (Switch) rootView
+		autostart_switch = (SwitchCompat) rootView
 				.findViewById(R.id.autostart_switch);
-		
-		aggregate_notification= (CheckBox) rootView
+
+		aggregate_notification = (CheckBox) rootView
 				.findViewById(R.id.aggregate_notification);
 
 		location_base = (ViewGroup) rootView.findViewById(R.id.location_base);
@@ -132,7 +132,7 @@ public class SettingsFragment extends AbstractFragment implements
 	public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 		if (buttonView.getId() == R.id.autostart_switch) {
 			PreferenceHelper.setIsAutoStart(getActivity(), isChecked);
-		}else if(buttonView.getId()==R.id.aggregate_notification){
+		} else if (buttonView.getId() == R.id.aggregate_notification) {
 			PreferenceHelper.setIsAggregateDownload(getActivity(), isChecked);
 		}
 	}

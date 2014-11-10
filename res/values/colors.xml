@@ -15,6 +15,7 @@
     <color name="navigation_bar_color">#AFBFFF</color>
     <color name="navigation_drawer_color">#F2F2F2</color>
     <color name="ascent_color">#4D73FF</color>
+    <color name="slidingtab_indicator">#FFFFFF</color>
 
     <!-- Action Bar Colors -->
     <color name="statusbarbar_dark_background">#4D73FF</color>

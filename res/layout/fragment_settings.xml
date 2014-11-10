@@ -25,7 +25,7 @@
         android:layout_marginTop="@dimen/divider_margin"
         android:background="@color/sttings_divider_color" />
 
-    <Switch
+    <android.support.v7.widget.SwitchCompat
         android:id="@+id/autostart_switch"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

@@ -1,6 +1,7 @@
 package com.milanix.example.downloader.activity;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 import android.content.ComponentName;
@@ -15,7 +16,10 @@ import android.os.StrictMode;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.view.ViewPager;
+import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.Toolbar;
@@ -41,6 +45,8 @@ import com.milanix.example.downloader.pref.PreferenceHelper;
 import com.milanix.example.downloader.service.DownloadService;
 import com.milanix.example.downloader.util.NetworkUtils;
 import com.milanix.example.downloader.util.ToastHelper;
+import com.milanix.example.downloader.view.SlidingTabLayout;
+import com.milanix.example.downloader.view.SlidingTabLayout.TabColorizer;
 
 /**
  * This is the main activity of this app. It contains logic to control fragment
@@ -49,14 +55,18 @@ import com.milanix.example.downloader.util.ToastHelper;
  * 
  */
 public class HomeActivity extends ActionBarActivity implements
-		ExtendedNavigationDrawerCallbacks, OnAddNewDownloadListener,
-		OnClickListener {
+		ExtendedNavigationDrawerCallbacks, OnPageChangeListener,
+		OnAddNewDownloadListener, OnClickListener {
 
 	private static final String KEY_INTENT_PROCESSED = "INTENT_PROCESSED";
 
 	private Toolbar toolbar_actionbar;
 	private ImageButton download_add;
 	private View view_rateme;
+
+	private SlidingTabLayout slidingTabLayout;
+	private ViewPager viewPager;
+	private PagerAdapter pagerAdapter;
 
 	private ActionMode actionMode;
 	private ActionMode.Callback actionCallback;
@@ -117,15 +127,12 @@ public class HomeActivity extends ActionBarActivity implements
 		setDownloadPath();
 
 		setUI();
-		setListener();
-
 		setToolBar();
+		setListener();
 		setDefinationBasedUI();
-		setupNativationDrawer();
 
 		// TODO Process only if intent is not already handled.
 		if (savedInstanceState != null) {
-
 			if (!savedInstanceState.getBoolean(KEY_INTENT_PROCESSED))
 				handleIncoming(getIntent());
 
@@ -198,9 +205,9 @@ public class HomeActivity extends ActionBarActivity implements
 	 */
 	private void setDefinationBasedUI() {
 		if (DeviceDefinition.TABLET.equals(getDeviceDefinition())) {
-
+			setSlidingTab();
 		} else {
-
+			setupNativationDrawer();
 		}
 	}
 
@@ -215,6 +222,43 @@ public class HomeActivity extends ActionBarActivity implements
 			return DeviceDefinition.TABLET;
 		else
 			return DeviceDefinition.MOBILE;
+	}
+
+	/**
+	 * Sets up sliding tab
+	 */
+	private void setSlidingTab() {
+		final ArrayList<FragmentStub> fragmentList = new ArrayList<FragmentStub>();
+		fragmentList.add(new FragmentStub(new DownloadingFragment(),
+				getString(R.string.tab_downloading)));
+		fragmentList.add(new FragmentStub(new DownloadedFragment(),
+				getString(R.string.tab_downloaded)));
+		fragmentList.add(new FragmentStub(new SettingsFragment(),
+				getString(R.string.tab_settings)));
+
+		pagerAdapter = new PagerAdapter(getSupportFragmentManager(),
+				fragmentList);
+
+		viewPager = (ViewPager) findViewById(R.id.viewpager);
+		viewPager.setOnPageChangeListener(this);
+		viewPager.setAdapter(pagerAdapter);
+
+		slidingTabLayout = (SlidingTabLayout) findViewById(R.id.sliding_tabs);
+		slidingTabLayout.setCustomTabColorizer(new TabColorizer() {
+
+			@Override
+			public int getIndicatorColor(int position) {
+				return getResources().getColor(R.color.slidingtab_indicator);
+			}
+
+			@Override
+			public int getDividerColor(int position) {
+				return getResources().getColor(R.color.slidingtab_indicator);
+			}
+
+		});
+		slidingTabLayout.setViewPager(viewPager);
+
 	}
 
 	/**
@@ -438,6 +482,78 @@ public class HomeActivity extends ActionBarActivity implements
 		this.actionCallback = actionCallback;
 
 		return super.onWindowStartingActionMode(actionCallback);
+	}
+
+	/**
+	 * The {@link android.support.v4.view.PagerAdapter} used to display pages in
+	 * this sample. The individual pages are simple and just display two lines
+	 * of text. The important section of this class is the
+	 * {@link #getPageTitle(int)} method which controls what is displayed in the
+	 * {@link SlidingTabLayout}.
+	 */
+	private class PagerAdapter extends FragmentStatePagerAdapter {
+		private ArrayList<FragmentStub> fragmentList;
+
+		public PagerAdapter(FragmentManager fragmentManager,
+				ArrayList<FragmentStub> fragmentList) {
+			super(fragmentManager);
+
+			this.fragmentList = fragmentList;
+		}
+
+		@Override
+		public int getCount() {
+			return fragmentList.size();
+		}
+
+		@Override
+		public CharSequence getPageTitle(int position) {
+
+			return fragmentList.get(position).title;
+		}
+
+		@Override
+		public Fragment getItem(int position) {
+
+			return fragmentList.get(position).fragment;
+		}
+
+	}
+
+	/**
+	 * Fragment stub object
+	 * 
+	 * @author Milan
+	 * 
+	 */
+	private class FragmentStub {
+		public Fragment fragment;
+		public String title;
+
+		public FragmentStub(Fragment fragment, String title) {
+			this.fragment = fragment;
+			this.title = title;
+		}
+
+	}
+
+	@Override
+	public void onPageScrollStateChanged(int position) {
+
+	}
+
+	@Override
+	public void onPageScrolled(int position, float positionOffset,
+			int positionOffsetPixels) {
+
+	}
+
+	@Override
+	public void onPageSelected(int position) {
+		if (null != getSupportActionBar() && null != pagerAdapter) {
+			getSupportActionBar().show();
+			getSupportActionBar().setTitle(pagerAdapter.getPageTitle(position));
+		}
 	}
 
 }
